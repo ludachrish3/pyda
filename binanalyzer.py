@@ -11,7 +11,6 @@ def getBinary(fd):
     # TODO: Do a more thorough check for different file types. This is only good
     # enough for ELF files.
     fileHeader = fd.read(4)
-    print("Magic number: {}".format(fileHeader))
 
     if fileHeader == MAGIC_NUM_ELF:
         # Set the file position back to zero so that the full file can be parsed
