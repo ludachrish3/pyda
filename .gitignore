@@ -1,0 +1,21 @@
+# Ignore everything
+*
+
+# Add back all directories so their content can be unignored if desired
+!*/
+
+# Allow the .gitignore file
+!.gitignore
+
+# Allow the README.md file
+!README.md
+
+# Allow all Python files
+!**/*.py
+
+# Allow all C files
+!**/*.c
+
+# Allow all makefiles
+!**/makefile
+
