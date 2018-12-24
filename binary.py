@@ -23,6 +23,10 @@ class Binary(metaclass=abc.ABCMeta):
     def setEndianness(self, endianness):
         pass
 
+    @abc.abstractmethod
+    def setISA(self, isa):
+        pass
+
 class AnalysisError(Exception):
     pass
 

@@ -73,17 +73,30 @@ class ElfBinary(binary.Binary):
                "ISA:          {}".format(self.isa)
 
 
+    def bytesToInt(self, byteArray, signed=False):
+        return int.from_bytes(byteArray, byteorder=self.getEndianness(), signed=signed)
+
+
+    # Reads an integer value from a file
+    def readInt(self, fd, size):
+        return self.bytesToInt(fd.read(size))
+
     def getArch(self):
         return self.arch
 
+
+    def getAddrSize(self):
+        return self.addrSize
 
     def setArch(self, arch):
 
         if arch == ELF_ARCH_32BIT:
             self.arch = binary.BIN_ARCH_32BIT
+            self.addrSize = 4
 
         elif arch == ELF_ARCH_64BIT:
             self.arch = binary.BIN_ARCH_64BIT
+            self.addrSize = 8
 
         else:
             raise binary.AnalysisError("The architecture could not be determined: {}".format(arch))
@@ -102,32 +115,6 @@ class ElfBinary(binary.Binary):
 
         else:
             raise binary.AnalysisError("The endianness could not be determined: {}".format(endianness))
-
-
-    def setISA(self, isa):
-        # TODO: Make this a required function in the abstract class
-        
-        isaVal = self.bytesToInt(isa)
-
-        if isaVal == ELF_ISA_X86_64:
-            self.isa = ELF_ISA_X86_64_STR
-
-        elif isaVal == ELF_ISA_X86:
-            self.isa = ELF_ISA_X86_STR
-            raise NotImplementedError("32-bit x86 files are not supported")
-
-        elif isaVal == ELF_ISA_ARM:
-            self.isa = ELF_ISA_ARM_STR
-            raise NotImplementedError("ARM files are not supported")
-            
-        # TODO: Fill out cases for all other defined types at the top of this file
-
-        else:
-            raise binary.AnalysisError("The ISA could not be determined: {}".format(isaVal))
-
-
-    def bytesToInt(self, byteArray, signed=False):
-        return int.from_bytes(byteArray, byteorder=self.getEndianness(), signed=signed)
 
 
     def setFileType(self, fileType):
@@ -149,20 +136,124 @@ class ElfBinary(binary.Binary):
             raise binary.AnalysisError("The ELF file type could not be determined: {}".format(fileTypeVal))
 
 
-    def analyze(self, fd):
+    def setISA(self, isa):
+        
+        isaVal = self.bytesToInt(isa)
+
+        if isaVal == ELF_ISA_X86_64:
+            self.isa = ELF_ISA_X86_64_STR
+
+        elif isaVal == ELF_ISA_X86:
+            self.isa = ELF_ISA_X86_STR
+            raise NotImplementedError("32-bit x86 files are not supported")
+
+        elif isaVal == ELF_ISA_ARM:
+            self.isa = ELF_ISA_ARM_STR
+            raise NotImplementedError("ARM files are not supported")
+            
+        elif isVal == ELF_ISA_SPARC:
+            self.isa = ELF_ISA_SPARC_STR
+            raise NotImplementedError("SPARC files are not supported")
+
+        elif isVal == ELF_ISA_MIPS:
+            self.isa = ELF_ISA_MIPS_STR
+            raise NotImplementedError("MIPS files are not supported")
+
+        elif isVal == ELF_ISA_POWER_PC_STR:
+            self.isa = ELF_ISA_POWER_PC_STR
+            raise NotImplementedError("PowerPC files are not supported")
+
+        elif isVal == ELF_ISA_POWER_PC_64_STR:
+            self.isa = ELF_ISA_POWER_PC_64_STR
+            raise NotImplementedError("64-bit PowerPC files are not supported")
+
+        elif isVal == ELF_ISA_IA_64:
+            self.isa = ELF_ISA_IA_64_STR
+            raise NotImplementedError("Intel IA-64 files are not supported")
+
+        else:
+            raise binary.AnalysisError("The ISA could not be determined: {}".format(isaVal))
+
+
+    def setStartAddr(self, startAddr):
+        
+        self.startAddr = self.bytesToInt(startAddr)
+        print("Start addr:            0x{0:0>8x}".format(self.startAddr))
+
+
+    def setProgHdrOffset(self, progHdrOffset):
+
+        self.progHdrOffset = self.bytesToInt(progHdrOffset)
+        print("Program header offset: 0x{0:<8x}".format(self.progHdrOffset))
+
+
+    def setSectionHdrOffset(self, sectionHdrOffset):
+
+        self.sectionHdrOffset = self.bytesToInt(sectionHdrOffset)
+        print("Section header offset: 0x{0:<8x}".format(self.sectionHdrOffset))
+
+    def setFlags(self, flags):
+
+        self.flags = self.bytesToInt(flags)
+
+        if self.flags != 0:
+            raise binary.AnalysisError("Flags were set for the architecture, but they cannot be handled: {0:<8}".format(self.flags))
+
+
+    def setElfHdrSize(self, hdrSize):
+
+        self.elfHdrSize = self.bytesToInt(hdrSize)
+        print("ELF header size: {}".format(self.elfHdrSize))
+
+
+    def setProgHdrEntrySize(self, entrySize):
+
+        self.progHdrEntrySize = self.bytesToInt(entrySize)
+        print("Program header entry size: {}".format(self.progHdrEntrySize))
+
+    def setNumProgHdrEntries(self, numEntries):
+
+        self.numProgHdrEntries = self.bytesToInt(numEntries)
+        print("Number of program header entries: {}".format(self.numProgHdrEntries))
+
+
+    def setSectionHdrEntrySize(self, entrySize):
+
+        self.sectionHdrEntrySize = self.bytesToInt(entrySize)
+        print("Section header entry size: {}".format(self.sectionHdrEntrySize))
+
+
+    def setNumSectionHdrEntries(self, numEntries):
+
+        self.numSectionHdrEntries = self.bytesToInt(numEntries)
+        print("Number of section header entries: {}".format(self.numSectionHdrEntries))
+
+
+    def setNameIndex(self, index):
+
+        self.nameIndex = self.bytesToInt(index)
+        print("Index of the section that contains the section names: {}".format(self.nameIndex))
+
+
+    def parseElfHeader(self, fd):
+
         # Skip over the magic number because it was already used
         fd.read(4)
         
         # Get the architecture
         self.setArch(fd.read(1))
 
+        # Now that the architecture is known, save a local copy of the number of
+        # bytes in an address
+        addrSize = self.getAddrSize()
+
         # Get endianness
         self.setEndianness(fd.read(1))
         
-        # Get version number (currently not used)
+        # Get version number (currently not used by this module)
         fd.read(1)
 
-        # Get the OS (not usually set, so not used)
+        # Get the OS (not usually set, so not used by this module)
         fd.read(1)
 
         # Skip over the padding bytes
@@ -173,3 +264,45 @@ class ElfBinary(binary.Binary):
 
         # Get the ISA
         self.setISA(fd.read(2))
+
+        # Get the ELF version (currently not used by this module)
+        fd.read(1)
+
+        # Skip over some more padding bytes
+        fd.read(3)
+
+        # Get the starting virtual address for the program. The size of the
+        #starting address varies based on the system's architecture.
+        self.setStartAddr(fd.read(addrSize))
+
+        # Get the start of the program header table in the file
+        self.setProgHdrOffset(fd.read(addrSize))
+
+        # Get the start of the section header table in the file
+        self.setSectionHdrOffset(fd.read(addrSize))
+
+        # Get the flags for the architecture
+        self.setFlags(fd.read(4))
+
+        # Get the size of the ELF header
+        self.setElfHdrSize(fd.read(2))
+
+        # Get the size of each program header entry
+        self.setProgHdrEntrySize(fd.read(2))
+
+        # Get the number of program header entries
+        self.setNumProgHdrEntries(fd.read(2))
+
+        # Get the size of each section header entry
+        self.setSectionHdrEntrySize(fd.read(2))
+
+        # Get the number of section header entries
+        self.setNumSectionHdrEntries(fd.read(2))
+
+        # Get the index of the section header that contains the section names
+        self.setNameIndex(fd.read(2))
+
+    def analyze(self, fd):
+
+        # Parse the ELF header to get basic information about the file
+        self.parseElfHeader(fd)
