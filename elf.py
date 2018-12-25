@@ -208,8 +208,10 @@ class ElfBinary(binary.Binary):
         #TODO: Fill this with default values
         self.segments = []
         self.sections = []
-        self.symbolTable = None
-        self.stringTable = None
+        self.stringSection = None
+        self.symbolSection = None # Section object that contains information about the section
+        self.stringTable = {}
+        self.symbolTable = None # SymbolTable object that contains the Symbols
 
 
     def __repr__(self):
@@ -229,6 +231,40 @@ class ElfBinary(binary.Binary):
 
         return self.bytesToInt(fd.read(size))
 
+
+    # Gets a string from the program's string table as long as the table has
+    # already been initialized.
+    def getStringFromTable(self, index):
+
+        # Make sure that the string table exists
+        if self.stringSection is None or self.stringSection.data is None:
+            raise AttributeError("The binary does not have a string table")
+
+        # Make sure that the index is sane
+        if index < 0 or index >= self.stringSection.fileSize:
+            raise IndexError("The requested string index is out of bounds of the string table: {}".format(index))
+
+        # If the string has already been looked up before, get it from the
+        # string table dictionary.
+        if index in self.stringTable:
+            return self.stringTable[index]
+
+        # Save a local reference to the string table data for convenience
+        stringTable = self.stringSection.data
+
+        # Set the position in the file to the beginning of the string based
+        # on the table offset and the section's index.
+        currentPos = index
+
+        while stringTable[currentPos] != 0:
+            currentChar = stringTable[currentPos]
+            currentPos += 1
+
+        # Save the string in the dictionary for fast access in the future
+        string = stringTable[index:currentPos].decode("ascii")
+        self.stringTable[index] = string
+
+        return string
 
     def setArch(self, arch):
 
@@ -495,28 +531,30 @@ class ElfBinary(binary.Binary):
             self.sections.append(newSection)
 
             if sectionType == SECTION_TYPE_SYMBOL_TABLE:
-                self.symbolTable = newSection
+                self.symbolSection = newSection
 
             elif sectionType == SECTION_TYPE_STRING_TABLE:
-                self.stringTable = newSection
+                self.stringSection = newSection
 
-
-        # TODO: Assign the section names now that all sections have been parsed
+        # Save each section as a byte string so that the file does not need to
+        # be read from anymore.
         for section in self.sections:
 
-            # Set the position in the file to the beginning of the string based
-            # on the table offset and the section's index.
-            stringPos = self.stringTable.fileOffset + section._nameIndex
-            fd.seek(stringPos)
+            fd.seek(section.fileOffset)
+            section.data = fd.read(section.fileSize)
 
-            currentChar = None
-            sectionName = ""
-            while currentChar != '\x00':
-                currentChar = fd.read(1).decode("ascii")
-                sectionName += currentChar
+        # Now that all data is stored in objects for sections rather than just
+        # in the file, get the section names from the string table.
+        for section in self.sections:
 
-            section.name = sectionName
+            section.name = self.getStringFromTable(section._nameIndex)
             print("Section: {}".format(section))
+        
+
+    def parseSymbolTable(self):
+
+        # TODO: Parse the symbol table to have a convenient storage of program symbols
+        pass
         
 
     def analyze(self, fd):
@@ -524,13 +562,16 @@ class ElfBinary(binary.Binary):
         # Parse the ELF header to get basic information about the file
         self.parseElfHeader(fd)
 
-        # TODO: Maybe don't do this because the info might be all in the sections
+        # TODO: Maybe don't do this because the info is in the sections
         # Handle the program headers if there are any
         if self.progHdrOffset > 0:
             self.parseProgHdrs(fd)
 
-        # TODO: Handle sections
+        # Handle sections and save them
         self.parseSectionHdrs(fd)
+
+        # Parse the symbol table
+        self.parseSymbolTable()
 
 
 class ElfSegment():
@@ -583,6 +624,7 @@ class ElfSection():
         self.info        = 0
         self.alignment   = 0
         self.entrySize   = 0
+        self.data        = None
 
 
     def __repr__(self):
@@ -597,3 +639,6 @@ class ElfSection():
              + " alignment: {}".format(self.alignment)            \
              + " entrySize: {}}}".format(self.entrySize)
 
+
+class SymbolTable():
+    pass
