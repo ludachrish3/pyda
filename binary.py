@@ -27,6 +27,7 @@ class Binary(metaclass=abc.ABCMeta):
     def setISA(self, isa):
         pass
 
+
 class AnalysisError(Exception):
     pass
 

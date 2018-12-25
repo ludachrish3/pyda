@@ -19,7 +19,6 @@ if __name__ == "__main__":
     except FileNotFoundError as e:
         print("The specified file could not be found. Quitting.")
         exit(1)
-
     
     try:
         binaryFile = binAnalyzer.analyzeFile(args.file)
