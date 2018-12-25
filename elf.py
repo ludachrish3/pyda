@@ -208,6 +208,8 @@ class ElfBinary(binary.Binary):
         #TODO: Fill this with default values
         self.segments = []
         self.sections = []
+        self.symbolTable = None
+        self.stringTable = None
 
 
     def __repr__(self):
@@ -479,7 +481,7 @@ class ElfBinary(binary.Binary):
             sectionNameIndex = self.readInt(fd, 4)
             sectionType = self.readInt(fd, 4)
 
-            newSection = ElfSection(sectionType, sectionNameIndex)
+            newSection = ElfSection(sectionType, nameIndex=sectionNameIndex)
 
             newSection.flags = self.readInt(fd, addrSize)
             newSection.virtualAddr = self.readInt(fd, addrSize)
@@ -491,9 +493,30 @@ class ElfBinary(binary.Binary):
             newSection.entrySize = self.readInt(fd, addrSize)
 
             self.sections.append(newSection)
-            print("Section [{}]: {}".format(entry, newSection))
+
+            if sectionType == SECTION_TYPE_SYMBOL_TABLE:
+                self.symbolTable = newSection
+
+            elif sectionType == SECTION_TYPE_STRING_TABLE:
+                self.stringTable = newSection
+
 
         # TODO: Assign the section names now that all sections have been parsed
+        for section in self.sections:
+
+            # Set the position in the file to the beginning of the string based
+            # on the table offset and the section's index.
+            stringPos = self.stringTable.fileOffset + section._nameIndex
+            fd.seek(stringPos)
+
+            currentChar = None
+            sectionName = ""
+            while currentChar != '\x00':
+                currentChar = fd.read(1).decode("ascii")
+                sectionName += currentChar
+
+            section.name = sectionName
+            print("Section: {}".format(section))
         
 
     def analyze(self, fd):
@@ -571,6 +594,6 @@ class ElfSection():
              + " fileSize: {},".format(self.fileSize)             \
              + " link: {},".format(self.link)                     \
              + " info: {},".format(self.info)                     \
-             + " alignment: {}}}".format(self.alignment)          \
+             + " alignment: {}".format(self.alignment)            \
              + " entrySize: {}}}".format(self.entrySize)
 
