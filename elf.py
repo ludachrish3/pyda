@@ -202,6 +202,7 @@ SECTION_TYPE_STR = {
     SECTION_TYPE_GNU_VERSION:   "GNU version",
 }
 
+SECTION_NAME_SECTION_NAMES = ".shstrtab"
 SECTION_NAME_STRING_TABLE = ".strtab"
 SECTION_NAME_DYN_STRING_TABLE = ".dynstr"
 SECTION_NAME_SYMBOL_TABLE = ".symtab"
@@ -256,17 +257,35 @@ class ElfBinary(binary.Binary):
         #TODO: Fill this with default values
         self._type = None
         self.segments = []
-        self.sections = []
 
-        self._sectionNameSection = None
-        self._stringSection = None
-        self._sectionNameTable = {}
-        self._stringTable = {}
+        self._sectionList = [] # Temporary and will be removed once _sections is populated
+        self._sections = {}
+
+        # Dictionary keyed on section name that contains the string at a given index
+        # Example:
+        # {
+        #     '.strtab': {
+        #         0:  '',
+        #         1:  'crtstuff.c',
+        #         12: 'deregister_tm_clones',
+        #         ...
+        #     },
+        #     '.shstrtab': {
+        #         0: '',
+        #         27: '.interp',
+        #         35: '.note.ABI-tag',
+        #         ...
+        #     }
+        # }
+        self._strings = {}
 
         # TODO: Update the key for the symbol table to be whatever is useful
         # Right now it is one big dictionary keyed on value, but maybe split it
         # up by type and key on something else if it makes more sense.
-        self._symbolTable = {}
+        self._functionsByName = {}
+        self._functionsByAddr = {}
+        self._globalVariablesByName = {}
+        self._globalVariablesByAddr = {}
 
 
     def __repr__(self):
@@ -287,66 +306,36 @@ class ElfBinary(binary.Binary):
         return self.bytesToInt(fd.read(size))
 
 
-    def getStringFromTable(self, data, index):
+    def getStringFromTable(self, sectionName, index):
 
-        if data is None:
+        if sectionName not in self._sections or self._sections[sectionName].data is None:
             raise AttributeError("The binary does not have the required section to look up a string.")
+
+        # If this section has never been queried before, add it to the dictionary
+        if sectionName not in self._strings:
+            self._strings[sectionName] = {}
+
+        # If this string has been asked for before, return the saved value
+        elif index in self._strings and index in self._strings[sectionName]:
+            return self._strings[sectionName][index]
+
+        # Save a reference to the section for convenience
+        section = self._sections[sectionName]
+
+        # Make sure that the index is sane
+        if index < 0 or index >= section.fileSize:
+            raise IndexError("The requested string index is out of bounds of the string table: {}".format(index))
 
         # Set the position in the file to the beginning of the string based
         # on the table offset and the section's index.
         currentPos = index
 
-        while data[currentPos] != 0:
-            currentChar = data[currentPos]
+        while section.data[currentPos] != 0:
+            currentChar = section.data[currentPos]
             currentPos += 1
 
-        return data[index:currentPos].decode("ascii")
-
-
-    # Gets a string from the program's string table as long as the table has
-    # already been initialized.
-    def getStringFromStringTable(self, index):
-
-        # Make sure that the string table exists
-        if self._stringSection is None or self._stringSection.data is None:
-            raise AttributeError("The binary does not have a string table")
-
-        # Make sure that the index is sane
-        if index < 0 or index >= self._stringSection.fileSize:
-            raise IndexError("The requested string index is out of bounds of the string table: {}".format(index))
-
-        # If the string has already been looked up before, get it from the
-        # string table dictionary.
-        if index in self._stringTable:
-            return self._stringTable[index]
-
-        # Save the string in the dictionary for fast access in the future
-        string = self.getStringFromTable(self._stringSection.data, index)
-        self._stringTable[index] = string
-
-        return string
-
-
-    # Gets a string from the program's string table as long as the table has
-    # already been initialized.
-    def getStringFromSectionNameTable(self, index):
-
-        # Make sure that the string table exists
-        if self._sectionNameSection is None or self._sectionNameSection.data is None:
-            raise AttributeError("The binary does not have a section name table")
-
-        # Make sure that the index is sane
-        if index < 0 or index >= self._sectionNameSection.fileSize:
-            raise IndexError("The requested string index is out of bounds of the section name table: {}".format(index))
-
-        # If the string has already been looked up before, get it from the
-        # section name dictionary.
-        if index in self._sectionNameTable:
-            return self._sectionNameTable[index]
-
-        # Save the string in the dictionary for fast access in the future
-        string = self.getStringFromTable(self._sectionNameSection.data, index)
-        self._sectionNameTable[index] = string
+        string = section.data[index:currentPos].decode("ascii")
+        self._strings[sectionName][index] = string
 
         return string
 
@@ -613,50 +602,52 @@ class ElfBinary(binary.Binary):
             newSection.alignment = self.readInt(fd, addrSize)
             newSection.entrySize = self.readInt(fd, addrSize)
 
-            self.sections.append(newSection)
+            self._sectionList.append(newSection)
 
             # Save the section that has the names of all other sections so that
             # it can be used to identify the others in the next step
             if entry == self._sectionNameIndex:
-                self._sectionNameSection = newSection
+                newSection.name = SECTION_NAME_SECTION_NAMES
+                self._sections[SECTION_NAME_SECTION_NAMES] = newSection
+
+        # Set the data for the section that contains all section names so that
+        # it can be used to look up the names of other sections.
+        sectionNameSection = self._sections[SECTION_NAME_SECTION_NAMES]
+        fd.seek(sectionNameSection.fileOffset)
+        self._sections[SECTION_NAME_SECTION_NAMES].data = fd.read(sectionNameSection.fileSize)
 
         # Save each section as a byte string so that the file does not need to
         # be read from anymore.
-        for section in self.sections:
+        for section in self._sectionList:
 
             fd.seek(section.fileOffset)
             section.data = fd.read(section.fileSize)
 
         # Now that all data is stored in objects for sections rather than just
         # in the file, get the section names from the string table.
-        for section in self.sections:
+        for section in self._sectionList:
 
-            section.name = self.getStringFromSectionNameTable(section._nameIndex)
+            section.name = self.getStringFromTable(SECTION_NAME_SECTION_NAMES, section._nameIndex)
 
             # Now that the section's name is known, it can be correctly assigned
-            # because there can be multiple string tables each with a different
-            # purpose.
-
-            if section.name == SECTION_NAME_STRING_TABLE:
-                self._stringSection = section
-
-            elif section.name == SECTION_NAME_SYMBOL_TABLE:
-                self._symbolSection = section
-
-            # TODO: If other sections need to be identified by name, do it here
+            self._sections[section.name] = section
 
             #print("Section: {}".format(section))
+
+        # Remove the list of sections because they have been converted into a
+        # dictionary keyed on section name.
+        del self._sectionList
         
 
-    def parseSymbolTable(self):
+    def parseSymbolTable(self, fd):
 
-        symbolData = self._symbolSection.data
+        symbolData = self._sections[SECTION_NAME_SYMBOL_TABLE].data
         index = 0
 
         if self.arch == binary.BIN_ARCH_32BIT:
-            for pos in range(0, self._symbolSection.fileSize, 16):
+            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].fileSize, 16):
                 newSymbol = ElfSymbol()
-                newSymbol.setName(self.getStringFromStringTable(self.bytesToInt(symbolData[pos:pos+4])))
+                newSymbol.setName(self.getStringFromTable(SECTION_NAME_STRING_TABLE, self.bytesToInt(symbolData[pos:pos+4])))
                 newSymbol.value        = self.bytesToInt(symbolData[pos+4:pos+8])
                 newSymbol.size         = self.bytesToInt(symbolData[pos+8:pos+12])
                 symbolInfo             = symbolData[pos+12]
@@ -666,12 +657,23 @@ class ElfBinary(binary.Binary):
                 newSymbol.visibility   = symbolOther & 0x3
                 newSymbol.sectionIndex = self.bytesToInt(symbolData[pos+14:pos+16])
 
-                self._symbolTable[newSymbol.value] = newSymbol
+                # Save the assembly bytes of the function with the object so that
+                # the file is no longer needed
+                fd.seek(newSymbol.value)
+                newSymbol.assembly = fd.read(newSymbol.size)
+
+                if newSymbol.type == SYMBOL_TYPE_FUNCTION:
+                    self._functionsByName[newSymbol.name] = newSymbol
+                    self._functionsByAddr[newSymbol.value] = newSymbol
+
+                elif newSymbol.type == SYMBOL_TYPE_OBJECT:
+                    self._globalVariablesByName[newSymbol.name] = newSymbol
+                    self._globalVariablesByAddr[newSymbol.name] = newSymbol
 
         elif self.arch == binary.BIN_ARCH_64BIT:
-            for pos in range(0, self._symbolSection.fileSize, 24):
+            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].fileSize, 24):
                 newSymbol = ElfSymbol()
-                newSymbol.setName(self.getStringFromStringTable(self.bytesToInt(symbolData[pos:pos+4])))
+                newSymbol.setName(self.getStringFromTable(SECTION_NAME_STRING_TABLE, self.bytesToInt(symbolData[pos:pos+4])))
                 symbolInfo             = symbolData[pos+4]
                 newSymbol.bind         = symbolInfo >> 4
                 newSymbol.type         = symbolInfo & 0xf
@@ -681,7 +683,20 @@ class ElfBinary(binary.Binary):
                 newSymbol.value        = self.bytesToInt(symbolData[pos+8:pos+16])
                 newSymbol.size         = self.bytesToInt(symbolData[pos+16:pos+24])
 
-                self._symbolTable[newSymbol.value] = newSymbol
+                # Save the assembly bytes of the function with the object so that
+                # the file is no longer needed
+                fd.seek(newSymbol.value)
+                newSymbol.assembly = fd.read(newSymbol.size)
+
+                if newSymbol.type == SYMBOL_TYPE_FUNCTION:
+                    self._functionsByName[newSymbol.name] = newSymbol
+                    self._functionsByAddr[newSymbol.value] = newSymbol
+                    print("Function symbol: {}".format(newSymbol))
+
+                elif newSymbol.type == SYMBOL_TYPE_OBJECT:
+                    self._globalVariablesByName[newSymbol.name] = newSymbol
+                    self._globalVariablesByAddr[newSymbol.name] = newSymbol
+                    print("Global symbol: {}".format(newSymbol))
 
 
     def analyze(self, fd):
@@ -698,7 +713,36 @@ class ElfBinary(binary.Binary):
         self.parseSectionHdrs(fd)
 
         # Parse the symbol table
-        self.parseSymbolTable()
+        self.parseSymbolTable(fd)
+
+
+    def getFunctionByName(self, name):
+
+        if name in self._functionsByName:
+            function = self._functionsByName[name]
+
+            return binary.Function(function.name, function.value, function.size, function.assembly)
+
+        else:
+            return None
+
+    def getFunctionByAddr(self, addr):
+
+        if addr in self._functionsByAddr:
+            function = self._functionsByAddr[addr]
+
+            return binary.Function(function.name, function.value, function.size, function.assembly)
+
+        else:
+            return None
+
+    def getExecutableCode(self):
+
+        if SECTION_NAME_TEXT in self._sections:
+            return self._sections[SECTION_NAME_TEXT].data
+
+        else:
+            return None
 
 
 class ElfSegment():

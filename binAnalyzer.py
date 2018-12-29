@@ -41,5 +41,8 @@ def analyzeFile(filename):
 
         print(binary)
 
+        functionToAnalyze = binary.getFunctionByName("main")
+
+        print("Function: {}".format(functionToAnalyze.assembly))
 
     return None
