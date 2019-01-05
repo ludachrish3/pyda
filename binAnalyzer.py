@@ -3,6 +3,8 @@ import os
 import binary
 import elf
 
+import x64asm
+
 # Magic numbers used to determine file types
 MAGIC_NUM_ELF = b'\x7fELF'
 
@@ -23,7 +25,7 @@ def getBinary(fd):
 
 def analyzeFile(filename):
 
-    binary = None
+    exe = None
 
     try:
         binStat = os.stat(filename)
@@ -36,13 +38,23 @@ def analyzeFile(filename):
 
     with open(filename, "rb") as binaryFile:
 
-        binary = getBinary(binaryFile)
-        binary.analyze(binaryFile)
+        exe = getBinary(binaryFile)
+        exe.analyze(binaryFile)
 
-        print(binary)
+        print(exe)
 
-        functionToAnalyze = binary.getFunctionByName("main")
+        functionToAnalyze = exe.getFunctionByName("main")
 
         print("Function: {}".format(functionToAnalyze.assembly))
+
+        if exe.getISA() == binary.ISA_X86_64:
+
+            instructions = x64asm.disassemble(functionToAnalyze.assembly)
+            print("Instructions:")
+            for inst in instructions:
+                print(inst)
+
+
+
 
     return None

@@ -1,96 +1,96 @@
 import binary
 
 # ELF architecture type
-ELF_ARCH_NONE  = b'\x00'
-ELF_ARCH_32BIT = b'\x01'
-ELF_ARCH_64BIT = b'\x02'
+ARCH_NONE  = b'\x00'
+ARCH_32BIT = b'\x01'
+ARCH_64BIT = b'\x02'
 
 # ELF endianness
-ELF_ENDIAN_NONE   = b'\x00'
-ELF_ENDIAN_LITTLE = b'\x01'
-ELF_ENDIAN_BIG    = b'\x02'
+ENDIAN_NONE   = b'\x00'
+ENDIAN_LITTLE = b'\x01'
+ENDIAN_BIG    = b'\x02'
 
 # ELF version number
-ELF_VERSION_NONE    = 0
-ELF_VERSION_CURRENT = 1
+VERSION_NONE    = 0
+VERSION_CURRENT = 1
 
 # ELF operating system
-ELF_OS_SYSTEM_V = 0
-ELF_OS_HP_UX    = 1
-ELF_OS_NET_BSD  = 2
-ELF_OS_LINUX    = 3
-ELF_OS_GNU_HURD = 4
-ELF_OS_SOLARIS  = 5
-ELF_OS_FREE_BSD = 8
-ELF_OS_OPEN_BSD = 11
+OS_SYSTEM_V = 0
+OS_HP_UX    = 1
+OS_NET_BSD  = 2
+OS_LINUX    = 3
+OS_GNU_HURD = 4
+OS_SOLARIS  = 5
+OS_FREE_BSD = 8
+OS_OPEN_BSD = 11
 
-ELF_OS_STR = {
-    ELF_OS_SYSTEM_V: "System V",
-    ELF_OS_HP_UX:    "HP-US",
-    ELF_OS_NET_BSD:  "NetBSD",
-    ELF_OS_LINUX:    "Linux",
-    ELF_OS_GNU_HURD: "GNU Hurd",
-    ELF_OS_SOLARIS:  "Solaris",
-    ELF_OS_FREE_BSD: "FreeBSD",
-    ELF_OS_OPEN_BSD: "OpenBSD",
+OS_STR = {
+    OS_SYSTEM_V: "System V",
+    OS_HP_UX:    "HP-US",
+    OS_NET_BSD:  "NetBSD",
+    OS_LINUX:    "Linux",
+    OS_GNU_HURD: "GNU Hurd",
+    OS_SOLARIS:  "Solaris",
+    OS_FREE_BSD: "FreeBSD",
+    OS_OPEN_BSD: "OpenBSD",
 }
 
 
 # ELF file types
-ELF_TYPE_NONE       = 0
-ELF_TYPE_RELOC      = 1
-ELF_TYPE_EXEC       = 2
-ELF_TYPE_SHARED_OBJ = 3
-ELF_TYPE_CORE       = 4
+TYPE_NONE       = 0
+TYPE_RELOC      = 1
+TYPE_EXEC       = 2
+TYPE_SHARED_OBJ = 3
+TYPE_CORE       = 4
 
-ALLOWED_ELF_TYPES = [
-    ELF_TYPE_NONE,
-    ELF_TYPE_RELOC,
-    ELF_TYPE_EXEC,
-    ELF_TYPE_SHARED_OBJ,
-    ELF_TYPE_CORE,
+ALLOWED_TYPES = [
+    TYPE_NONE,
+    TYPE_RELOC,
+    TYPE_EXEC,
+    TYPE_SHARED_OBJ,
+    TYPE_CORE,
 ]
 
-ELF_TYPE_STR = {
-    ELF_TYPE_RELOC:      "relocatable",
-    ELF_TYPE_EXEC:       "executable",
-    ELF_TYPE_SHARED_OBJ: "shared object",
-    ELF_TYPE_CORE:       "core",
+TYPE_STR = {
+    TYPE_RELOC:      "relocatable",
+    TYPE_EXEC:       "executable",
+    TYPE_SHARED_OBJ: "shared object",
+    TYPE_CORE:       "core",
 }
 
-ELF_ISA_NONE        = 0x00
-ELF_ISA_SPARC       = 0x02
-ELF_ISA_X86         = 0x03
-ELF_ISA_MIPS        = 0x08
-ELF_ISA_POWER_PC    = 0x14
-ELF_ISA_POWER_PC_64 = 0x15
-ELF_ISA_ARM         = 0x28
-ELF_ISA_SUPER_H     = 0x2a
-ELF_ISA_IA_64       = 0x32
-ELF_ISA_X86_64      = 0x3e
+ISA_NONE        = 0x00
+ISA_SPARC       = 0x02
+ISA_X86         = 0x03
+ISA_MIPS        = 0x08
+ISA_POWER_PC    = 0x14
+ISA_POWER_PC_64 = 0x15
+ISA_ARM         = 0x28
+ISA_SUPER_H     = 0x2a
+ISA_IA_64       = 0x32
+ISA_X86_64      = 0x3e
 
-ALLOWED_ELF_ISAS = [
-    ELF_ISA_SPARC,
-    ELF_ISA_X86,
-    ELF_ISA_MIPS,
-    ELF_ISA_POWER_PC,
-    ELF_ISA_POWER_PC_64,
-    ELF_ISA_ARM,
-    ELF_ISA_SUPER_H,
-    ELF_ISA_IA_64,
-    ELF_ISA_X86_64,
+ALLOWED_ISAS = [
+    ISA_SPARC,
+    ISA_X86,
+    ISA_MIPS,
+    ISA_POWER_PC,
+    ISA_POWER_PC_64,
+    ISA_ARM,
+    ISA_SUPER_H,
+    ISA_IA_64,
+    ISA_X86_64,
 ]
 
-ELF_ISA_STR = {
-    ELF_ISA_SPARC:       "SPARC",
-    ELF_ISA_X86:         "x86",
-    ELF_ISA_MIPS:        "MIPS",
-    ELF_ISA_POWER_PC:    "PowerPC",
-    ELF_ISA_POWER_PC_64: "64-bit PowerPC",
-    ELF_ISA_ARM:         "ARM",
-    ELF_ISA_SUPER_H:     "SuperH",
-    ELF_ISA_IA_64:       "Intel IA-64",
-    ELF_ISA_X86_64:      "64-bit x86",
+ISA_STR = {
+    ISA_SPARC:       binary.ISA_SPARC,
+    ISA_X86:         binary.ISA_X86,
+    ISA_MIPS:        binary.ISA_MIPS,
+    ISA_POWER_PC:    binary.ISA_POWER_PC,
+    ISA_POWER_PC_64: binary.ISA_POWER_PC_64,
+    ISA_ARM:         binary.ISA_ARM,
+    ISA_SUPER_H:     binary.ISA_SUPER_H,
+    ISA_IA_64:       binary.ISA_IA_64,
+    ISA_X86_64:      binary.ISA_X86_64,
 }
 
 
@@ -291,8 +291,8 @@ class ElfBinary(binary.Binary):
     def __repr__(self):
         return "Architecture: {}\n".format(self.arch) + \
                "Endianness:   {}\n".format(self.endianness) + \
-               "File Type:    {}\n".format(ELF_TYPE_STR[self._type]) + \
-               "ISA:          {}".format(ELF_ISA_STR[self.isa])
+               "File Type:    {}\n".format(TYPE_STR[self._type]) + \
+               "ISA:          {}".format(ISA_STR[self.isa])
 
 
     def bytesToInt(self, byteArray, signed=False):
@@ -342,11 +342,11 @@ class ElfBinary(binary.Binary):
 
     def setArch(self, arch):
 
-        if arch == ELF_ARCH_32BIT:
+        if arch == ARCH_32BIT:
             self.arch = binary.BIN_ARCH_32BIT
             self.addrSize = 4
 
-        elif arch == ELF_ARCH_64BIT:
+        elif arch == ARCH_64BIT:
             self.arch = binary.BIN_ARCH_64BIT
             self.addrSize = 8
 
@@ -355,10 +355,10 @@ class ElfBinary(binary.Binary):
 
 
     def setEndianness(self, endianness):
-        if endianness == ELF_ENDIAN_LITTLE:
+        if endianness == ENDIAN_LITTLE:
             self.endianness = binary.BIN_ENDIAN_LITTLE
 
-        elif endianness == ELF_ENDIAN_BIG:
+        elif endianness == ENDIAN_BIG:
             self.endianness = binary.BIN_ENDIAN_BIG
 
         else:
@@ -370,43 +370,48 @@ class ElfBinary(binary.Binary):
         fileTypeVal = self.bytesToInt(fileType)
 
         # Make sure that the file type is one of the defined types
-        if fileTypeVal not in ALLOWED_ELF_TYPES:
+        if fileTypeVal not in ALLOWED_TYPES:
             raise binary.AnalysisError("The ELF file type could not be determined: {}".format(fileTypeVal))
 
         # Do not allow relocatable files for now because they are not supported
-        if fileTypeVal == ELF_TYPE_RELOC:
+        if fileTypeVal == TYPE_RELOC:
             raise NotImplementedError("Relocatable files are not supported")
 
         self._type = fileTypeVal
+
+
+    def getISA(self):
+
+        return ISA_STR[self.isa]
 
 
     def setISA(self, isa):
         
         isaVal = self.bytesToInt(isa)
 
-        if isaVal not in ALLOWED_ELF_ISAS:
+        if isaVal not in ALLOWED_ISAS:
             raise binary.AnalysisError("The ISA could not be determined: {}".format(isaVal))
 
         # Many ISAs are not currently suported, so throw exceptions for them
-        if isaVal == ELF_ISA_X86:
+        if isaVal == ISA_X86:
             raise NotImplementedError("32-bit x86 files are not supported")
 
-        elif isaVal == ELF_ISA_ARM:
+        elif isaVal == ISA_ARM:
             raise NotImplementedError("ARM files are not supported")
             
-        elif isaVal == ELF_ISA_SPARC:
+        elif isaVal == ISA_SPARC:
             raise NotImplementedError("SPARC files are not supported")
 
-        elif isaVal == ELF_ISA_MIPS:
+        elif isaVal == ISA_MIPS:
             raise NotImplementedError("MIPS files are not supported")
 
-        elif isaVal == ELF_ISA_POWER_PC:
+        elif isaVal == ISA_POWER_PC:
             raise NotImplementedError("PowerPC files are not supported")
 
-        elif isaVal == ELF_ISA_POWER_PC_64:
+        elif isaVal == ISA_POWER_PC_64:
             raise NotImplementedError("64-bit PowerPC files are not supported")
 
-        elif isaVal == ELF_ISA_IA_64:
+        elif isaVal == ISA_IA_64:
             raise NotImplementedError("Intel IA-64 files are not supported")
 
         self.isa = isaVal
@@ -489,13 +494,13 @@ class ElfBinary(binary.Binary):
         # Get the ELF version number. The only allowed value is the most current
         # value. Anything else is considered an error.
         elfVersion = self.readInt(fd, 1)
-        if elfVersion != ELF_VERSION_CURRENT:
+        if elfVersion != VERSION_CURRENT:
             raise binary.AnalysisError("An invalid ELF version number was found: {}".format(elfVersion))
 
         # Get the OS (not usually set, so not used by this module)
         fileOs = self.readInt(fd, 1)
         if fileOs != 0:
-            raise NotImplementedError("The OS is not supported: {}".format(ELF_OS_STR[fileOs]))
+            raise NotImplementedError("The OS is not supported: {}".format(OS_STR[fileOs]))
 
         # Skip over the padding bytes
         fd.read(8)

@@ -3,6 +3,16 @@ import abc
 BIN_ARCH_32BIT = "32-bit"
 BIN_ARCH_64BIT = "64-bit"
 
+ISA_X86_64      = "64-bit x86"
+ISA_X86         = "x86"
+ISA_ARM         = "ARM"
+ISA_SPARC       = "SPARC"
+ISA_POWER_PC    = "PowerPC"
+ISA_POWER_PC_64 = "64-bit PowerPC"
+ISA_MIPS        = "MIPS"
+ISA_SUPER_H     = "SuperH"
+ISA_IA_64       = "Intel IA-64"
+
 BIN_ENDIAN_LITTLE = "little"
 BIN_ENDIAN_BIG    = "big"
 
@@ -26,6 +36,11 @@ class Binary(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def setISA(self, isa):
         pass
+
+    @abc.abstractmethod
+    def getISA(self):
+        pass
+
 
     @abc.abstractmethod
     def getFunctionByName(self, name):
