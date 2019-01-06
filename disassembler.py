@@ -17,11 +17,11 @@ class Instruction():
         reprStr = self.mnemonic
         operands = []
 
-        if self.source is not None:
-            operands.append(self.source)
-
         if self.dest is not None:
             operands.append(self.dest)
+
+        if self.source is not None:
+            operands.append(self.source)
 
         operands = operands + self.extraOperands
 

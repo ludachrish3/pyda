@@ -8,6 +8,7 @@ class X64Instruction(Instruction):
         super().__init__(mnemonic, source, dest, extraOperands)
 
         self.hasRMMod = hasRMMod
+        self.extOpcode = extOpcode
 
 class X64Operand(Operand):
 
@@ -32,6 +33,9 @@ class X64Operand(Operand):
                 return "[{}]".format(regName)
             else:
                 return regName
+
+        else:
+            return "0x{:x}".format(self.value)
             
 STEP_BEGIN = 0
 STEP_PREFIX = 1
@@ -39,8 +43,7 @@ STEP_2_BYTE_PREFIX = 2
 STEP_OPCODE = 3
 STEP_RM_MOD = 4
 STEP_SIB_BYTE = 5
-STEP_DISPLACE_BYTE = 6
-STEP_IMMEDIATE_BYTE = 7
+STEP_DISP_IMM_BYTES = 6
 
 def disassemble(binary):
 
@@ -59,7 +62,9 @@ def disassemble(binary):
             is2ByteOpcode = False
             operandSize = REG_SIZE_32
             addressSize = 64
+            displaceBytes = 0
             displaceBytesLeft = 0
+            immediateBytes = 0
             immediateBytesLeft = 0
 
         # Handle all possible prefix bytes and reset the state
@@ -144,36 +149,75 @@ def disassemble(binary):
                 continue
 
         if step <= STEP_RM_MOD:
-            print("About to parse rm mod byte")
             curInst.bytes.append(byte)
-            mod      = byte & MOD_MASK
-            register = (byte & REG_MASK) >> 3
-            regmem   = byte & RM_MASK
+            mod     = byte & MOD_MASK
+            regOrOp = (byte & REG_MASK) >> 3
+            regmem  = byte & RM_MASK
+
+            print("mod: {}, reg: {}, r/m: {}".format(mod, regOrOp, regmem))
+            print("Extended opcode? {}".format(curInst.extOpcode))
 
             # TODO: If the instruction has an extended opcode, the register value is actually part of the opcode. Do the necessary stuff here
+            if curInst.extOpcode:
+                
+                print("Found an opcode that needs to be extended: {:x}".format(curInst.bytes[-1]))
+                if curInst.bytes[-2] == 0x83:
+                    # Make sure that the direction is into the value at R/M
+                    # because these source operand is an immediate.
+                    direction = OP_DIR_TO_REG_MEM
+                    curInst.source.value = 0
 
-            print("mod: {}, reg: {}, r/m: {}".format(mod, register, regmem))
+                    if regOrOp == 0:
+                        curInst.mnemonic = "add"
+
+                    elif regOrOp == 1:
+                        curInst.mnemonic = "or"
+
+                    elif regOrOp == 2:
+                        curInst.mnemonic = "adc"
+                        
+                    elif regOrOp == 3:
+                        curInst.mnemonic = "sbb"
+
+                    elif regOrOp == 4:
+                        curInst.mnemonic = "and"
+
+                    elif regOrOp == 5:
+                        curInst.mnemonic = "sub"
+
+                    elif regOrOp == 6:
+                        curInst.mnemonic = "xor"
+
+                    elif regOrOp == 7:
+                        curInst.mnemonic = "cmp"
+
+                    # TODO: This is true for 0x83. Other opcodes might have different sizes
+                    immediateBytes = 1
+                    immediateBytesLeft = 1
+                    step = STEP_DISP_IMM_BYTES
 
             # Set the properties of the source operand now that enough is known about it
             if curInst.source is not None:
 
                 curInst.source.setSize(operandSize)
-                if direction == OP_DIR_TO_REG:
-                    curInst.source.value = register
+                if direction == OP_DIR_FROM_REG_MEM:
+                    curInst.source.value = regmem
                 else:
                     if mod == MOD_INDIRECT:
                         # TODO: Go to the SIB if the value is ESP
                         # TODO: Do a 4 byte displacement if the value is EBP
                         curInst.source.indirect = True
 
-                    curInst.source.value = regmem
+                    # Only set the value if it is a register. Immediates are not set with the R/M byte.
+                    if curInst.source.isReg:
+                        curInst.source.value = regOrOp
 
             # Set the properties of the destination operand now that enough is known about it
             if curInst.dest is not None:
 
                 curInst.dest.setSize(operandSize)
-                if direction == OP_DIR_FROM_REG:
-                    curInst.dest.value = register
+                if direction == OP_DIR_FROM_REG_MEM:
+                    curInst.dest.value = regOrOp
                 else:
                     if mod == MOD_INDIRECT:
                         # TODO: Go to the SIB if the value is ESP
@@ -184,24 +228,51 @@ def disassemble(binary):
 
             if mod == MOD_1_BYTE_DISP:
                 print("1 byte dispalcement")
+                displaceBytes = 1
                 displaceBytesLeft = 1
-                step = STEP_DISPLACE_BYTE
+                step = STEP_DISP_IMM_BYTES
                 continue
 
             elif mod == MOD_4_BYTE_DISP:
                 print("4 byte dispalcement")
+                displaceBytes = 4
                 displaceBytesLeft = 4
-                step = STEP_DISPLACE_BYTE
+                step = STEP_DISP_IMM_BYTES
+                continue
+
+            elif immediateBytes > 0:
+                step = STEP_DISP_IMM_BYTES
                 continue
 
             else:
+                step = STEP_BEGIN
+                instructions.append(curInst)
+                continue
+
+        if step <= STEP_DISP_IMM_BYTES:
+            print("Looking for extra bytes, disp: {}, imm: {}".format(displaceBytesLeft, immediateBytesLeft))
+
+            curInst.bytes.append(byte)
+
+            if displaceBytesLeft > 0:
+                # TODO: Process displacement bytes
+                displaceBytesLeft -= 1
+
+            elif immediateBytesLeft > 0:
+                print("adding immediate")
+                # x86 is little endian, so as bytes come in, they should be bitshifted over 8 times for every
+                # byte that has already been processed for the value.
+                curInst.source.value = curInst.source.value + (byte >> (8 * (immediateBytes - immediateBytesLeft)))
+                immediateBytesLeft -= 1
+
+            # After processing the displacement or immediate byte, check whether there are
+            # any bytes left. If not, add the instruction to the list because this is the
+            # last possible step when processing an instruction.
+            if displaceBytesLeft == 0 and immediateBytesLeft == 0:
+                print("nothing left")
                 instructions.append(curInst)
                 step = STEP_BEGIN
                 continue
-
-            print("almost done: {}".format(curInst))
-
-
 
     return instructions
 
@@ -262,7 +333,7 @@ oneByteOpcodes = {
     0x57: X64Instruction("push", source=X64Operand(size=REG_SIZE_64, value=REG_RDI, defSize=True), hasRMMod=False),
 
 
-    0x83: X64Instruction("", extOpcode=True, source=
+    0x83: X64Instruction("", source=X64Operand(size=REG_SIZE_8L, defSize=True, isReg=False), dest=X64Operand(), extOpcode=True),
 
     0x89: X64Instruction("mov",  source=X64Operand(), dest=X64Operand()),
 
