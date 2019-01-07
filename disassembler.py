@@ -25,7 +25,7 @@ class Instruction():
 
         operands = operands + self.extraOperands
 
-        return "{: <16} {: <6}{}".format(" ".join([hex(x)[2:] for x in self.bytes]),
+        return "{: <20} {: <6}{}".format(" ".join(["{:0<2x}".format(x) for x in self.bytes]),
                                   self.mnemonic,
                                   ", ".join([str(x) for x in operands]))
 

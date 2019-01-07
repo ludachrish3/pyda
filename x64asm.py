@@ -12,12 +12,21 @@ class X64Instruction(Instruction):
 
 class X64Operand(Operand):
 
-    def __init__(self, size=REG_SIZE_32, value=0, isReg=True, defSize=False):
+    def __init__(self, size=REG_SIZE_32, value=0, isImm=False, defSize=False):
 
         super().__init__(size, value)
-        self.isReg = isReg
+        self.isImm = isImm
+        self.displacement = 0
         self.defSize = defSize
         self.indirect = False
+
+    # Make the size 64 bits because it must hold an address
+    # TODO: Make this also be able to hold other values in case the address
+    # size has changed based on a prefix byte.
+    def makeIndirect(self):
+
+        self.indirect = True
+        self.size = REG_SIZE_64
 
     # Only update the size if different sizes are allowed
     def setSize(self, newSize):
@@ -27,15 +36,22 @@ class X64Operand(Operand):
 
     def __repr__(self):
 
-        if self.isReg:
-            regName = REG_NAMES[self.value][self.size]
-            if self.indirect:
-                return "[{}]".format(regName)
-            else:
-                return regName
+        if self.isImm:
+            return "0x{:x}".format(self.value)
 
         else:
-            return "0x{:x}".format(self.value)
+            regName = REG_NAMES[self.value][self.size]
+            if self.indirect and self.displacement == 0:
+                return "[{}]".format(regName)
+
+            elif self.indirect and self.displacement < 0:
+                return "[{}] - 0x{:x}".format(regName, abs(self.displacement))
+
+            elif self.indirect and self.displacement > 0:
+                return "[{}] + 0x{:x}".format(regName, self.displacement)
+
+            else:
+                return regName
             
 STEP_BEGIN = 0
 STEP_PREFIX = 1
@@ -51,7 +67,7 @@ def disassemble(binary):
     instructions = []
     instBytes = []
 
-    for byte in binary[0:8]:
+    for byte in binary[0:14]:
 
         print("byte: {0:0>2x}".format(byte))
 
@@ -74,6 +90,13 @@ def disassemble(binary):
             if byte == PREFIX_64_BIT_OPERAND:
                 print("Found the 64-bit prefix")
                 operandSize = REG_SIZE_64
+                instBytes.append(byte)
+                step = STEP_PREFIX
+                continue
+
+            if byte == PREFIX_16_BIT_OPERAND:
+                print("Found the 16-bit prefix")
+                operandSize = REG_SIZE_16
                 instBytes.append(byte)
                 step = STEP_PREFIX
                 continue
@@ -191,26 +214,34 @@ def disassemble(binary):
                     elif regOrOp == 7:
                         curInst.mnemonic = "cmp"
 
-                    # TODO: This is true for 0x83. Other opcodes might have different sizes
-                    immediateBytes = 1
-                    immediateBytesLeft = 1
                     step = STEP_DISP_IMM_BYTES
 
             # Set the properties of the source operand now that enough is known about it
             if curInst.source is not None:
 
                 curInst.source.setSize(operandSize)
+                if curInst.source.isImm:
+                    print("Setting number of bytes for the immediate")
+                    immediateBytes = REG_NUM_BYTES[curInst.source.size]
+                    immediateBytesLeft = REG_NUM_BYTES[curInst.source.size]
+
                 if direction == OP_DIR_FROM_REG_MEM:
                     curInst.source.value = regmem
                 else:
                     if mod == MOD_INDIRECT:
                         # TODO: Go to the SIB if the value is ESP
                         # TODO: Do a 4 byte displacement if the value is EBP
-                        curInst.source.indirect = True
+                        curInst.source.makeIndirect()
 
                     # Only set the value if it is a register. Immediates are not set with the R/M byte.
-                    if curInst.source.isReg:
+                    if not curInst.source.isImm:
                         curInst.source.value = regOrOp
+
+                    elif mod == MOD_1_BYTE_DISP and not curInst.source.isImm:
+                        curInst.source.makeIndirect()
+
+                    elif mod == MOD_4_BYTE_DISP and not curInst.source.isImm:
+                        curInst.source.makeIndirect()
 
             # Set the properties of the destination operand now that enough is known about it
             if curInst.dest is not None:
@@ -222,7 +253,13 @@ def disassemble(binary):
                     if mod == MOD_INDIRECT:
                         # TODO: Go to the SIB if the value is ESP
                         # TODO: Do a 4 byte displacement if the value is EBP
-                        curInst.dest.indirect = True
+                        curInst.dest.makeIndirect()
+
+                    elif mod == MOD_1_BYTE_DISP and not curInst.dest.isImm:
+                        curInst.dest.makeIndirect()
+
+                    elif mod == MOD_4_BYTE_DISP and not curInst.dest.isImm:
+                        curInst.dest.makeIndirect()
 
                     curInst.dest.value = regmem
 
@@ -255,14 +292,31 @@ def disassemble(binary):
             curInst.bytes.append(byte)
 
             if displaceBytesLeft > 0:
-                # TODO: Process displacement bytes
+                print("Processing displacement byte")
+                # TODO: Assume that displacement bytes can only be for one operand
+                if curInst.source is not None and curInst.source.indirect:
+                    print("adding to source displacement")
+                    curInst.source.displacement += (byte >> (8 * (displaceBytes - displaceBytesLeft)))
+                    if displaceBytesLeft == 1 and byte > 0x80:
+                        curInst.source.displacement = -1 * (pow(2, 8 * displaceBytes) - curInst.source.displacement)
+                        
+                
+                elif curInst.dest is not None and curInst.dest.indirect:
+                    print("adding to dest displacement")
+                    curInst.dest.displacement += (byte >> (8 * (displaceBytes - displaceBytesLeft)))
+                    if displaceBytesLeft == 1 and byte > 0x80:
+                        curInst.dest.displacement = -1 * (pow(2, 8 * displaceBytes) - curInst.dest.displacement)
+
+                else:
+                    raise binary.AnalysisError("There are displacement bytes left, but no operand that needs any")
+
                 displaceBytesLeft -= 1
 
             elif immediateBytesLeft > 0:
                 print("adding immediate")
                 # x86 is little endian, so as bytes come in, they should be bitshifted over 8 times for every
                 # byte that has already been processed for the value.
-                curInst.source.value = curInst.source.value + (byte >> (8 * (immediateBytes - immediateBytesLeft)))
+                curInst.source.value += (byte >> (8 * (immediateBytes - immediateBytesLeft)))
                 immediateBytesLeft -= 1
 
             # After processing the displacement or immediate byte, check whether there are
@@ -287,6 +341,7 @@ For example, the add opcode's lower bits tell which registers to use and which d
 prefixes = [
 
     PREFIX_64_BIT_OPERAND,
+    PREFIX_16_BIT_OPERAND,
     PREFIX_32_BIT_ADDRESS,
 
 ]
@@ -333,11 +388,12 @@ oneByteOpcodes = {
     0x57: X64Instruction("push", source=X64Operand(size=REG_SIZE_64, value=REG_RDI, defSize=True), hasRMMod=False),
 
 
-    0x83: X64Instruction("", source=X64Operand(size=REG_SIZE_8L, defSize=True, isReg=False), dest=X64Operand(), extOpcode=True),
+    0x83: X64Instruction("", source=X64Operand(size=REG_SIZE_8L, defSize=True, isImm=True), dest=X64Operand(), extOpcode=True),
 
     0x89: X64Instruction("mov",  source=X64Operand(), dest=X64Operand()),
 
     0xc3: X64Instruction("leave", 0),
+    0xc7: X64Instruction("mov", source= X64Operand(isImm=True), dest=X64Operand()),
     0xc9: X64Instruction("ret", 0),
 
 }
