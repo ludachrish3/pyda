@@ -29,9 +29,9 @@ class X64Operand(Operand):
         if self.isReg:
             regName = REG_NAMES[self.value][self.size]
             if self.indirect:
-                return "[{}]".format(regName)
+                return "[%{}]".format(regName)
             else:
-                return regName
+                return "%{}".format(regName)
             
 STEP_BEGIN = 0
 STEP_PREFIX = 1
@@ -48,6 +48,7 @@ def disassemble(binary):
     instructions = []
     instBytes = []
 
+    # TODO: Add a good description of what this loop is doing and the stages that are performed
     for byte in binary[0:8]:
 
         print("byte: {0:0>2x}".format(byte))
@@ -84,7 +85,8 @@ def disassemble(binary):
             else:
                 print("Instruction prefix not found")
 
-        # Check for the 2-byte prefix
+        # Check for the 2-byte prefix after prefix bytes because this is
+        # always immediately before the opcode.
         if step <= STEP_2_BYTE_PREFIX:
             print("Checking for the 2-byte prefix")
             if byte == PREFIX_2_BYTE_OPCODE:
@@ -124,7 +126,9 @@ def disassemble(binary):
 
             # The size flag indicates either 8-bit or 32-bit operands
             # This is mainly for R/M Mod values
-            sizeFlag   = byte & OP_SIZE_MASK
+            # The direction determines whether the operands go to a register or
+            # from a register.
+            sizeFlag  = byte & OP_SIZE_MASK
             direction = byte & OP_DIR_MASK
 
             if sizeFlag == 0:
@@ -158,7 +162,7 @@ def disassemble(binary):
             if curInst.source is not None:
 
                 curInst.source.setSize(operandSize)
-                if direction == OP_DIR_TO_REG:
+                if direction == OP_DIR_FROM_REG:
                     curInst.source.value = register
                 else:
                     if mod == MOD_INDIRECT:
@@ -172,7 +176,7 @@ def disassemble(binary):
             if curInst.dest is not None:
 
                 curInst.dest.setSize(operandSize)
-                if direction == OP_DIR_FROM_REG:
+                if direction == OP_DIR_TO_REG:
                     curInst.dest.value = register
                 else:
                     if mod == MOD_INDIRECT:
@@ -200,7 +204,6 @@ def disassemble(binary):
                 continue
 
             print("almost done: {}".format(curInst))
-
 
 
     return instructions
@@ -262,7 +265,7 @@ oneByteOpcodes = {
     0x57: X64Instruction("push", source=X64Operand(size=REG_SIZE_64, value=REG_RDI, defSize=True), hasRMMod=False),
 
 
-    0x83: X64Instruction("", extOpcode=True, source=
+    #0x83: X64Instruction("", extOpcode=True, source=
 
     0x89: X64Instruction("mov",  source=X64Operand(), dest=X64Operand()),
 
