@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from argparse import ArgumentParser
 import os
 
@@ -6,7 +8,7 @@ import disassembler
 import decompiler
 
 if __name__ == "__main__":
-    
+
     parser = ArgumentParser()
     required = parser.add_argument_group("required arguments")
     required.add_argument("-f", "--file", required=True, help="the binary file to analyze")
@@ -19,7 +21,7 @@ if __name__ == "__main__":
     except FileNotFoundError as e:
         print("The specified file could not be found. Quitting.")
         exit(1)
-    
+
     try:
         binaryFile = binAnalyzer.analyzeFile(args.file)
 
