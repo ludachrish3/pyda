@@ -21,3 +21,4 @@ required arguments:
 * Calling and called functions
 * Highlight CALL instructions for when a functino pointer is dereferenced and called
 * Cross references of addresses (aggressive matching of address throughout whole binary)
+* Create a runnable version from the source code that can be used with GDB

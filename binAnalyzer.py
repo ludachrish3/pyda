@@ -1,3 +1,10 @@
+"""
+Name:           analyzer.py
+
+Description:    This file is responsible for determining the type of executable
+                file and using the appropriate module for parsing its data.
+"""
+
 import os
 
 import binary
@@ -8,8 +15,15 @@ import x64asm
 # Magic numbers used to determine file types
 MAGIC_NUM_ELF = b'\x7fELF'
 
-# Analyzes just enough to figure out the type of file
 def getBinary(fd):
+    """
+    Description:    Analyzes just enough to figure out the type of file
+
+    Arguments:      fd - File descriptor of an open file
+
+    Return:         Object that is derived from the Binary class
+    """
+
     # TODO: Do a more thorough check for different file types. This is only good
     # enough for ELF files.
     fileHeader = fd.read(4)
@@ -27,6 +41,7 @@ def analyzeFile(filename):
 
     exe = None
 
+    # stat the file to get the size
     try:
         binStat = os.stat(filename)
 
@@ -53,8 +68,6 @@ def analyzeFile(filename):
             print("Instructions:")
             for inst in instructions:
                 print(inst)
-
-
 
 
     return None

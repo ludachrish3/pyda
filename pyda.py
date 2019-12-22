@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 import os
 
-import binAnalyzer
+import analyzer
 import disassembler
 import decompiler
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         exit(1)
 
     try:
-        binaryFile = binAnalyzer.analyzeFile(args.file)
+        binaryFile = analyzer.analyzeFile(args.file)
 
     except Exception as e:
         print("An error occurred while analyzing the binary: {}".format(e))

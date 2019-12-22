@@ -709,7 +709,7 @@ class ElfBinary(binary.Binary):
         # Parse the ELF header to get basic information about the file
         self.parseElfHeader(fd)
 
-        # TODO: Maybe don't do this because the info is in the sections
+        # TODO: Maybe don't do this because the info is in the section headers
         # Handle the program headers if there are any
         if self.progHdrOffset > 0:
             self.parseProgHdrs(fd)
