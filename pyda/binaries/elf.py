@@ -1,4 +1,4 @@
-import binary
+from binaries import binary
 
 # ELF architecture type
 ARCH_NONE  = b'\x00'

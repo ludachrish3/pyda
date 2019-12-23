@@ -4,8 +4,7 @@ from argparse import ArgumentParser
 import os
 
 import analyzer
-import disassembler
-import decompiler
+from decompilers import decompiler
 
 if __name__ == "__main__":
 

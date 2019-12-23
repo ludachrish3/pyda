@@ -1,6 +1,6 @@
-from x64defs import *
+from disassemblers.x64defs import *
 
-from disassembler import Instruction, Operand
+from disassemblers.disassembler import Instruction, Operand
 
 class X64Instruction(Instruction):
     # TODO: Fill out x64 specific attributes

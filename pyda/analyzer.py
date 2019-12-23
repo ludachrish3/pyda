@@ -7,10 +7,10 @@ Description:    This file is responsible for determining the type of executable
 
 import os
 
-import binary
-import elf
+from binaries import binary
+from binaries import elf
 
-import x64asm
+from disassemblers import x64asm
 
 # Magic numbers used to determine file types
 MAGIC_NUM_ELF = b'\x7fELF'
@@ -38,8 +38,6 @@ def getBinary(fd):
 
 
 def analyzeFile(filename):
-
-    exe = None
 
     # stat the file to get the size
     try:
