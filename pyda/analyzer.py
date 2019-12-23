@@ -12,6 +12,9 @@ from binaries import elf
 
 from disassemblers import x64asm
 
+import logging
+logger = logging.getLogger(__name__)
+
 # Magic numbers used to determine file types
 MAGIC_NUM_ELF = b'\x7fELF'
 
@@ -54,18 +57,18 @@ def analyzeFile(filename):
         exe = getBinary(binaryFile)
         exe.analyze(binaryFile)
 
-        print(exe)
+        logger.info(exe)
 
         functionToAnalyze = exe.getFunctionByName("main")
 
-        print("Function: {}".format(functionToAnalyze.assembly))
+        logger.debug("Function: {}".format(functionToAnalyze.assembly))
 
         if exe.getISA() == binary.ISA_X86_64:
 
             instructions = x64asm.disassemble(functionToAnalyze.assembly)
-            print("Instructions:")
+            logger.debug("Instructions:")
             for inst in instructions:
-                print(inst)
+                logger.debug(inst)
 
 
     return None

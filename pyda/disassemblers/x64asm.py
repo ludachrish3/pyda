@@ -2,6 +2,10 @@ from disassemblers.x64defs import *
 
 from disassemblers.disassembler import Instruction, Operand
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class X64Instruction(Instruction):
     # TODO: Fill out x64 specific attributes
     def __init__(self, mnemonic, source=None, dest=None, extOpcode=False, extraOperands=[], hasRMMod=True):
@@ -71,10 +75,10 @@ def disassemble(binary):
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     for byte in binary[0:14]:
 
-        print("byte: {0:0>2x}".format(byte))
+        logger.debug("byte: {0:0>2x}".format(byte))
 
         if step <= STEP_BEGIN:
-            print("moving on to the next instruction")
+            logger.debug("moving on to the next instruction")
             instBytes = []
             curInstruction = None
             is2ByteOpcode = False
@@ -87,24 +91,24 @@ def disassemble(binary):
 
         # Handle all possible prefix bytes and reset the state
         if step <= STEP_PREFIX:
-            print("Looking for a prefix")
+            logger.debug("Looking for a prefix")
 
             if byte == PREFIX_64_BIT_OPERAND:
-                print("Found the 64-bit prefix")
+                logger.debug("Found the 64-bit prefix")
                 operandSize = REG_SIZE_64
                 instBytes.append(byte)
                 step = STEP_PREFIX
                 continue
 
             if byte == PREFIX_16_BIT_OPERAND:
-                print("Found the 16-bit prefix")
+                logger.debug("Found the 16-bit prefix")
                 operandSize = REG_SIZE_16
                 instBytes.append(byte)
                 step = STEP_PREFIX
                 continue
 
             if byte == PREFIX_32_BIT_ADDRESS:
-                print("Found the 32-bit address prefix")
+                logger.debug("Found the 32-bit address prefix")
                 addressSize = 32
                 instBytes.append(byte)
                 step = STEP_PREFIX
@@ -112,12 +116,12 @@ def disassemble(binary):
 
             # If a prefix is not found, proceed to the next step
             else:
-                print("Instruction prefix not found")
+                logger.debug("Instruction prefix not found")
 
         # Check for the 2-byte prefix after prefix bytes because this is
         # always immediately before the opcode.
         if step <= STEP_2_BYTE_PREFIX:
-            print("Checking for the 2-byte prefix")
+            logger.debug("Checking for the 2-byte prefix")
             if byte == PREFIX_2_BYTE_OPCODE:
                 is2ByteOpcode = True
                 step = STEP_OPCODE
@@ -126,7 +130,7 @@ def disassemble(binary):
 
             # If the 2-byte prefix is not found, proceed to the next step
             else:
-                print("2-byte prefix not found")
+                logger.debug("2-byte prefix not found")
                 step = STEP_OPCODE
 
 
@@ -136,15 +140,15 @@ def disassemble(binary):
             if is2ByteOpcode and byte in twoByteOpcodes:
 
                 curInst = twoByteOpcodes[byte]
-                print("Found a 2 byte opcode")
+                logger.debug("Found a 2 byte opcode")
 
             elif not is2ByteOpcode and byte in oneByteOpcodes:
 
-                print("Found a 1 byte opcode")
+                logger.debug("Found a 1 byte opcode")
                 curInst = oneByteOpcodes[byte]
 
             else:
-                print("no opcode was found :(")
+                logger.debug("no opcode was found :(")
                 instructions.append(X64Instruction("byte"))
                 step = STEP_BEGIN
                 continue
@@ -165,7 +169,7 @@ def disassemble(binary):
 
             # If the instruction has an R/W MOD byte, parse it next
             if curInst.hasRMMod:
-                print("There is an RM mod byte")
+                logger.debug("There is an RM mod byte")
 
                 step = STEP_RM_MOD
                 continue
@@ -182,13 +186,13 @@ def disassemble(binary):
             regOrOp = (byte & REG_MASK) >> 3
             regmem  = byte & RM_MASK
 
-            print("mod: {}, reg: {}, r/m: {}".format(mod, regOrOp, regmem))
-            print("Extended opcode? {}".format(curInst.extOpcode))
+            logger.debug("mod: {}, reg: {}, r/m: {}".format(mod, regOrOp, regmem))
+            logger.debug("Extended opcode? {}".format(curInst.extOpcode))
 
             # TODO: If the instruction has an extended opcode, the register value is actually part of the opcode. Do the necessary stuff here
             if curInst.extOpcode:
                 
-                print("Found an opcode that needs to be extended: {:x}".format(curInst.bytes[-1]))
+                logger.debug("Found an opcode that needs to be extended: {:x}".format(curInst.bytes[-1]))
                 if curInst.bytes[-2] == 0x83:
                     # Make sure that the direction is into the value at R/M
                     # because these source operand is an immediate.
@@ -228,7 +232,7 @@ def disassemble(binary):
 
                 curInst.source.setSize(operandSize)
                 if curInst.source.isImm:
-                    print("Setting number of bytes for the immediate")
+                    logger.debug("Setting number of bytes for the immediate")
                     immediateBytes = REG_NUM_BYTES[curInst.source.size]
                     immediateBytesLeft = REG_NUM_BYTES[curInst.source.size]
 
@@ -273,14 +277,14 @@ def disassemble(binary):
                     curInst.dest.value = regmem
 
             if mod == MOD_1_BYTE_DISP:
-                print("1 byte dispalcement")
+                logger.debug("1 byte dispalcement")
                 displaceBytes = 1
                 displaceBytesLeft = 1
                 step = STEP_DISP_IMM_BYTES
                 continue
 
             elif mod == MOD_4_BYTE_DISP:
-                print("4 byte dispalcement")
+                logger.debug("4 byte dispalcement")
                 displaceBytes = 4
                 displaceBytesLeft = 4
                 step = STEP_DISP_IMM_BYTES
@@ -296,22 +300,22 @@ def disassemble(binary):
                 continue
 
         if step <= STEP_DISP_IMM_BYTES:
-            print("Looking for extra bytes, disp: {}, imm: {}".format(displaceBytesLeft, immediateBytesLeft))
+            logger.debug("Looking for extra bytes, disp: {}, imm: {}".format(displaceBytesLeft, immediateBytesLeft))
 
             curInst.bytes.append(byte)
 
             if displaceBytesLeft > 0:
-                print("Processing displacement byte")
+                logger.debug("Processing displacement byte")
                 # TODO: Assume that displacement bytes can only be for one operand
                 if curInst.source is not None and curInst.source.indirect:
-                    print("adding to source displacement")
+                    logger.debug("adding to source displacement")
                     curInst.source.displacement += (byte >> (8 * (displaceBytes - displaceBytesLeft)))
                     if displaceBytesLeft == 1 and byte > 0x80:
                         curInst.source.displacement = -1 * (pow(2, 8 * displaceBytes) - curInst.source.displacement)
                         
                 
                 elif curInst.dest is not None and curInst.dest.indirect:
-                    print("adding to dest displacement")
+                    logger.debug("adding to dest displacement")
                     curInst.dest.displacement += (byte >> (8 * (displaceBytes - displaceBytesLeft)))
                     if displaceBytesLeft == 1 and byte > 0x80:
                         curInst.dest.displacement = -1 * (pow(2, 8 * displaceBytes) - curInst.dest.displacement)
@@ -322,7 +326,7 @@ def disassemble(binary):
                 displaceBytesLeft -= 1
 
             elif immediateBytesLeft > 0:
-                print("adding immediate")
+                logger.debug("adding immediate")
                 # x86 is little endian, so as bytes come in, they should be bitshifted over 8 times for every
                 # byte that has already been processed for the value.
                 curInst.source.value += (byte >> (8 * (immediateBytes - immediateBytesLeft)))
@@ -332,7 +336,7 @@ def disassemble(binary):
             # any bytes left. If not, add the instruction to the list because this is the
             # last possible step when processing an instruction.
             if displaceBytesLeft == 0 and immediateBytesLeft == 0:
-                print("nothing left")
+                logger.debug("nothing left")
                 instructions.append(curInst)
                 step = STEP_BEGIN
                 continue

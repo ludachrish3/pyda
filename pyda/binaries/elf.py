@@ -1,5 +1,9 @@
 from binaries import binary
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # ELF architecture type
 ARCH_NONE  = b'\x00'
 ARCH_32BIT = b'\x01'
@@ -386,7 +390,7 @@ class ElfBinary(binary.Binary):
 
 
     def setISA(self, isa):
-        
+
         isaVal = self.bytesToInt(isa)
 
         if isaVal not in ALLOWED_ISAS:
@@ -398,7 +402,7 @@ class ElfBinary(binary.Binary):
 
         elif isaVal == ISA_ARM:
             raise NotImplementedError("ARM files are not supported")
-            
+
         elif isaVal == ISA_SPARC:
             raise NotImplementedError("SPARC files are not supported")
 
@@ -417,21 +421,21 @@ class ElfBinary(binary.Binary):
         self.isa = isaVal
 
     def setStartAddr(self, startAddr):
-        
+
         self.startAddr = self.bytesToInt(startAddr)
-        print("Start addr:            0x{0:0>8x}".format(self.startAddr))
+        logger.debug("Start addr:            0x{0:0>8x}".format(self.startAddr))
 
 
     def setProgHdrOffset(self, offset):
 
         self.progHdrOffset = self.bytesToInt(offset)
-        print("Program header offset: 0x{0:<8x}".format(self.progHdrOffset))
+        logger.debug("Program header offset: 0x{0:<8x}".format(self.progHdrOffset))
 
 
     def setSectionHdrOffset(self, offset):
 
         self.sectionHdrOffset = self.bytesToInt(offset)
-        print("Section header offset: 0x{0:<8x}".format(self.sectionHdrOffset))
+        logger.debug("Section header offset: 0x{0:<8x}".format(self.sectionHdrOffset))
 
     def setFlags(self, flags):
 
@@ -444,43 +448,43 @@ class ElfBinary(binary.Binary):
     def setElfHdrSize(self, hdrSize):
 
         self.elfHdrSize = self.bytesToInt(hdrSize)
-        print("ELF header size: {}".format(self.elfHdrSize))
+        logger.debug("ELF header size: {}".format(self.elfHdrSize))
 
 
     def setProgHdrEntrySize(self, entrySize):
 
         self.progHdrEntrySize = self.bytesToInt(entrySize)
-        print("Program header entry size: {}".format(self.progHdrEntrySize))
+        logger.debug("Program header entry size: {}".format(self.progHdrEntrySize))
 
     def setNumProgHdrEntries(self, numEntries):
 
         self.numProgHdrEntries = self.bytesToInt(numEntries)
-        print("Number of program header entries: {}".format(self.numProgHdrEntries))
+        logger.debug("Number of program header entries: {}".format(self.numProgHdrEntries))
 
 
     def setSectionHdrEntrySize(self, entrySize):
 
         self.sectionHdrEntrySize = self.bytesToInt(entrySize)
-        print("Section header entry size: {}".format(self.sectionHdrEntrySize))
+        logger.debug("Section header entry size: {}".format(self.sectionHdrEntrySize))
 
 
     def setNumSectionHdrEntries(self, numEntries):
 
         self.numSectionHdrEntries = self.bytesToInt(numEntries)
-        print("Number of section header entries: {}".format(self.numSectionHdrEntries))
+        logger.debug("Number of section header entries: {}".format(self.numSectionHdrEntries))
 
 
     def setNameIndex(self, index):
 
         self._sectionNameIndex = self.bytesToInt(index)
-        print("Index of the section that contains the section names: {}".format(self._sectionNameIndex))
+        logger.debug("Index of the section that contains the section names: {}".format(self._sectionNameIndex))
 
 
     def parseElfHeader(self, fd):
 
         # Skip over the magic number because it was already used
         fd.read(4)
-        
+
         # Get the architecture
         self.setArch(fd.read(1))
 
@@ -490,7 +494,7 @@ class ElfBinary(binary.Binary):
 
         # Get endianness
         self.setEndianness(fd.read(1))
-        
+
         # Get the ELF version number. The only allowed value is the most current
         # value. Anything else is considered an error.
         elfVersion = self.readInt(fd, 1)
@@ -571,7 +575,7 @@ class ElfBinary(binary.Binary):
             newSegment.physicalAddr = self.readInt(fd, addrSize)
             newSegment.fileSize     = self.readInt(fd, addrSize)
             newSegment.memorySize   = self.readInt(fd, addrSize)
-                
+
             # Now is the appropriate time to check for the flags field if the
             # architecture is 32-bit.
             if self.arch == binary.BIN_ARCH_32BIT:
@@ -579,8 +583,8 @@ class ElfBinary(binary.Binary):
 
             newSegment.alignment = self.readInt(fd, addrSize)
 
-            #print("Segment [{}]: {}".format(entry, newSegment))
-            
+            #logger.debug("Segment [{}]: {}".format(entry, newSegment))
+
             self.segments.append(newSegment)
 
     def parseSectionHdrs(self, fd):
@@ -637,12 +641,12 @@ class ElfBinary(binary.Binary):
             # Now that the section's name is known, it can be correctly assigned
             self._sections[section.name] = section
 
-            #print("Section: {}".format(section))
+            #logger.debug("Section: {}".format(section))
 
         # Remove the list of sections because they have been converted into a
         # dictionary keyed on section name.
         del self._sectionList
-        
+
 
     def parseSymbolTable(self, fd):
 
@@ -696,12 +700,12 @@ class ElfBinary(binary.Binary):
                 if newSymbol.type == SYMBOL_TYPE_FUNCTION:
                     self._functionsByName[newSymbol.name] = newSymbol
                     self._functionsByAddr[newSymbol.value] = newSymbol
-                    print("Function symbol: {}".format(newSymbol))
+                    logger.debug("Function symbol: {}".format(newSymbol))
 
                 elif newSymbol.type == SYMBOL_TYPE_OBJECT:
                     self._globalVariablesByName[newSymbol.name] = newSymbol
                     self._globalVariablesByAddr[newSymbol.name] = newSymbol
-                    print("Global symbol: {}".format(newSymbol))
+                    logger.debug("Global symbol: {}".format(newSymbol))
 
 
     def analyze(self, fd):
@@ -753,7 +757,7 @@ class ElfBinary(binary.Binary):
 class ElfSegment():
 
     def __init__(self, segmentType):
-        
+
         if segmentType in ALLOWED_SEGMENT_TYPES:
             self._type = segmentType
 
