@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
+import traceback
 import os
 
 import analyzer
@@ -49,4 +50,5 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.error("An error occurred while analyzing the binary: {}".format(e))
+        traceback.print_tb(e.__traceback__)
         exit(1)

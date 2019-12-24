@@ -17,6 +17,7 @@ optional arguments:
 
 ## Goals
 
+* Support both Intel and AT&T assembly syntax
 * Visual representation of the stack
 * Resetting values of strings or arrays to be the value during runtime. The original value is also saved for reference.
 * Analyzing DWARF info
