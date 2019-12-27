@@ -4,7 +4,7 @@ OPERAND_TYPE_MEM = 2
 
 class Instruction():
 
-    def __init__(self, mnemonic, source=[], dest=None, extraOperands=[]):
+    def __init__(self, mnemonic, source=None, dest=None, extraOperands=[]):
 
         self.bytes = []
         self.mnemonic = mnemonic
@@ -18,11 +18,10 @@ class Instruction():
         operands = []
 
         # Display the source first, then the destination
-        for source in self.source:
-            if type(source.value) == int:
-                operands += self.source
+        if self.source is not None:
+            operands.append(self.source)
 
-        if type(self.dest.value) == int:
+        if self.dest is not None:
             operands.append(self.dest)
 
         operands = operands + self.extraOperands
