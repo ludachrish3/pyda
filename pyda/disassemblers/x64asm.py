@@ -43,7 +43,7 @@ class X64Instruction( Instruction ):
             # Otherwise, the direction bit, which is the 2nd least significant
             # bit, is the indicator of which direction to use
             else:
-                self.info.direction = (opcode & OP_DIR_MASK) > 1
+                self.info.direction = (opcode & OP_DIR_MASK) >> 1
 
         logger.debug("direction: {}".format(self.info.direction))
 
@@ -70,11 +70,23 @@ class X64Instruction( Instruction ):
             self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=self.info.srcIsImmediate)
             self.dest   = X64Operand(size=self.info.dstOperandSize)
 
+        ################################
+        #  SET MOD R/M OPERAND STATUS  #
+        ################################
+
+        if self.info.modRm == MODRM_SOURCE:
+            logger.debug("Source gets the mod r/m byte")
+            self.source.modRm = True
+
+        elif self.info.modRm == MODRM_DEST:
+            logger.debug("Dest gets the mod r/m byte")
+            self.dest.modRm = True
+
 
 class X64InstructionInfo():
 
     def __init__( self, mnemonic, registerCode=False, direction=None,
-                  hasModRM=True, extOpcode=False, srcIsImmediate=False,
+                  modRm=MODRM_NONE, extOpcode=False, srcIsImmediate=False,
                   srcOperandSize=None, dstOperandSize=None,
                   srcCanPromote=True, dstCanPromote=True, signExtBit=False):
 
@@ -82,7 +94,7 @@ class X64InstructionInfo():
         self.mnemonic     = mnemonic        # The name of the instruction
         self.registerCode = registerCode    # Whether the least 3 significant bits of the opcode represent a register
         self.direction    = direction       # The direction to move the data if there is a register code (OP_DIR_TO_REG or OP_DIR_FROM_REG)
-        self.hasModRM     = hasModRM        # Whether an ModR/M byte follows the opcode
+        self.modRm        = modRm           # How the Mod R/M byte must be handled
         self.extOpcode    = extOpcode       # Whether the opcode is extended into the ModR/M
         self.signExtBit   = signExtBit      # Whether the sign extension bit of the opcode means anything
 
@@ -103,6 +115,7 @@ class X64Operand( Operand ):
         self.isImmediate = isImmediate  # Whether the operand is an immediate
         self.displacement = 0           # Value of the displacement from the register value
         self.indirect = False           # Whether the addressing is indirect
+        self.modRm = False              # Whether the Mod R/M byte applies
 
     def __repr__( self ):
 
@@ -110,7 +123,12 @@ class X64Operand( Operand ):
             return "0x{:x}".format(self.value)
 
         else:
-            regName = REG_NAMES[self.value][self.size]
+            # If this is an indirect value, use the name of the 64 bit register
+            if self.indirect:
+                regName = REG_NAMES[self.value][REG_SIZE_64]
+
+            else:
+                regName = REG_NAMES[self.value][self.size]
 
             if self.indirect and self.displacement == 0:
                 return "[%{}]".format(regName)
@@ -131,11 +149,12 @@ def getOperandSize( opcode, prefixSize, infoSize ):
                     opcode, the size of the instruction if one was set by a
                     prefix byte, and the info from the opcode dictionary.
 
-                    The value in the info dictionary should be used if given
-                    because it is an override of the normal behavior.
+                    The size of the operands because of a prefix is used if one
+                    was found and neither the info nor the size bit indicate
+                    that the size should be 8 bits.
 
-                    Next, the size of the operands because of a prefix are
-                    used if one was found.
+                    Next, the value in the info dictionary should be used if given
+                    because it is an override of the normal behavior.
 
                     Otherwise, the size bit is used to choose between an 8 bits
                     if it is not set or 32 bit if the bit is set.
@@ -157,11 +176,11 @@ def getOperandSize( opcode, prefixSize, infoSize ):
 
     sizeBit = opcode & OP_SIZE_MASK
 
-    if infoSize is not None:
-        return infoSize
-
-    elif prefixSize is not None and sizeBit != 0:
+    if prefixSize is not None and infoSize != REG_SIZE_8 and sizeBit != 0:
         return prefixSize
+
+    elif infoSize is not None:
+        return infoSize
 
     elif sizeBit == 0:
         return REG_SIZE_8
@@ -302,7 +321,7 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
     return True
 
 
-def handleOperandAddressing( operand, binary, isReg ):
+def handleOperandAddressing( operand, binary ):
     """
     Description:    Figures out addressing mode for an operand based on the
                     Mod R/M byte.
@@ -310,7 +329,6 @@ def handleOperandAddressing( operand, binary, isReg ):
     Arguments:      operand - X64Operand object
                     binary  - Remaining bytes to disassemble, starting with the
                               Mod R/M byte
-                    isReg   - Whether the operand is a register
 
     Return:         Number of bytes needed for addressing, not including the
                     Mod R/M byte.
@@ -321,35 +339,39 @@ def handleOperandAddressing( operand, binary, isReg ):
     regOrOp = (modRmByte & ADDR_REG_MASK) >> 3
     regmem  = modRmByte & ADDR_RM_MASK
 
-    # If the operand is a register from the reg/mem value
-    if isReg:
-        # TODO: If the size is 8 bytes, the register for ESP is actually AH,
-        # EBP is CH, ESI is DH, and EDI is BH
-        operand.value = regmem
+    # Process the addressing if the Mod R/M byte applies to this operand
+    if operand.modRm:
 
-    else:
         if mod == MOD_INDIRECT:
             # TODO: Go to the SIB if the value is ESP
             # TODO: Do a 4 byte displacement if the value is EBP
+            logger.debug("REQUIRES SIB BYTE")
             operand.indirect = True
             return 1
 
-        # Only set the value if it is a register. Immediates are not set with the R/M byte.
-        if not operand.isImmediate:
-            logger.debug("Operand is a register value: {}".format(regOrOp))
-            operand.value = regOrOp
-
-        elif mod == MOD_1_BYTE_DISP and not operand.isImmediate:
+        elif mod == MOD_1_BYTE_DISP:
             logger.debug("Operand is a register value with a 1 byte displacement")
             operand.indirect = True
-            operand.value = int.from_bytes(binary[1:2], "little")
+            operand.displacement = int.from_bytes(binary[1:2], "little", signed=True)
+            operand.value = regmem
             return 1
 
-        elif mod == MOD_4_BYTE_DISP and not operand.isImmediate:
+        elif mod == MOD_4_BYTE_DISP:
             logger.debug("Operand is a register value with a 4 byte displacement")
             operand.indirect = True
-            operand.value = int.from_bytes(binary[1:5], "little")
+            operand.value = int.from_bytes(binary[1:5], "little", signed=True)
             return 4
+
+        elif mod == MOD_REGISTER:
+            logger.debug("Operand is the value in a register")
+            operand.value = regmem
+
+        else:
+            logger.debug("Something else")
+
+    # Otherwise, set the value as long as this operand is not an immediate
+    elif not operand.isImmediate:
+        operand.value = regmem
 
     return 0
 
@@ -371,7 +393,7 @@ def handleModRMByte( instruction, binary ):
     regmem  = modRmByte & ADDR_RM_MASK
 
     logger.debug("byte: {:02x}".format(modRmByte))
-    logger.debug("mod: {}, reg: {}, r/m: {}".format(mod, regOrOp, regmem))
+    logger.debug("mod: {}, reg: {}, r/m: {}".format(mod >> 6, regOrOp, regmem))
 
     # If the instruction has an extended opcode, the REG value is actually
     # part of the opcode.
@@ -384,8 +406,10 @@ def handleModRMByte( instruction, binary ):
 
     # Set the operand addressing properties
     direction = instruction.info.direction
-    numBytesConsumed += handleOperandAddressing(instruction.source, binary, direction == OP_DIR_FROM_REG)
-    numBytesConsumed += handleOperandAddressing(instruction.dest,   binary, direction == OP_DIR_TO_REG)
+    logger.debug("Handling source operand")
+    numBytesConsumed += handleOperandAddressing(instruction.source, binary)
+    logger.debug("Handling dest operand")
+    numBytesConsumed += handleOperandAddressing(instruction.dest,   binary)
 
     instruction.bytes += list(binary[:numBytesConsumed])
     return numBytesConsumed
@@ -397,7 +421,7 @@ def disassemble(binary):
     instructions = []
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:8]
+    binary = binary[:14]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -435,7 +459,7 @@ def disassemble(binary):
             continue
 
         # If the instruction has a Mod R/M byte, parse it next
-        if not curInstruction.info.hasModRM:
+        if curInstruction.info.modRm == MODRM_NONE:
             instructions.append(curInstruction)
             logger.debug(curInstruction)
             continue
@@ -457,51 +481,38 @@ def disassemble(binary):
 
     return instructions
 
-
-"""
-x86 is split between modifers and opcodes. There can be 0-4 modifier bytes then followed by an opcode. Parts of the opcode can also say something about how the operands should be used.
-For example, the add opcode's lower bits tell which registers to use and which direction to do the addition
-
-
-"""
-prefixes = [
-
-    PREFIX_64_BIT_OPERAND,
-    PREFIX_16_BIT_OPERAND,
-    PREFIX_32_BIT_ADDRESS,
-
-]
-
 """
     def __init__( self, mnemonic, registerCode=False, direction=None,
-                  hasModRM=True, extOpcode=False, srcIsImmediate=False,
+                  modRm=None, extOpcode=False, srcIsImmediate=False,
                   srcOperandSize=None, dstOperandSize=None,
                   srcCanPromote=True, dstCanPromote=True, signExtBit=False):
 """
 
 oneByteOpcodes = {
 
-    0x50: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x51: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x52: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x53: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x54: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x55: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x56: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x57: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x50: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x51: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x52: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x53: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x54: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x55: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x56: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x57: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
 
-    0x58: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x59: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5a: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5b: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5c: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5d: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5e: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5f: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x58: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x59: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5a: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5b: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5c: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5d: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5e: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5f: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
 
-    0x83: X64InstructionInfo("", extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
+    0x83: X64InstructionInfo("",     modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
 
-    0x89: X64InstructionInfo("mov"),
+    0x89: X64InstructionInfo("mov",  modRm=MODRM_DEST),
+
+    0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtBit= True),
 }
 
 

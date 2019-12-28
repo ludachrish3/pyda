@@ -16,6 +16,11 @@ ADDR_MOD_MASK = 0b11000000
 ADDR_REG_MASK = 0b00111000
 ADDR_RM_MASK  = 0b00000111
 
+MODRM_NONE      = 0     # There is no Mod R/M byte
+MODRM_ONLY_REGS = 1     # Source and destination are register values
+MODRM_SOURCE    = 2     # Mod R/M byte is applied to the source operand
+MODRM_DEST      = 3     # Mod R/M byte is applied to the dest operand
+
 MOD_INDIRECT    = 0b00000000
 MOD_1_BYTE_DISP = 0b01000000
 MOD_4_BYTE_DISP = 0b10000000
