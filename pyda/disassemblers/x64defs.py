@@ -36,6 +36,11 @@ REG_RBP  = 0b00000101
 REG_RSI  = 0b00000110
 REG_RDI  = 0b00000111
 
+# Unofficial values for registers that can be used to identify them.
+# They will all start with a 1 at the most significant bit to differentiate
+# them from the standard, official registers.
+REG_RIP  = 0b10000000
+
 REG_SIZE_64 = 8
 REG_SIZE_32 = 4
 REG_SIZE_16 = 2
@@ -95,5 +100,11 @@ REG_NAMES = {
         REG_SIZE_32: "edi",
         REG_SIZE_16: "di",
         REG_SIZE_8:  "bh",
+    },
+    REG_RIP: {
+        REG_SIZE_64: "rip",
+        REG_SIZE_32: "eip",
+        REG_SIZE_16: "ip",
+        REG_SIZE_8:  REG_NAME_UNDEF,
     },
 }

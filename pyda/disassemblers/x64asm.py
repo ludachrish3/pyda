@@ -272,6 +272,7 @@ def handleOpcode( instruction, binary ):
 
     return numOpcodeBytes
 
+
 def handleExtendedOpcode( instruction, modRmOpValue ):
     """
     Description:    Handles the extended opcode based on the REG value of the
@@ -321,6 +322,11 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
     return True
 
 
+def handleSibByte( instruction, binary ):
+
+    sibByte = binary[0]
+
+
 def handleOperandAddressing( operand, binary ):
     """
     Description:    Figures out addressing mode for an operand based on the
@@ -345,10 +351,25 @@ def handleOperandAddressing( operand, binary ):
     if operand.modRm:
 
         if mod == MOD_INDIRECT:
+
             # TODO: Go to the SIB if the value is ESP
+            if regmem == REG_RSP:
+                logger.debug("REQUIRES SIB BYTE")
+
+            # TODO: Calculate the absolute address by figuring out what the address
+            # of the next instruction is. That is what value should be in RIP.
+            elif regmem == REG_RBP:
+                logger.debug("Indirect register 4 byte displacement from RIP")
+                operand.indirect = True
+                operand.displacement = int.from_bytes(binary[1:5], "little", signed=True)
+                operand.value = REG_RIP
+                return 4
+
+            else:
             # TODO: Do a 4 byte displacement if the value is EBP
-            logger.debug("REQUIRES SIB BYTE")
-            operand.indirect = True
+                logger.debug("Operand is address in register value")
+                operand.indirect = True
+                operand.value = regmem
             return 1
 
         elif mod == MOD_1_BYTE_DISP:
@@ -378,7 +399,8 @@ def handleOperandAddressing( operand, binary ):
 
     return 0
 
-def handleModRMByte( instruction, binary ):
+
+def handleModRmByte( instruction, binary ):
     """
     Description:    Handles the Mod R/M byte(s) of an instruction
 
@@ -468,9 +490,8 @@ def disassemble(binary):
             continue
 
         logger.debug("There is an RM mod byte")
-        numModRMBytes = handleModRMByte(curInstruction, binary)
-        binary = binary[numModRMBytes:]
-        logger.debug("Next binary byte is now: {:02x}".format(binary[0]))
+        numModRmBytes = handleModRmByte(curInstruction, binary)
+        binary = binary[numModRmBytes:]
 
         # Handle an immediate value if there is one
         if curInstruction.source.isImmediate:

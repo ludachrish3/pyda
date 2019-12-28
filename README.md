@@ -17,6 +17,8 @@ optional arguments:
 
 ## Goals
 
+* Handle SIB byte
+* Figure out how global variables and functions are linked to values (like how does calling printf() get figured out)
 * Support both Intel and AT&T assembly syntax
 * Visual representation of the stack
 * Resetting values of strings or arrays to be the value during runtime. The original value is also saved for reference.
