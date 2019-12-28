@@ -4,8 +4,9 @@ OPERAND_TYPE_MEM = 2
 
 class Instruction():
 
-    def __init__(self, mnemonic, source=None, dest=None, extraOperands=[]):
+    def __init__(self, mnemonic, addr=0, source=None, dest=None, extraOperands=[]):
 
+        self.addr = addr
         self.bytes = []
         self.mnemonic = mnemonic
         self.source = source
@@ -26,9 +27,11 @@ class Instruction():
 
         operands = operands + self.extraOperands
 
-        return "{: <20} {: <6}{}".format(" ".join(["{:0<2x}".format(x) for x in self.bytes]),
-                                  self.mnemonic,
-                                  ", ".join([str(x) for x in operands]))
+        return "{addr: <6} {bytes: <20} {mnemonic: <6}{operands}".format(
+                addr="{:x}:".format(self.addr),
+                bytes=" ".join(["{:0<2x}".format(x) for x in self.bytes]),
+                mnemonic=self.mnemonic,
+                operands=", ".join([str(x) for x in operands]))
 
 
 class Operand():

@@ -2,7 +2,7 @@
 
 all: main.c
 	gcc main.c -o elf/main
-	gcc main.c -no-pie -o main-exec
+	gcc main.c -no-pie -o elf/main-exec
 
 clean:
 	rm -f elf/main

@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 class X64Instruction( Instruction ):
 
-    def __init__( self, mnemonic="byte", source=None, dest=None, extraOperands=[] ):
-        super().__init__(mnemonic, source, dest, extraOperands)
+    def __init__( self, mnemonic="byte", addr=0, source=None, dest=None, extraOperands=[] ):
+        super().__init__(mnemonic, addr, source, dest, extraOperands)
 
         self.prefixSize = None  # The size operands should be based on the prefix
         self.addressSize = 8
@@ -445,10 +445,12 @@ def handleModRmByte( instruction, binary ):
     return numBytesConsumed
 
 
-def disassemble(binary):
+def disassemble( function ):
 
-    offTheRails = False
-    instructions = []
+    addr         = function.addr
+    binary       = function.assembly
+    instructions = function.instructions
+    offTheRails  = False
 
     # TODO: Remove this line when more instructions can be handled
     binary = binary[:34]
@@ -457,15 +459,20 @@ def disassemble(binary):
     while len(binary) > 0:
 
         logger.debug("moving on to the next instruction")
-        curInstruction = X64Instruction()
+        curInstruction = X64Instruction(addr=addr)
 
         # If things have gone off the rails, consume each byte and add a
         # default instruction
         if offTheRails:
             logger.warning("Adding an unknown byte: {:02x}".format(binary[0]))
+
+            # Create an instruction with the byte and advance the address
             curInstruction.bytes.append(binary[0])
-            instructions.append(curInstruction)
             binary = binary[1:]
+
+            # Add the instruction and advance the address
+            instructions.append(curInstruction)
+            addr += len(curInstruction.bytes)
             continue
 
         # Find all prefix bytes and set the appropriate settings in the
@@ -503,7 +510,10 @@ def disassemble(binary):
             binary = binary[numBytes:]
 
         logger.debug(curInstruction)
+
+        # Add the instruction and advance the address
         instructions.append(curInstruction)
+        addr += len(curInstruction.bytes)
 
     return instructions
 
@@ -534,17 +544,28 @@ oneByteOpcodes = {
     0x5e: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
     0x5f: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
 
+#   0x82: Invalid
     0x83: X64InstructionInfo("",     modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
 
+    0x88: X64InstructionInfo("mov",  modRm=MODRM_DEST),
     0x89: X64InstructionInfo("mov",  modRm=MODRM_DEST),
-
+    0x8a: X64InstructionInfo("mov",  modRm=MODRM_SOURCE),
     0x8b: X64InstructionInfo("mov",  modRm=MODRM_SOURCE),
 
     0x8d: X64InstructionInfo("lea",  modRm=MODRM_SOURCE),
 
     0xb8: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xb9: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xba: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbb: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbc: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbd: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbe: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbf: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
 
     0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtBit= True),
+
+#    0xe8: X64InstructionInfo("call", ,
 }
 
 

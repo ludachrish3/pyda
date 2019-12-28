@@ -65,7 +65,7 @@ def analyzeFile(filename):
 
         if exe.getISA() == binary.ISA_X86_64:
 
-            instructions = x64asm.disassemble(functionToAnalyze.assembly)
+            instructions = x64asm.disassemble(functionToAnalyze)
             logger.debug("Instructions:              src, dst")
             for inst in instructions:
                 logger.debug(inst)

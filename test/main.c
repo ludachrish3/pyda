@@ -11,6 +11,14 @@ int main()
     printf("Hello world! %d\n", globalVariable);
     sum = anotherFunc(globalVariable);
     printf("Sum: %d\n", sum);
+    if ( sum > 3 )
+    {
+        printf("This is a miracle!\n");
+    }
+    else
+    {
+        printf("Sum is too small\n");
+    }
     return 0;
 }
 

@@ -59,10 +59,11 @@ class Function():
 
     def __init__(self, name, addr, size, assembly):
 
-        self.name     = name
-        self.addr     = addr
-        self.size     = size
-        self.assembly = assembly
+        self.name         = name
+        self.addr         = addr
+        self.size         = size
+        self.assembly     = assembly
+        self.instructions = []
 
     def __repr__(self):
 
