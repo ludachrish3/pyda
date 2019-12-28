@@ -1,7 +1,7 @@
 from disassemblers.x64defs import *
-
 from disassemblers.disassembler import Instruction, Operand
 
+import copy
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,15 +16,17 @@ class X64Instruction( Instruction ):
 
     def setAttributes( self, opcode, info ):
 
-        self.info = info
-        self.mnemonic= info.mnemonic
+        # Create deep copies so that the dictionary of infos remains unchanged
+        # and this specific instruction's info can be updated as needed.
+        self.info = copy.deepcopy(info)
+        self.mnemonic= copy.deepcopy(info.mnemonic)
 
         #############################
         #  DETERMINE OPERAND SIZES  #
         #############################
 
-        self.info.srcOperandSize = getOperandSize( opcode, self.prefixSize, self.info.srcOperandSize )
-        self.info.dstOperandSize = getOperandSize( opcode, self.prefixSize, self.info.dstOperandSize )
+        self.info.srcOperandSize = getOperandSize(opcode, self.prefixSize, self.info.srcOperandSize)
+        self.info.dstOperandSize = getOperandSize(opcode, self.prefixSize, self.info.dstOperandSize)
 
         logger.debug("source size: {}, dest size: {}".format(self.info.srcOperandSize, self.info.dstOperandSize))
 
@@ -258,7 +260,7 @@ def handleOpcode( instruction, binary ):
 
     # Check for the opcode being a 1 byte opcode
     elif binary[0] in oneByteOpcodes:
-        logger.debug("A 1 byte opcode was found")
+        logger.debug("A 1 byte opcode was found: {:02x}".format(binary[0]))
         instruction.setAttributes(binary[0], oneByteOpcodes[binary[0]])
         numOpcodeBytes = 1
 
@@ -446,7 +448,7 @@ def disassemble(binary):
     instructions = []
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:20]
+    binary = binary[:22]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
