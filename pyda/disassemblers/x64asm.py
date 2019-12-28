@@ -34,7 +34,7 @@ class X64Instruction( Instruction ):
 
         # If direction is already set, the default rules for direction apply
         # This should only be true in cases where an override is necessary
-        if self.info.direction is not None:
+        if self.info.direction is None:
 
             # The direction is always to the register or memory if there is an immediate
             if self.info.srcIsImmediate:
@@ -44,6 +44,8 @@ class X64Instruction( Instruction ):
             # bit, is the indicator of which direction to use
             else:
                 self.info.direction = (opcode & OP_DIR_MASK) > 1
+
+        logger.debug("direction: {}".format(self.info.direction))
 
         #####################
         #  CREATE OPERANDS  #
@@ -98,19 +100,20 @@ class X64Operand( Operand ):
     def __init__( self, size=REG_SIZE_32, value=0, isImmediate=False ):
 
         super().__init__(size, value)
-        self.isImmediate = isImmediate
-        self.displacement = 0
-        self.indirect = False
+        self.isImmediate = isImmediate  # Whether the operand is an immediate
+        self.numDisplacementBytes = 0   # Number of displacement bytes if the operand addressing is indirect
+        self.displacement = 0           # Value of the displacement from the register value
+        self.indirect = False           # Whether the addressing is indirect
 
     # Make the size 64 bits because it must hold an address
     # TODO: Make this also be able to hold other values in case the address
     # size has changed based on a prefix byte.
-    def makeIndirect(self):
+    def makeIndirect( self, numDisplacementBytes ):
 
         self.indirect = True
-        self.size = REG_SIZE_64
+        self.numDisplacementBytes = numDisplacementBytes
 
-    def __repr__(self):
+    def __repr__( self ):
 
         if self.isImmediate:
             return "0x{:x}".format(self.value)
@@ -182,7 +185,8 @@ def getOperandSize( opcode, prefixSize, infoSize ):
         return REG_SIZE_32
 
     else:
-        logger.debug("The size for the operand could not be determined")
+        logger.debug("The size of the operand could not be determined")
+
 
 def handlePrefix( instruction, binary ):
     """
@@ -264,6 +268,98 @@ def handleOpcode( instruction, binary ):
 
     return numOpcodeBytes
 
+def handleExtendedOpcode( instruction, modRmOpValue ):
+    """
+    Description:    Handles the extended opcode based on the REG value of the
+                    Mod R/M byte
+
+    Arguments:      instruction  - X64Instruction object
+                    modRmOpValue - Value of the REG value of the Mod R/M byte
+
+    Return:         True on success
+                    False on failure
+    """
+
+    if instruction.bytes[-1] == 0x83:
+
+        if modRmOpValue == 0:
+            instruction.mnemonic = "add"
+
+        elif modRmOpValue == 1:
+            instruction.mnemonic = "or"
+
+        elif modRmOpValue == 2:
+            instruction.mnemonic = "adc"
+
+        elif modRmOpValue == 3:
+            instruction.mnemonic = "sbb"
+
+        elif modRmOpValue == 4:
+            instruction.mnemonic = "and"
+
+        elif modRmOpValue == 5:
+            instruction.mnemonic = "sub"
+
+        elif modRmOpValue == 6:
+            instruction.mnemonic = "xor"
+
+        elif modRmOpValue == 7:
+            instruction.mnemonic = "cmp"
+
+        else:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
+    else:
+        logger.debug("An unsupported extended opcode was found")
+        return False
+
+    return True
+
+
+def handleOperandAddressing( operand, modRmByte, isReg ):
+    """
+    Description:    Figures out addressing mode for an operand based on the
+                    Mod R/M byte.
+
+    Arguments:      operand   - X64Operand object
+                    modRmByte - Mod R/M byte for the instruction
+                    isReg     - Whether the operand is a register
+
+    Return:         Number of bytes needed for addressing, not including the
+                    Mod R/M byte.
+    """
+
+    mod     = modRmByte & ADDR_MOD_MASK
+    regOrOp = (modRmByte & ADDR_REG_MASK) >> 3
+    regmem  = modRmByte & ADDR_RM_MASK
+
+    logger.debug("isReg: {}".format(isReg))
+
+    if isReg:
+        operand.value = regmem
+
+    else:
+        if mod == MOD_INDIRECT:
+            # TODO: Go to the SIB if the value is ESP
+            # TODO: Do a 4 byte displacement if the value is EBP
+            operand.makeIndirect()
+            return 1
+
+        # Only set the value if it is a register. Immediates are not set with the R/M byte.
+        if not operand.isImmediate:
+            logger.debug("Operand is a register value: {}".format(regOrOp))
+            operand.value = regOrOp
+
+        elif mod == MOD_1_BYTE_DISP and not operand.isImmediate:
+            logger.debug("Operand is a register value with a 1 byte displacement")
+            operand.makeIndirect(1)
+
+        elif mod == MOD_4_BYTE_DISP and not operand.isImmediate:
+            logger.debug("Operand is a register value with a 4 byte displacement")
+            operand.makeIndirect(4)
+
+    return 0
 
 def handleModRMByte( instruction, binary ):
     """
@@ -273,6 +369,7 @@ def handleModRMByte( instruction, binary ):
                     binary      - bytes remaining to be processed for an instruction
 
     Return:         The number of bytes consumed when processing the Mod R/M bytes
+                    If an error occurs 0 is returned
     """
 
     numBytesConsumed = 1
@@ -285,11 +382,27 @@ def handleModRMByte( instruction, binary ):
     logger.debug("mod: {}, reg: {}, r/m: {}".format(mod, regOrOp, regmem))
     logger.debug("Extended opcode? {}".format(instruction.info.extOpcode))
 
+    # If the instruction has an extended opcode, the REG value is actually
+    # part of the opcode.
     if instruction.info.extOpcode:
-        logger.debug("Found an opcode that needs to be extended: {:x}".format(curInstruction.bytes[-1]))
 
+        logger.debug("Found an opcode that needs to be extended: {:x}".format(instruction.bytes[-1]))
+        opcodeSuccess = handleExtendedOpcode(instruction, regOrOp)
+        if not opcodeSuccess:
+            return 0
 
-    # TODO: Append consumed bytes to the end of instruction.bytes
+    # Set the properties of the source operand now that enough is known about it
+    # TODO: Look into refactoring this section. The source and destination setup is very similar
+    # Maybe have a function that just sets this info that is called for the source and then the dest
+    direction = instruction.info.direction
+    logger.debug("Dir : {}".format(direction))
+    logger.debug("from: {}".format(OP_DIR_FROM_REG))
+    logger.debug("to  : {}".format(OP_DIR_TO_REG))
+    numBytesConsumed += handleOperandAddressing(instruction.source, modRmByte, direction == OP_DIR_FROM_REG)
+    numBytesConsumed += handleOperandAddressing(instruction.dest,   modRmByte, direction == OP_DIR_TO_REG)
+
+    instruction.bytes += list(binary[:numBytesConsumed])
+    return numBytesConsumed
 
 def disassemble(binary):
 
@@ -349,117 +462,8 @@ def disassemble(binary):
         # This is mainly for Mod R/M values
         # The direction determines whether the operands go to a register or
         # from a register.
-
-
-            # TODO: If the instruction has an extended opcode, the register value is actually part of the opcode. Do the necessary stuff here
-            if curInstruction.extOpcode:
-
-                logger.debug("Found an opcode that needs to be extended: {:x}".format(curInstruction.bytes[-1]))
-                if curInstruction.bytes[-2] == 0x83:
-                    # Make sure that the direction is into the value at R/M
-                    # because the source operand is an immediate.
-                    direction = OP_DIR_TO_REG_MEM
-                    curInstruction.source.value = 0
-
-                    if regOrOp == 0:
-                        curInstruction.mnemonic = "add"
-
-                    elif regOrOp == 1:
-                        curInstruction.mnemonic = "or"
-
-                    elif regOrOp == 2:
-                        curInstruction.mnemonic = "adc"
-
-                    elif regOrOp == 3:
-                        curInstruction.mnemonic = "sbb"
-
-                    elif regOrOp == 4:
-                        curInstruction.mnemonic = "and"
-
-                    elif regOrOp == 5:
-                        curInstruction.mnemonic = "sub"
-
-                    elif regOrOp == 6:
-                        curInstruction.mnemonic = "xor"
-
-                    elif regOrOp == 7:
-                        curInstruction.mnemonic = "cmp"
-
-                    step = STEP_DISP_IMM_BYTES
-
-            # Set the properties of the source operand now that enough is known about it
-            # TODO: Look into refactoring this section. The source and destination setup is very similar
-            # Maybe have a function that just sets this info that is called for the source and then the dest
-            if curInstruction.source is not None:
-
-                curInstruction.source.setSize(operandSize)
-                if curInstruction.source.isImm:
-                    logger.debug("Setting number of bytes for the immediate")
-                    immediateBytes = REG_NUM_BYTES[curInstruction.source.size]
-                    immediateBytesLeft = REG_NUM_BYTES[curInstruction.source.size]
-
-                if direction == OP_DIR_FROM_REG_MEM:
-                    curInstruction.source.value = regmem
-
-                else:
-                    if mod == MOD_INDIRECT:
-                        # TODO: Go to the SIB if the value is ESP
-                        # TODO: Do a 4 byte displacement if the value is EBP
-                        curInstruction.source.makeIndirect()
-
-                    # Only set the value if it is a register. Immediates are not set with the R/M byte.
-                    if not curInstruction.source.isImm:
-                        curInstruction.source.value = regOrOp
-
-                    elif mod == MOD_1_BYTE_DISP and not curInstruction.source.isImm:
-                        curInstruction.source.makeIndirect()
-
-                    elif mod == MOD_4_BYTE_DISP and not curInstruction.source.isImm:
-                        curInstruction.source.makeIndirect()
-
-            # Set the properties of the destination operand now that enough is known about it
-            if curInstruction.dest is not None:
-
-                curInstruction.dest.setSize(operandSize)
-                if direction == OP_DIR_FROM_REG_MEM:
-                    curInstruction.dest.value = regOrOp
-
-                else:
-                    if mod == MOD_INDIRECT:
-                        # TODO: Go to the SIB if the value is ESP
-                        # TODO: Do a 4 byte displacement if the value is EBP
-                        curInstruction.dest.makeIndirect()
-
-                    elif mod == MOD_1_BYTE_DISP and not curInstruction.dest.isImm:
-                        curInstruction.dest.makeIndirect()
-
-                    elif mod == MOD_4_BYTE_DISP and not curInstruction.dest.isImm:
-                        curInstruction.dest.makeIndirect()
-
-                    curInstruction.dest.value = regmem
-
-            if mod == MOD_1_BYTE_DISP:
-                logger.debug("1 byte dispalcement")
-                displaceBytes = 1
-                displaceBytesLeft = 1
-                step = STEP_DISP_IMM_BYTES
-                continue
-
-            elif mod == MOD_4_BYTE_DISP:
-                logger.debug("4 byte dispalcement")
-                displaceBytes = 4
-                displaceBytesLeft = 4
-                step = STEP_DISP_IMM_BYTES
-                continue
-
-            elif immediateBytes > 0:
-                step = STEP_DISP_IMM_BYTES
-                continue
-
-            else:
-                step = STEP_BEGIN
-                instructions.append(curInstruction)
-                continue
+        #
+        logger.debug(curInstruction)
 
         if step <= STEP_DISP_IMM_BYTES:
             logger.debug("Looking for extra bytes, disp: {}, imm: {}".format(displaceBytesLeft, immediateBytesLeft))
@@ -520,10 +524,12 @@ prefixes = [
 ]
 
 """
-def __init__( self, mnemonic, registerCode=False, direction=None,
-              hasModRM=False, canPromote=True, operandSize=REG_SIZE_32,
-              sizeBit=False, signExtBit=False, directionBit=False):
+    def __init__( self, mnemonic, registerCode=False, direction=None,
+                  hasModRM=True, extOpcode=False, srcIsImmediate=False,
+                  srcOperandSize=None, dstOperandSize=None,
+                  srcCanPromote=True, dstCanPromote=True, signExtBit=False):
 """
+
 oneByteOpcodes = {
 
     0x50: X64InstructionInfo("push", hasModRM=False, registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
@@ -544,7 +550,7 @@ oneByteOpcodes = {
     0x5e: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
     0x5f: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
 
-    0x89: X64InstructionInfo("mov", srcOperandSize=REG_SIZE_8L),
+    0x89: X64InstructionInfo("mov"),
 }
 
 
