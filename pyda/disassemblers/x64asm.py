@@ -339,6 +339,8 @@ def handleOperandAddressing( operand, binary ):
     regOrOp = (modRmByte & ADDR_REG_MASK) >> 3
     regmem  = modRmByte & ADDR_RM_MASK
 
+    logger.debug("mod: {}, reg: {}, r/m: {}".format(mod >> 6, regOrOp, regmem))
+
     # Process the addressing if the Mod R/M byte applies to this operand
     if operand.modRm:
 
@@ -359,7 +361,8 @@ def handleOperandAddressing( operand, binary ):
         elif mod == MOD_4_BYTE_DISP:
             logger.debug("Operand is a register value with a 4 byte displacement")
             operand.indirect = True
-            operand.value = int.from_bytes(binary[1:5], "little", signed=True)
+            operand.displacement = int.from_bytes(binary[1:5], "little", signed=True)
+            operand.value = regmem
             return 4
 
         elif mod == MOD_REGISTER:
@@ -371,7 +374,7 @@ def handleOperandAddressing( operand, binary ):
 
     # Otherwise, set the value as long as this operand is not an immediate
     elif not operand.isImmediate:
-        operand.value = regmem
+        operand.value = regOrOp
 
     return 0
 
@@ -421,7 +424,7 @@ def disassemble(binary):
     instructions = []
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:14]
+    binary = binary[:20]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -476,6 +479,7 @@ def disassemble(binary):
             curInstruction.bytes += list(binary[:numBytes])
             binary = binary[numBytes:]
 
+        logger.debug(curInstruction)
         instructions.append(curInstruction)
 
 
@@ -511,6 +515,8 @@ oneByteOpcodes = {
     0x83: X64InstructionInfo("",     modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
 
     0x89: X64InstructionInfo("mov",  modRm=MODRM_DEST),
+
+    0x8b: X64InstructionInfo("mov",  modRm=MODRM_SOURCE),
 
     0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtBit= True),
 }
