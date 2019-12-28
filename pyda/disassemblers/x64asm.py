@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class X64Instruction( Instruction ):
-    # TODO: Fill out x64 specific attributes
+
     def __init__( self, mnemonic="byte", source=None, dest=None, extraOperands=[] ):
         super().__init__(mnemonic, source, dest, extraOperands)
 
@@ -101,17 +101,8 @@ class X64Operand( Operand ):
 
         super().__init__(size, value)
         self.isImmediate = isImmediate  # Whether the operand is an immediate
-        self.numDisplacementBytes = 0   # Number of displacement bytes if the operand addressing is indirect
         self.displacement = 0           # Value of the displacement from the register value
         self.indirect = False           # Whether the addressing is indirect
-
-    # Make the size 64 bits because it must hold an address
-    # TODO: Make this also be able to hold other values in case the address
-    # size has changed based on a prefix byte.
-    def makeIndirect( self, numDisplacementBytes ):
-
-        self.indirect = True
-        self.numDisplacementBytes = numDisplacementBytes
 
     def __repr__( self ):
 
@@ -133,12 +124,6 @@ class X64Operand( Operand ):
             else:
                 return "%{}".format(regName)
 
-class X64OperandInfo():
-
-    def __init__( self, size=REG_SIZE_32, isImmediate=False, sizeCanChange=True):
-        self.size = size
-        self.isImmediate = isImmediate
-        self.sizeCanChange = sizeCanChange
 
 def getOperandSize( opcode, prefixSize, infoSize ):
     """
@@ -179,7 +164,7 @@ def getOperandSize( opcode, prefixSize, infoSize ):
         return prefixSize
 
     elif sizeBit == 0:
-        return REG_SIZE_8L
+        return REG_SIZE_8
 
     elif sizeBit == 1:
         return REG_SIZE_32
@@ -317,33 +302,36 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
     return True
 
 
-def handleOperandAddressing( operand, modRmByte, isReg ):
+def handleOperandAddressing( operand, binary, isReg ):
     """
     Description:    Figures out addressing mode for an operand based on the
                     Mod R/M byte.
 
-    Arguments:      operand   - X64Operand object
-                    modRmByte - Mod R/M byte for the instruction
-                    isReg     - Whether the operand is a register
+    Arguments:      operand - X64Operand object
+                    binary  - Remaining bytes to disassemble, starting with the
+                              Mod R/M byte
+                    isReg   - Whether the operand is a register
 
     Return:         Number of bytes needed for addressing, not including the
                     Mod R/M byte.
     """
 
+    modRmByte = binary[0]
     mod     = modRmByte & ADDR_MOD_MASK
     regOrOp = (modRmByte & ADDR_REG_MASK) >> 3
     regmem  = modRmByte & ADDR_RM_MASK
 
-    logger.debug("isReg: {}".format(isReg))
-
+    # If the operand is a register from the reg/mem value
     if isReg:
+        # TODO: If the size is 8 bytes, the register for ESP is actually AH,
+        # EBP is CH, ESI is DH, and EDI is BH
         operand.value = regmem
 
     else:
         if mod == MOD_INDIRECT:
             # TODO: Go to the SIB if the value is ESP
             # TODO: Do a 4 byte displacement if the value is EBP
-            operand.makeIndirect()
+            operand.indirect = True
             return 1
 
         # Only set the value if it is a register. Immediates are not set with the R/M byte.
@@ -353,11 +341,15 @@ def handleOperandAddressing( operand, modRmByte, isReg ):
 
         elif mod == MOD_1_BYTE_DISP and not operand.isImmediate:
             logger.debug("Operand is a register value with a 1 byte displacement")
-            operand.makeIndirect(1)
+            operand.indirect = True
+            operand.value = int.from_bytes(binary[1:2], "little")
+            return 1
 
         elif mod == MOD_4_BYTE_DISP and not operand.isImmediate:
             logger.debug("Operand is a register value with a 4 byte displacement")
-            operand.makeIndirect(4)
+            operand.indirect = True
+            operand.value = int.from_bytes(binary[1:5], "little")
+            return 4
 
     return 0
 
@@ -380,7 +372,6 @@ def handleModRMByte( instruction, binary ):
 
     logger.debug("byte: {:02x}".format(modRmByte))
     logger.debug("mod: {}, reg: {}, r/m: {}".format(mod, regOrOp, regmem))
-    logger.debug("Extended opcode? {}".format(instruction.info.extOpcode))
 
     # If the instruction has an extended opcode, the REG value is actually
     # part of the opcode.
@@ -391,23 +382,22 @@ def handleModRMByte( instruction, binary ):
         if not opcodeSuccess:
             return 0
 
-    # Set the properties of the source operand now that enough is known about it
-    # TODO: Look into refactoring this section. The source and destination setup is very similar
-    # Maybe have a function that just sets this info that is called for the source and then the dest
+    # Set the operand addressing properties
     direction = instruction.info.direction
-    logger.debug("Dir : {}".format(direction))
-    logger.debug("from: {}".format(OP_DIR_FROM_REG))
-    logger.debug("to  : {}".format(OP_DIR_TO_REG))
-    numBytesConsumed += handleOperandAddressing(instruction.source, modRmByte, direction == OP_DIR_FROM_REG)
-    numBytesConsumed += handleOperandAddressing(instruction.dest,   modRmByte, direction == OP_DIR_TO_REG)
+    numBytesConsumed += handleOperandAddressing(instruction.source, binary, direction == OP_DIR_FROM_REG)
+    numBytesConsumed += handleOperandAddressing(instruction.dest,   binary, direction == OP_DIR_TO_REG)
 
     instruction.bytes += list(binary[:numBytesConsumed])
     return numBytesConsumed
+
 
 def disassemble(binary):
 
     offTheRails = False
     instructions = []
+
+    # TODO: Remove this line when more instructions can be handled
+    binary = binary[:8]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -418,15 +408,11 @@ def disassemble(binary):
         # If things have gone off the rails, consume each byte and add a
         # default instruction
         if offTheRails:
-            logger.warning("Adding an unknown byte: {:02x}".format(byte))
+            logger.warning("Adding an unknown byte: {:02x}".format(binary[0]))
             curInstruction.bytes.append(binary[0])
+            instructions.append(curInstruction)
             binary = binary[1:]
             continue
-
-        displaceBytes = 0
-        displaceBytesLeft = 0
-        immediateBytes = 0
-        immediateBytesLeft = 0
 
         # Find all prefix bytes and set the appropriate settings in the
         # instruction. Consume all prefix bytes from the binary.
@@ -449,62 +435,25 @@ def disassemble(binary):
             continue
 
         # If the instruction has a Mod R/M byte, parse it next
-        if curInstruction.info.hasModRM:
-            logger.debug("There is an RM mod byte")
-            numModRMBytes = handleModRMByte(curInstruction, binary)
-
-        else:
+        if not curInstruction.info.hasModRM:
             instructions.append(curInstruction)
             logger.debug(curInstruction)
             continue
 
-        # The size flag indicates either 8-bit or 32-bit operands
-        # This is mainly for Mod R/M values
-        # The direction determines whether the operands go to a register or
-        # from a register.
-        #
-        logger.debug(curInstruction)
+        logger.debug("There is an RM mod byte")
+        numModRMBytes = handleModRMByte(curInstruction, binary)
+        binary = binary[numModRMBytes:]
+        logger.debug("Next binary byte is now: {:02x}".format(binary[0]))
 
-        if step <= STEP_DISP_IMM_BYTES:
-            logger.debug("Looking for extra bytes, disp: {}, imm: {}".format(displaceBytesLeft, immediateBytesLeft))
+        # Handle an immediate value if there is one
+        if curInstruction.source.isImmediate:
+            numBytes = curInstruction.source.size
+            curInstruction.source.value = int.from_bytes(binary[:numBytes], "little")
+            curInstruction.bytes += list(binary[:numBytes])
+            binary = binary[numBytes:]
 
-            curInstruction.bytes.append(byte)
+        instructions.append(curInstruction)
 
-            if displaceBytesLeft > 0:
-                logger.debug("Processing displacement byte")
-                # TODO: Assume that displacement bytes can only be for one operand
-                if curInstruction.source is not None and curInstruction.source.indirect:
-                    logger.debug("adding to source displacement")
-                    curInstruction.source.displacement += (byte >> (8 * (displaceBytes - displaceBytesLeft)))
-                    if displaceBytesLeft == 1 and byte > 0x80:
-                        curInstruction.source.displacement = -1 * (pow(2, 8 * displaceBytes) - curInstruction.source.displacement)
-
-                elif curInstruction.dest is not None and curInstruction.dest.indirect:
-                    logger.debug("adding to dest displacement")
-                    curInstruction.dest.displacement += (byte >> (8 * (displaceBytes - displaceBytesLeft)))
-                    if displaceBytesLeft == 1 and byte > 0x80:
-                        curInstruction.dest.displacement = -1 * (pow(2, 8 * displaceBytes) - curInstruction.dest.displacement)
-
-                else:
-                    raise binary.AnalysisError("There are displacement bytes left, but no operand that needs any")
-
-                displaceBytesLeft -= 1
-
-            elif immediateBytesLeft > 0:
-                logger.debug("adding immediate")
-                # x86 is little endian, so as bytes come in, they should be bitshifted over 8 times for every
-                # byte that has already been processed for the value.
-                curInstruction.source.value += (byte >> (8 * (immediateBytes - immediateBytesLeft)))
-                immediateBytesLeft -= 1
-
-            # After processing the displacement or immediate byte, check whether there are
-            # any bytes left. If not, add the instruction to the list because this is the
-            # last possible step when processing an instruction.
-            if displaceBytesLeft == 0 and immediateBytesLeft == 0:
-                logger.debug("nothing left")
-                instructions.append(curInstruction)
-                step = STEP_BEGIN
-                continue
 
     return instructions
 
@@ -549,6 +498,8 @@ oneByteOpcodes = {
     0x5d: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
     0x5e: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
     0x5f: X64InstructionInfo("pop",  hasModRM=False, registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+
+    0x83: X64InstructionInfo("", extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
 
     0x89: X64InstructionInfo("mov"),
 }

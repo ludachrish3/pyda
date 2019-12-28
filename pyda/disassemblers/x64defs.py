@@ -31,66 +31,64 @@ REG_RBP  = 0b00000101
 REG_RSI  = 0b00000110
 REG_RDI  = 0b00000111
 
-REG_SIZE_64 = "64"
-REG_SIZE_32 = "32"
-REG_SIZE_16 = "16"
-REG_SIZE_8H = "8h"
-REG_SIZE_8L = "8l"
-
-REG_NUM_BYTES = {
-    REG_SIZE_64: 8,
-    REG_SIZE_32: 4,
-    REG_SIZE_16: 2,
-    REG_SIZE_8H: 1,
-    REG_SIZE_8L: 1,
-}
-
+REG_SIZE_64 = 8
+REG_SIZE_32 = 4
+REG_SIZE_16 = 2
+REG_SIZE_8  = 1
 
 REG_NAME_UNDEF = "UNDEF REG"
 
+# For the most part this is straight forward for the A, C, D, and B registers,
+# but for RSP, RBP, RSI, and RDI, things are a bit different. Their 8 bit
+# values actually correspond to the higher 8 bit values for the corresponding
+# A, C, D, and B registers. They do not have 8 bit registers of their own.
 REG_NAMES = {
-    REG_RBP: {
-        REG_SIZE_64: "rbp",
-        REG_SIZE_32: "ebp",
-        REG_SIZE_16: "bp",
-        REG_SIZE_8H: REG_NAME_UNDEF,
-        REG_SIZE_8L: REG_NAME_UNDEF
-    },
-    REG_RSP:{
-        REG_SIZE_64: "rsp",
-        REG_SIZE_32: "esp",
-        REG_SIZE_16: "sp",
-        REG_SIZE_8H: REG_NAME_UNDEF,
-        REG_SIZE_8L: REG_NAME_UNDEF
-    },
     REG_RAX: {
         REG_SIZE_64: "rax",
         REG_SIZE_32: "eax",
         REG_SIZE_16: "ax",
-        REG_SIZE_8H: "ah",
-        REG_SIZE_8L: "al",
-    },
-    REG_RBX: {
-        REG_SIZE_64: "rbx",
-        REG_SIZE_32: "ebx",
-        REG_SIZE_16: "bx",
-        REG_SIZE_8H: "bh",
-        REG_SIZE_8L: "bl",
+        REG_SIZE_8:  "al",
     },
     REG_RCX: {
         REG_SIZE_64: "rcx",
         REG_SIZE_32: "ecx",
         REG_SIZE_16: "cx",
-        REG_SIZE_8H: "ch",
-        REG_SIZE_8L: "cl",
+        REG_SIZE_8:  "cl",
     },
     REG_RDX: {
         REG_SIZE_64: "rdx",
         REG_SIZE_32: "edx",
         REG_SIZE_16: "dx",
-        REG_SIZE_8H: "dh",
-        REG_SIZE_8L: "dl",
-    }
+        REG_SIZE_8:  "dl",
+    },
+    REG_RBX: {
+        REG_SIZE_64: "rbx",
+        REG_SIZE_32: "ebx",
+        REG_SIZE_16: "bx",
+        REG_SIZE_8:  "bl",
+    },
+    REG_RSP:{
+        REG_SIZE_64: "rsp",
+        REG_SIZE_32: "esp",
+        REG_SIZE_16: "sp",
+        REG_SIZE_8:  "ah",
+    },
+    REG_RBP: {
+        REG_SIZE_64: "rbp",
+        REG_SIZE_32: "ebp",
+        REG_SIZE_16: "bp",
+        REG_SIZE_8:  "ch",
+    },
+    REG_RSI: {
+        REG_SIZE_64: "rsi",
+        REG_SIZE_32: "esi",
+        REG_SIZE_16: "si",
+        REG_SIZE_8:  "dh",
+    },
+    REG_RDI: {
+        REG_SIZE_64: "rdi",
+        REG_SIZE_32: "edi",
+        REG_SIZE_16: "di",
+        REG_SIZE_8:  "bh",
+    },
 }
-
-# TODO: Fill out more of these dicts for all registers
