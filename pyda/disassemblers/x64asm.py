@@ -57,9 +57,12 @@ class X64Instruction( Instruction ):
         if self.info.registerCode:
             register = opcode & REG_MASK
 
-            if self.info.direction == OP_DIR_TO_REG:
+            # If the source is an immeidate, it is also assumed that the value
+            # is being put into the register specified by the register code.
+            if self.info.direction == OP_DIR_TO_REG or self.info.srcIsImmediate:
                 logger.debug("The destination is the register")
                 self.dest = X64Operand(size=self.info.dstOperandSize, value=register)
+                self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=True)
 
             elif self.info.direction == OP_DIR_FROM_REG:
                 logger.debug("The source is the register")
@@ -448,7 +451,7 @@ def disassemble(binary):
     instructions = []
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:29]
+    binary = binary[:34]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -486,17 +489,14 @@ def disassemble(binary):
             continue
 
         # If the instruction has a Mod R/M byte, parse it next
-        if curInstruction.info.modRm == MODRM_NONE:
-            instructions.append(curInstruction)
-            logger.debug(curInstruction)
-            continue
-
-        logger.debug("There is an RM mod byte")
-        numModRmBytes = handleModRmByte(curInstruction, binary)
-        binary = binary[numModRmBytes:]
+        if curInstruction.info.modRm != MODRM_NONE:
+            logger.debug("There is an RM mod byte")
+            numModRmBytes = handleModRmByte(curInstruction, binary)
+            binary = binary[numModRmBytes:]
 
         # Handle an immediate value if there is one
         if curInstruction.source.isImmediate:
+            logger.debug("Handling the immeidate")
             numBytes = curInstruction.source.size
             curInstruction.source.value = int.from_bytes(binary[:numBytes], "little")
             curInstruction.bytes += list(binary[:numBytes])
@@ -504,7 +504,6 @@ def disassemble(binary):
 
         logger.debug(curInstruction)
         instructions.append(curInstruction)
-
 
     return instructions
 
@@ -542,6 +541,8 @@ oneByteOpcodes = {
     0x8b: X64InstructionInfo("mov",  modRm=MODRM_SOURCE),
 
     0x8d: X64InstructionInfo("lea",  modRm=MODRM_SOURCE),
+
+    0xb8: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
 
     0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtBit= True),
 }
