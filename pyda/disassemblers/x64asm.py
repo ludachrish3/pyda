@@ -448,7 +448,7 @@ def disassemble(binary):
     instructions = []
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:22]
+    binary = binary[:29]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -540,6 +540,8 @@ oneByteOpcodes = {
     0x89: X64InstructionInfo("mov",  modRm=MODRM_DEST),
 
     0x8b: X64InstructionInfo("mov",  modRm=MODRM_SOURCE),
+
+    0x8d: X64InstructionInfo("lea",  modRm=MODRM_SOURCE),
 
     0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtBit= True),
 }
