@@ -73,7 +73,9 @@ class X64Instruction( Instruction ):
 
         else:
             self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=self.info.srcIsImmediate)
-            self.dest   = X64Operand(size=self.info.dstOperandSize)
+
+            if not self.info.relativeJump:
+                self.dest   = X64Operand(size=self.info.dstOperandSize)
 
         ################################
         #  SET MOD R/M OPERAND STATUS  #
@@ -92,7 +94,7 @@ class X64InstructionInfo():
 
     def __init__( self, mnemonic, registerCode=False, direction=None,
                   modRm=MODRM_NONE, extOpcode=False, srcIsImmediate=False,
-                  srcOperandSize=None, dstOperandSize=None,
+                  srcOperandSize=None, dstOperandSize=None, relativeJump=False,
                   srcCanPromote=True, dstCanPromote=True, signExtBit=False):
 
         # Opcode info
@@ -102,6 +104,7 @@ class X64InstructionInfo():
         self.modRm        = modRm           # How the Mod R/M byte must be handled
         self.extOpcode    = extOpcode       # Whether the opcode is extended into the ModR/M
         self.signExtBit   = signExtBit      # Whether the sign extension bit of the opcode means anything
+        self.relativeJump = relativeJump    # Whether the instruction is a relative jump and expects an immediate to follow the opcode
 
         # Operand info
         self.srcCanPromote  = srcCanPromote     # Whether the src operand size is allowed to be promoted to 64 bits
@@ -111,6 +114,11 @@ class X64InstructionInfo():
         self.dstCanPromote  = dstCanPromote     # Whether the dst operand size is allowed to be promoted to 64 bits
         self.dstOperandSize = dstOperandSize    # The default size of the dst operands
                                                 # The dst operand cannot be an immediate, so there is no option for it
+
+        # Set properties that are always true if the instruction is a relative jump
+        if self.relativeJump:
+            self.signExtBit = True
+            self.srcIsImmediate = True
 
 class X64Operand( Operand ):
 
@@ -124,8 +132,11 @@ class X64Operand( Operand ):
 
     def __repr__( self ):
 
-        if self.isImmediate:
-            return "0x{:x}".format(self.value)
+        if self.isImmediate and self.value < 0:
+            return "-0x{:x}".format(abs(self.value))
+
+        elif self.isImmediate:
+            return "0x{:x}".format(abs(self.value))
 
         else:
             # If this is an indirect value, use the name of the 64 bit register
@@ -453,7 +464,7 @@ def disassemble( function ):
     offTheRails  = False
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:34]
+    binary = binary[:39]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -505,8 +516,21 @@ def disassemble( function ):
         if curInstruction.source.isImmediate:
             logger.debug("Handling the immeidate")
             numBytes = curInstruction.source.size
-            curInstruction.source.value = int.from_bytes(binary[:numBytes], "little")
             curInstruction.bytes += list(binary[:numBytes])
+            immediate = int.from_bytes(binary[:numBytes], "little", signed=curInstruction.info.signExtBit)
+
+            # If the instruction is a relative jump, the address is:
+            # [%rip] + immediate
+            # The value in the instruction pointer register is the address of
+            # the next instruction, which is the address of the current
+            # instruction plus the number of bytes in it.
+            if curInstruction.info.relativeJump:
+                curInstruction.source.value = curInstruction.addr + len(curInstruction.bytes) + immediate
+
+            # Otherwise, the source value is just the immediate
+            else:
+                curInstruction.source.value = immediate
+
             binary = binary[numBytes:]
 
         logger.debug(curInstruction)
@@ -565,7 +589,7 @@ oneByteOpcodes = {
 
     0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtBit= True),
 
-#    0xe8: X64InstructionInfo("call", ,
+    0xe8: X64InstructionInfo("call", relativeJump=True, srcOperandSize=REG_SIZE_32),
 }
 
 

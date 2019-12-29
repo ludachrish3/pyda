@@ -15,7 +15,7 @@ optional arguments:
   -h, --help            Show this help message and exit
 ```
 
-## Goals
+## TODO
 
 * Handle SIB byte
 * Figure out how global variables and functions are linked to values (like how does calling printf() get figured out)
@@ -25,7 +25,7 @@ optional arguments:
 * Analyzing DWARF info
 * Entropy analysis
 * Calling and called functions
-* Highlight CALL instructions for when a functino pointer is dereferenced and called
+* Highlight CALL instructions for when a function pointer is dereferenced and called
 * Cross references of addresses (aggressive matching of address throughout whole binary)
 * Create a runnable version from the source code that can be used with GDB
 * Allow for manual disassembly starting at a certain offset if disassembly goes off the rails
