@@ -41,7 +41,6 @@ class Binary(metaclass=abc.ABCMeta):
     def getISA(self):
         pass
 
-
     @abc.abstractmethod
     def getFunctionByName(self, name):
         pass

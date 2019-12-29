@@ -57,8 +57,13 @@ class X64Instruction( Instruction ):
         if opcode & OP_SIGN_MASK:
             self.info.signExtension = True
 
+        # Skip creating operands if there aren't supposed to be any
+        if self.info.noOperands:
+            logger.debug("There are no operands")
+            pass
+
         # Handle setup if there is a register code in the opcode
-        if self.info.registerCode:
+        elif self.info.registerCode:
             register = opcode & REG_MASK
 
             # If the source is an immeidate, it is also assumed that the value
@@ -66,7 +71,11 @@ class X64Instruction( Instruction ):
             if self.info.direction == OP_DIR_TO_REG or self.info.srcIsImmediate:
                 logger.debug("The destination is the register")
                 self.dest = X64Operand(size=self.info.dstOperandSize, value=register)
-                self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=True)
+
+                # Only add a source if it is an immediate. Otherwise, there
+                # should not be a source if the register code is specified.
+                if self.info.srcIsImmediate:
+                    self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=True)
 
             elif self.info.direction == OP_DIR_FROM_REG:
                 logger.debug("The source is the register")
@@ -99,7 +108,7 @@ class X64InstructionInfo():
     def __init__( self, mnemonic, registerCode=False, direction=None,
                   modRm=MODRM_NONE, extOpcode=False, srcIsImmediate=False,
                   srcOperandSize=None, dstOperandSize=None, relativeJump=False,
-                  signExtension=False,
+                  signExtension=False, noOperands=False,
                   srcCanPromote=True, dstCanPromote=True, signExtBit=False):
 
         # Opcode info
@@ -111,6 +120,7 @@ class X64InstructionInfo():
         self.signExtBit    = signExtBit     # Whether the sign extension bit of the opcode means anything
         self.signExtension = signExtension  # Whether the sign should be extended
         self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
+        self.noOperands    = noOperands     # Whether the instruction has no operands
 
         # Operand info
         self.srcCanPromote  = srcCanPromote     # Whether the src operand size is allowed to be promoted to 64 bits
@@ -198,16 +208,22 @@ def getOperandSize( opcode, prefixSize, infoSize ):
 
     sizeBit = opcode & OP_SIZE_MASK
 
-    if prefixSize is not None and infoSize != REG_SIZE_8 and sizeBit != 0:
+    logger.debug("prefixSize: {}, infoSize: {}, sizeBit: {}".format(prefixSize, infoSize, sizeBit))
+
+    if prefixSize is not None and infoSize != REG_SIZE_8 and infoSize is None:
+        logger.debug("Using prefix size")
         return prefixSize
 
     elif infoSize is not None:
+        logger.debug("Using info size")
         return infoSize
 
     elif sizeBit == 0:
+        logger.debug("Using bit size 8")
         return REG_SIZE_8
 
     elif sizeBit == 1:
+        logger.debug("Using bit size 32")
         return REG_SIZE_32
 
     else:
@@ -497,9 +513,6 @@ def disassemble( function ):
     instructions = function.instructions
     offTheRails  = False
 
-    # TODO: Remove this line when more instructions can be handled
-    binary = binary[:48]
-
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
 
@@ -547,7 +560,7 @@ def disassemble( function ):
             binary = binary[numModRmBytes:]
 
         # Handle an immediate value if there is one
-        if curInstruction.source.isImmediate:
+        if curInstruction.source is not None and curInstruction.source.isImmediate:
             logger.debug("Handling the immeidate")
             numImmediateBytes = handleImmediate(curInstruction, binary)
             binary = binary[numImmediateBytes:]
@@ -569,49 +582,79 @@ def disassemble( function ):
 
 oneByteOpcodes = {
 
-    0x50: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x51: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x52: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x53: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x54: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x55: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x56: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x57: X64InstructionInfo("push", registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x00: X64InstructionInfo("add",   modRm=MODRM_DEST),
+    0x01: X64InstructionInfo("add",   modRm=MODRM_DEST),
+    0x02: X64InstructionInfo("add",   modRm=MODRM_DEST),
+    0x03: X64InstructionInfo("add",   modRm=MODRM_DEST),
 
-    0x58: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x59: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5a: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5b: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5c: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5d: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5e: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
-    0x5f: X64InstructionInfo("pop",  registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x50: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x51: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x52: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x53: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x54: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x55: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x56: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+    0x57: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
+
+    0x58: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x59: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5a: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5b: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5c: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5d: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5e: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+    0x5f: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG, dstOperandSize=REG_SIZE_64),
+
+    0x70: X64InstructionInfo("jo",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Overflow
+    0x71: X64InstructionInfo("jno",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not overflow
+    0x72: X64InstructionInfo("jb",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than or equal (unsigned)
+    0x73: X64InstructionInfo("jae",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Greater than or equal (unsigned)
+    0x74: X64InstructionInfo("jz",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Zero
+    0x75: X64InstructionInfo("jnz",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not zero
+    0x76: X64InstructionInfo("jbe",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than or equal (unsigned)
+    0x77: X64InstructionInfo("ja",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Greater than (unsigned)
+    0x78: X64InstructionInfo("js",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Signed
+    0x79: X64InstructionInfo("jns",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Unsigned
+    0x7a: X64InstructionInfo("jp",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Parity
+    0x7b: X64InstructionInfo("jnp",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not parity
+    0x7c: X64InstructionInfo("jlt",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than (signed)
+    0x7d: X64InstructionInfo("jge",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Greater than or equal (signed)
+    0x7e: X64InstructionInfo("jle",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than or equal (signed)
+    0x7f: X64InstructionInfo("jgt",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Greater than (signed)
 
 #   0x82: Invalid
-    0x83: X64InstructionInfo("",     modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
+    0x83: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
 
-    0x88: X64InstructionInfo("mov",  modRm=MODRM_DEST),
-    0x89: X64InstructionInfo("mov",  modRm=MODRM_DEST),
-    0x8a: X64InstructionInfo("mov",  modRm=MODRM_SOURCE),
-    0x8b: X64InstructionInfo("mov",  modRm=MODRM_SOURCE),
+    0x88: X64InstructionInfo("mov",   modRm=MODRM_DEST),
+    0x89: X64InstructionInfo("mov",   modRm=MODRM_DEST),
+    0x8a: X64InstructionInfo("mov",   modRm=MODRM_SOURCE),
+    0x8b: X64InstructionInfo("mov",   modRm=MODRM_SOURCE),
 
-    0x8d: X64InstructionInfo("lea",  modRm=MODRM_SOURCE),
+    0x8d: X64InstructionInfo("lea",   modRm=MODRM_SOURCE),
 
-    0xb8: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-    0xb9: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-    0xba: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-    0xbb: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-    0xbc: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-    0xbd: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-    0xbe: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-    0xbf: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xb8: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xb9: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xba: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbb: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbc: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbd: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbe: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0xbf: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
 
-    0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True),
+    0xc3: X64InstructionInfo("ret",   noOperands=True),
 
-    0xe8: X64InstructionInfo("call", relativeJump=True, srcOperandSize=REG_SIZE_32),
+    0xc6: X64InstructionInfo("mov",   modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True),
+    0xc7: X64InstructionInfo("mov",   modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True),
+
+    0xc9: X64InstructionInfo("leave", noOperands=True),
+
+    0xe8: X64InstructionInfo("call",  relativeJump=True, srcOperandSize=REG_SIZE_32),
+
+    0xeb: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_8),
 }
 
 
 twoByteOpcodes = {
-    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_8, dstOperandSize=REG_SIZE_32),
+    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_32),
+    0xbf: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32),
 }

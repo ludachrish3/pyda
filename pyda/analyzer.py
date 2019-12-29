@@ -59,16 +59,19 @@ def analyzeFile(filename):
 
         logger.info(exe)
 
-        functionToAnalyze = exe.getFunctionByName("main")
+        for funcName in exe.functionsByName:
 
-        logger.debug("Function: {}".format(functionToAnalyze.assembly))
+            functionToAnalyze = exe.getFunctionByName(funcName)
 
-        if exe.getISA() == binary.ISA_X86_64:
+            logger.debug("Function: {}".format(functionToAnalyze.assembly))
 
-            instructions = x64asm.disassemble(functionToAnalyze)
-            logger.debug("Instructions:              src, dst")
-            for inst in instructions:
-                logger.debug(inst)
+            if exe.getISA() == binary.ISA_X86_64:
 
+                if funcName[0] != '_':
+                    instructions = x64asm.disassemble(functionToAnalyze)
+                    logger.info("{} Instructions (src, dst)".format(funcName))
+
+                    for inst in instructions:
+                        logger.info(inst)
 
     return None

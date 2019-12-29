@@ -286,8 +286,8 @@ class ElfBinary(binary.Binary):
         # TODO: Update the key for the symbol table to be whatever is useful
         # Right now it is one big dictionary keyed on value, but maybe split it
         # up by type and key on something else if it makes more sense.
-        self._functionsByName = {}
-        self._functionsByAddr = {}
+        self.functionsByName = {}
+        self.functionsByAddr = {}
         self._globalVariablesByName = {}
         self._globalVariablesByAddr = {}
 
@@ -672,8 +672,8 @@ class ElfBinary(binary.Binary):
                 newSymbol.assembly = fd.read(newSymbol.size)
 
                 if newSymbol.type == SYMBOL_TYPE_FUNCTION:
-                    self._functionsByName[newSymbol.name] = newSymbol
-                    self._functionsByAddr[newSymbol.value] = newSymbol
+                    self.functionsByName[newSymbol.name] = newSymbol
+                    self.functionsByAddr[newSymbol.value] = newSymbol
 
                 elif newSymbol.type == SYMBOL_TYPE_OBJECT:
                     self._globalVariablesByName[newSymbol.name] = newSymbol
@@ -698,8 +698,8 @@ class ElfBinary(binary.Binary):
                 newSymbol.assembly = fd.read(newSymbol.size)
 
                 if newSymbol.type == SYMBOL_TYPE_FUNCTION:
-                    self._functionsByName[newSymbol.name] = newSymbol
-                    self._functionsByAddr[newSymbol.value] = newSymbol
+                    self.functionsByName[newSymbol.name] = newSymbol
+                    self.functionsByAddr[newSymbol.value] = newSymbol
                     logger.debug("Function symbol: {}".format(newSymbol))
 
                 elif newSymbol.type == SYMBOL_TYPE_OBJECT:
@@ -727,8 +727,8 @@ class ElfBinary(binary.Binary):
 
     def getFunctionByName(self, name):
 
-        if name in self._functionsByName:
-            function = self._functionsByName[name]
+        if name in self.functionsByName:
+            function = self.functionsByName[name]
 
             return binary.Function(function.name, function.value, function.size, function.assembly)
 
@@ -737,8 +737,8 @@ class ElfBinary(binary.Binary):
 
     def getFunctionByAddr(self, addr):
 
-        if addr in self._functionsByAddr:
-            function = self._functionsByAddr[addr]
+        if addr in self.functionsByAddr:
+            function = self.functionsByAddr[addr]
 
             return binary.Function(function.name, function.value, function.size, function.assembly)
 
