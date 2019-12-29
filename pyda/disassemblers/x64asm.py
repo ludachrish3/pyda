@@ -53,6 +53,10 @@ class X64Instruction( Instruction ):
         #  CREATE OPERANDS  #
         #####################
 
+        # Handle sign extension if the bit it meaningful
+        if opcode & OP_SIGN_MASK:
+            self.info.signExtension = True
+
         # Handle setup if there is a register code in the opcode
         if self.info.registerCode:
             register = opcode & REG_MASK
@@ -95,16 +99,18 @@ class X64InstructionInfo():
     def __init__( self, mnemonic, registerCode=False, direction=None,
                   modRm=MODRM_NONE, extOpcode=False, srcIsImmediate=False,
                   srcOperandSize=None, dstOperandSize=None, relativeJump=False,
+                  signExtension=False,
                   srcCanPromote=True, dstCanPromote=True, signExtBit=False):
 
         # Opcode info
-        self.mnemonic     = mnemonic        # The name of the instruction
-        self.registerCode = registerCode    # Whether the least 3 significant bits of the opcode represent a register
-        self.direction    = direction       # The direction to move the data if there is a register code (OP_DIR_TO_REG or OP_DIR_FROM_REG)
-        self.modRm        = modRm           # How the Mod R/M byte must be handled
-        self.extOpcode    = extOpcode       # Whether the opcode is extended into the ModR/M
-        self.signExtBit   = signExtBit      # Whether the sign extension bit of the opcode means anything
-        self.relativeJump = relativeJump    # Whether the instruction is a relative jump and expects an immediate to follow the opcode
+        self.mnemonic      = mnemonic       # The name of the instruction
+        self.registerCode  = registerCode   # Whether the least 3 significant bits of the opcode represent a register
+        self.direction     = direction      # The direction to move the data if there is a register code (OP_DIR_TO_REG or OP_DIR_FROM_REG)
+        self.modRm         = modRm          # How the Mod R/M byte must be handled
+        self.extOpcode     = extOpcode      # Whether the opcode is extended into the ModR/M
+        self.signExtBit    = signExtBit     # Whether the sign extension bit of the opcode means anything
+        self.signExtension = signExtension  # Whether the sign should be extended
+        self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
 
         # Operand info
         self.srcCanPromote  = srcCanPromote     # Whether the src operand size is allowed to be promoted to 64 bits
@@ -117,7 +123,7 @@ class X64InstructionInfo():
 
         # Set properties that are always true if the instruction is a relative jump
         if self.relativeJump:
-            self.signExtBit = True
+            self.signExtension  = True
             self.srcIsImmediate = True
 
 class X64Operand( Operand ):
@@ -464,7 +470,7 @@ def disassemble( function ):
     offTheRails  = False
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:39]
+    binary = binary[:45]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -517,7 +523,7 @@ def disassemble( function ):
             logger.debug("Handling the immeidate")
             numBytes = curInstruction.source.size
             curInstruction.bytes += list(binary[:numBytes])
-            immediate = int.from_bytes(binary[:numBytes], "little", signed=curInstruction.info.signExtBit)
+            immediate = int.from_bytes(binary[:numBytes], "little", signed=curInstruction.info.signExtension)
 
             # If the instruction is a relative jump, the address is:
             # [%rip] + immediate
@@ -587,12 +593,12 @@ oneByteOpcodes = {
     0xbe: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
     0xbf: X64InstructionInfo("mov",  registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
 
-    0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtBit= True),
+    0xc7: X64InstructionInfo("mov",  modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True),
 
     0xe8: X64InstructionInfo("call", relativeJump=True, srcOperandSize=REG_SIZE_32),
 }
 
 
 twoByteOpcodes = {
-    0xbe: X64Instruction("movsx", 2),
+    0xbe: X64InstructionInfo("movsx", signExtension=True),
 }
