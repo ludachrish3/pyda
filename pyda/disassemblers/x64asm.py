@@ -58,13 +58,8 @@ class X64Instruction( Instruction ):
         if opcode & OP_SIGN_MASK:
             self.info.signExtension = True
 
-        # Skip creating operands if there aren't supposed to be any
-        if self.info.noOperands:
-            logger.debug("There are no operands")
-            pass
-
         # Handle setup if there is a register code in the opcode
-        elif self.info.registerCode:
+        if self.info.registerCode:
             register = opcode & REG_MASK
 
             # If the source is an immeidate, it is also assumed that the value
@@ -86,9 +81,13 @@ class X64Instruction( Instruction ):
                 logger.debug("An invalid direction was specified")
 
         else:
-            self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=self.info.srcIsImmediate)
+            # Create a source operand as long as the size isn't 0
+            if self.info.srcOperandSize != REG_SIZE_0:
+                self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=self.info.srcIsImmediate)
 
-            if not self.info.relativeJump:
+            # Create s destination operand as long as the size isn't 0 and the
+            # instruction is a jump, which would not have a destination.
+            if not self.info.relativeJump and self.info.dstOperandSize != REG_SIZE_0:
                 self.dest   = X64Operand(size=self.info.dstOperandSize)
 
         ################################
@@ -464,12 +463,15 @@ def handleModRmByte( instruction, binary ):
         if not opcodeSuccess:
             return 0
 
-    # Set the operand addressing properties
+    # Set the operand addressing properties as long as they are not None
     direction = instruction.info.direction
-    logger.debug("Handling source operand")
-    numBytesConsumed += handleOperandAddressing(instruction.source, binary)
-    logger.debug("Handling dest operand")
-    numBytesConsumed += handleOperandAddressing(instruction.dest,   binary)
+    if instruction.source is not None:
+        logger.debug("Handling source operand")
+        numBytesConsumed += handleOperandAddressing(instruction.source, binary)
+
+    if instruction.dest is not None:
+        logger.debug("Handling dest operand")
+        numBytesConsumed += handleOperandAddressing(instruction.dest,   binary)
 
     instruction.bytes += list(binary[:numBytesConsumed])
     return numBytesConsumed

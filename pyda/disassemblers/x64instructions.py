@@ -5,7 +5,7 @@ class X64InstructionInfo():
     def __init__( self, mnemonic, registerCode=False, direction=None,
                   modRm=MODRM_NONE, extOpcode=False, srcIsImmediate=False,
                   srcOperandSize=None, dstOperandSize=None, relativeJump=False,
-                  signExtension=False, noOperands=False,
+                  signExtension=False,
                   srcCanPromote=True, dstCanPromote=True, signExtBit=False):
 
         # Opcode info
@@ -17,7 +17,6 @@ class X64InstructionInfo():
         self.signExtBit    = signExtBit     # Whether the sign extension bit of the opcode means anything
         self.signExtension = signExtension  # Whether the sign should be extended
         self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
-        self.noOperands    = noOperands     # Whether the instruction has no operands
 
         # Operand info
         self.srcCanPromote  = srcCanPromote     # Whether the src operand size is allowed to be promoted to 64 bits
@@ -168,12 +167,12 @@ oneByteOpcodes = {
     0xc0: X64InstructionInfo("",      modRm=MODRM_DEST,  extOpcode=True, srcIsImmediate=True),
     0xc1: X64InstructionInfo("",      modRm=MODRM_DEST,  extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
     0xc2: X64InstructionInfo("ret",   relativeJump=True, srcOperandSize=REG_SIZE_16),
-    0xc3: X64InstructionInfo("ret",   noOperands=True),
+    0xc3: X64InstructionInfo("ret",   srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
 
     0xc6: X64InstructionInfo("mov",   modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True),
     0xc7: X64InstructionInfo("mov",   modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True),
 
-    0xc9: X64InstructionInfo("leave", noOperands=True),
+    0xc9: X64InstructionInfo("leave", srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
 
     0xe8: X64InstructionInfo("call",  relativeJump=True, srcOperandSize=REG_SIZE_32),
 
@@ -181,7 +180,7 @@ oneByteOpcodes = {
 }
 
 twoByteOpcodes = {
-    0x9f: X64InstructionInfo("setg",  modRm=MODRM_DEST, dstOperandSize=REG_SIZE_8),    # Greater than
+    0x9f: X64InstructionInfo("setg",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Greater than
     0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_32),
     0xbf: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32),
 }
