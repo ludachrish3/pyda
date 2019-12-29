@@ -29,7 +29,7 @@ class Instruction():
 
         return "{addr: <6} {bytes: <20} {mnemonic: <6}{operands}".format(
                 addr="{:x}:".format(self.addr),
-                bytes=" ".join(["{:0<2x}".format(x) for x in self.bytes]),
+                bytes=" ".join(["{:02x}".format(x) for x in self.bytes]),
                 mnemonic=self.mnemonic,
                 operands=", ".join([str(x) for x in operands]))
 

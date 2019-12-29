@@ -461,6 +461,34 @@ def handleModRmByte( instruction, binary ):
     instruction.bytes += list(binary[:numBytesConsumed])
     return numBytesConsumed
 
+def handleImmediate( instruction, binary ):
+    """
+    Description:    Consume all immediate bytes and convert them to an integer
+
+    Arguments:      instruction - X64Instruction object with its info member set
+                    binary      - bytes remaining to be processed for an instruction
+
+    Return:         The number of bytes consumed when processing the immediate
+    """
+
+    numBytes = instruction.source.size
+    instruction.bytes += list(binary[:numBytes])
+    immediate = int.from_bytes(binary[:numBytes], "little", signed=instruction.info.signExtension)
+
+    # If the instruction is a relative jump, the address is:
+    # [%rip] + immediate
+    # The value in the instruction pointer register is the address of
+    # the next instruction, which is the address of the current
+    # instruction plus the number of bytes in it.
+    if instruction.info.relativeJump:
+        instruction.source.value = instruction.addr + len(instruction.bytes) + immediate
+
+    # Otherwise, the source value is just the immediate
+    else:
+        instruction.source.value = immediate
+
+    return numBytes
+
 
 def disassemble( function ):
 
@@ -470,7 +498,7 @@ def disassemble( function ):
     offTheRails  = False
 
     # TODO: Remove this line when more instructions can be handled
-    binary = binary[:45]
+    binary = binary[:48]
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
@@ -521,23 +549,8 @@ def disassemble( function ):
         # Handle an immediate value if there is one
         if curInstruction.source.isImmediate:
             logger.debug("Handling the immeidate")
-            numBytes = curInstruction.source.size
-            curInstruction.bytes += list(binary[:numBytes])
-            immediate = int.from_bytes(binary[:numBytes], "little", signed=curInstruction.info.signExtension)
-
-            # If the instruction is a relative jump, the address is:
-            # [%rip] + immediate
-            # The value in the instruction pointer register is the address of
-            # the next instruction, which is the address of the current
-            # instruction plus the number of bytes in it.
-            if curInstruction.info.relativeJump:
-                curInstruction.source.value = curInstruction.addr + len(curInstruction.bytes) + immediate
-
-            # Otherwise, the source value is just the immediate
-            else:
-                curInstruction.source.value = immediate
-
-            binary = binary[numBytes:]
+            numImmediateBytes = handleImmediate(curInstruction, binary)
+            binary = binary[numImmediateBytes:]
 
         logger.debug(curInstruction)
 
@@ -600,5 +613,5 @@ oneByteOpcodes = {
 
 
 twoByteOpcodes = {
-    0xbe: X64InstructionInfo("movsx", signExtension=True),
+    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_8, dstOperandSize=REG_SIZE_32),
 }
