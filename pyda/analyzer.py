@@ -10,7 +10,7 @@ import os
 from binaries import binary
 from binaries import elf
 
-from disassemblers import x64asm
+from disassemblers.x64 import asm as x64asm
 
 import logging
 logger = logging.getLogger(__name__)

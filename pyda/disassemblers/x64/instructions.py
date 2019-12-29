@@ -1,4 +1,4 @@
-from disassemblers.x64defs import *
+from disassemblers.x64.definitions import *
 
 class X64InstructionInfo():
 

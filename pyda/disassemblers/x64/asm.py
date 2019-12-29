@@ -1,5 +1,5 @@
-from disassemblers.x64defs import *
-from disassemblers.x64instructions import *
+from disassemblers.x64.definitions import *
+from disassemblers.x64.instructions import *
 from disassemblers.disassembler import Instruction, Operand
 
 import copy
