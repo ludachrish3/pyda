@@ -26,7 +26,7 @@ class X64Instruction( Instruction ):
         #  DETERMINE OPERAND SIZES  #
         #############################
 
-        self.info.srcOperandSize = getOperandSize(opcode, self.prefixSize, self.info.srcOperandSize)
+        self.info.srcOperandSize = getOperandSize(opcode, self.prefixSize, self.info.srcOperandSize, self.info.srcCanPromote)
         self.info.dstOperandSize = getOperandSize(opcode, self.prefixSize, self.info.dstOperandSize)
 
         logger.debug("source size: {}, dest size: {}".format(self.info.srcOperandSize, self.info.dstOperandSize))
@@ -142,7 +142,7 @@ class X64Operand( Operand ):
                 return "%{}".format(regName)
 
 
-def getOperandSize( opcode, prefixSize, infoSize ):
+def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
     """
     Description:    Figures out what the operand size should be based on the
                     opcode, the size of the instruction if one was set by a
@@ -169,6 +169,7 @@ def getOperandSize( opcode, prefixSize, infoSize ):
     Arguments:      opcode     - The instruction opcode
                     prefixSize - The size based on a prefix byte
                     infoSize   - The size from the table of opcodes
+                    canPromote - Whether the size can be promoted
 
     Return:         The size that should be used for the operand.
     """
@@ -177,7 +178,7 @@ def getOperandSize( opcode, prefixSize, infoSize ):
 
     logger.debug("prefixSize: {}, infoSize: {}, sizeBit: {}".format(prefixSize, infoSize, sizeBit))
 
-    if prefixSize is not None and infoSize != REG_SIZE_8 and infoSize is None:
+    if prefixSize is not None and infoSize != REG_SIZE_8 and infoSize is None and canPromote:
         logger.debug("Using prefix size")
         return prefixSize
 

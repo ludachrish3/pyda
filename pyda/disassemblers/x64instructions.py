@@ -122,10 +122,10 @@ oneByteOpcodes = {
 
     0x70: X64InstructionInfo("jo",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Overflow
     0x71: X64InstructionInfo("jno",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not overflow
-    0x72: X64InstructionInfo("jb",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than or equal (unsigned)
+    0x72: X64InstructionInfo("jb",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than (unsigned)
     0x73: X64InstructionInfo("jae",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Greater than or equal (unsigned)
-    0x74: X64InstructionInfo("jz",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Zero
-    0x75: X64InstructionInfo("jnz",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not zero
+    0x74: X64InstructionInfo("je",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Equal
+    0x75: X64InstructionInfo("jne",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not equal
     0x76: X64InstructionInfo("jbe",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than or equal (unsigned)
     0x77: X64InstructionInfo("ja",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Greater than (unsigned)
     0x78: X64InstructionInfo("js",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Signed
@@ -140,7 +140,10 @@ oneByteOpcodes = {
     0x81: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True),
 #   0x82: Invalid
     0x83: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
-
+    0x84: X64InstructionInfo("test",  modRm=MODRM_DEST),
+    0x85: X64InstructionInfo("test",  modRm=MODRM_DEST),
+    0x86: X64InstructionInfo("xchg",  modRm=MODRM_SOURCE),
+    0x87: X64InstructionInfo("xchg",  modRm=MODRM_SOURCE),
     0x88: X64InstructionInfo("mov",   modRm=MODRM_DEST),
     0x89: X64InstructionInfo("mov",   modRm=MODRM_DEST),
     0x8a: X64InstructionInfo("mov",   modRm=MODRM_SOURCE),
@@ -180,7 +183,25 @@ oneByteOpcodes = {
 }
 
 twoByteOpcodes = {
-    0x9f: X64InstructionInfo("setg",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Greater than
-    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_32),
-    0xbf: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32),
+    0x90: X64InstructionInfo("seto",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Overflow
+    0x91: X64InstructionInfo("setno", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Not Overflow
+    0x92: X64InstructionInfo("setb",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Less than (unsigned)
+    0x93: X64InstructionInfo("setae", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Greater than or equal (unsigned)
+    0x94: X64InstructionInfo("sete",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Equal
+    0x95: X64InstructionInfo("setne", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Not equal
+    0x96: X64InstructionInfo("setbe", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Less than or equal (unsigned)
+    0x97: X64InstructionInfo("seta",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Greater than (unsigned)
+    0x98: X64InstructionInfo("sets",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Signed
+    0x99: X64InstructionInfo("setns", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Not signed
+    0x9a: X64InstructionInfo("setp",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Parity
+    0x9b: X64InstructionInfo("setnp", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Not parity
+    0x9c: X64InstructionInfo("setl",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Less than (signed)
+    0x9d: X64InstructionInfo("setge", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Greater than or equal (signed)
+    0x9e: X64InstructionInfo("setle", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Less than or equal (signed)
+    0x9f: X64InstructionInfo("setg",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Greater than (signed)
+
+    0xb6: X64InstructionInfo("movzx", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_32),
+    0xb7: X64InstructionInfo("movzx", modRm=MODRM_SOURCE, srcCanPromote=False, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32),
+    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,  srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_32),
+    0xbf: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,  srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32),
 }
