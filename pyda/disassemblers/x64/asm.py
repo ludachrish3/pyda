@@ -491,19 +491,44 @@ def handleImmediate( instruction, binary ):
     instruction.bytes += list(binary[:numBytes])
     immediate = int.from_bytes(binary[:numBytes], "little", signed=instruction.info.signExtension)
 
-    # If the instruction is a relative jump, the address is:
-    # [%rip] + immediate
-    # The value in the instruction pointer register is the address of
-    # the next instruction, which is the address of the current
-    # instruction plus the number of bytes in it.
+    # If the instruction is a relative jump, mark the source as indirect from
+    # the RIP register so that it can be resolved once processing all
+    # instruction bytes is done and the length of the instruction is known.
     if instruction.info.relativeJump:
-        instruction.source.value = instruction.addr + len(instruction.bytes) + immediate
+        instruction.source.indirect = True
+        instruction.source.value = REG_RIP
+        instruction.source.displacement = immediate
 
     # Otherwise, the source value is just the immediate
     else:
         instruction.source.value = immediate
 
     return numBytes
+
+def resolveRelativeAddr( instruction ):
+    """
+    Description:    Resolves any relative memory addresses if there are any.
+
+                    If the instruction is a relative address, the it is:
+                    [%rip] + displacement
+
+                    The value in the instruction pointer register is the
+                    address of the next instruction, which is the address of
+                    the current instruction plus the number of bytes in it.
+
+    Arguments:      instruction - X64Instruction object
+
+    Return:         None
+    """
+
+    operand = instruction.source
+
+    if operand.indirect and operand.value == REG_RIP:
+        logger.debug("Relative indirect memory reference")
+        ripValue = instruction.addr + len(instruction.bytes)
+        operand.indirect = False
+        operand.isImmediate = True
+        operand.value = ripValue + operand.displacement
 
 
 def disassemble( function ):
@@ -566,6 +591,11 @@ def disassemble( function ):
             binary = binary[numImmediateBytes:]
 
         logger.debug(curInstruction)
+
+        # Resolve any addresses that are relative now that the value of RIP can
+        # be calculated because all bytes of the current isntruction are consumed.
+        if curInstruction.source is not None:
+            resolveRelativeAddr(curInstruction)
 
         # Add the instruction and advance the address
         instructions.append(curInstruction)
