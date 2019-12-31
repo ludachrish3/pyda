@@ -16,8 +16,11 @@ build
 # Allow the .gitignore file
 !.gitignore
 
+# Allow all .ini files
+!**/*.ini
+
 # Allow the README.md file
-!README.md
+!**/README.md
 
 # Allow all Python files
 !**/*.py
