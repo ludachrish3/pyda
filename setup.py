@@ -14,8 +14,9 @@ setup(name='pyda',
         'pyda.disassemblers.x64',
         'pyda.decompilers',
       ],
-      test_suite='pytest',  # This might not be right
+      test_suite='pytest',
       tests_require=[
+        'tox',
         'pytest',
         'pytest-cov',
       ],
