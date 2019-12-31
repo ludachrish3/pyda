@@ -1,4 +1,4 @@
-from binaries import binary
+from pyda.binaries import binary
 
 import logging
 

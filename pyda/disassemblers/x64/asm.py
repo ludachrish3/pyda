@@ -1,6 +1,6 @@
-from disassemblers.x64.definitions import *
-from disassemblers.x64.instructions import *
-from disassemblers.disassembler import Instruction, Operand
+from pyda.disassemblers.x64.definitions import *
+from pyda.disassemblers.x64.instructions import *
+from pyda.disassemblers.disassembler import Instruction, Operand
 
 import copy
 import logging
@@ -532,6 +532,15 @@ def resolveRelativeAddr( instruction ):
 
 
 def disassemble( function ):
+    """
+    Description:    Disassembles a function and creates its list of instructions.
+                    The function object will have its instructions member updated
+                    with the list of instructions that are generated.
+
+    Arguments:      function - Function object that has assembly to be disassembled
+
+    Return:         The list of instructions that are created.
+    """
 
     addr         = function.addr
     binary       = function.assembly

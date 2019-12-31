@@ -4,6 +4,15 @@
 # Add back all directories so their content can be unignored if desired
 !*/
 
+# Hide the .eggs directory that gets created by setup.py
+.eggs
+
+# Hide the .tox directory created when using tox
+.tox
+
+# Hide the build directory that gets created by setup.py
+build
+
 # Allow the .gitignore file
 !.gitignore
 

@@ -7,10 +7,9 @@ Description:    This file is responsible for determining the type of executable
 
 import os
 
-from binaries import binary
-from binaries import elf
+from pyda.binaries import binary, elf
 
-from disassemblers.x64 import asm as x64asm
+from pyda.disassemblers.x64 import asm as x64asm
 
 import logging
 logger = logging.getLogger(__name__)

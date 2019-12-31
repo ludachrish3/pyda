@@ -4,8 +4,8 @@ from argparse import ArgumentParser
 import traceback
 import os
 
-import analyzer
-from decompilers import decompiler
+from pyda import analyzer
+from pyda.decompilers import decompiler
 
 import logging
 

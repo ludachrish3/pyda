@@ -1,4 +1,4 @@
-from disassemblers.x64.definitions import *
+from pyda.disassemblers.x64.definitions import *
 
 class X64InstructionInfo():
 
@@ -150,6 +150,8 @@ oneByteOpcodes = {
     0x8b: X64InstructionInfo("mov",   modRm=MODRM_SOURCE),
 
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SOURCE),
+
+    0x90: X64InstructionInfo("nop", srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
 
     0xb0: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
     0xb1: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
