@@ -27,7 +27,11 @@ class TestX64():
         return function, match
 
 
-    def test_add_no_immediate( self ):
+    def test_basic_no_immediate( self ):
+        """
+        Description:    Tests a basic instruction (add) in the 4 ways that the
+                        Mod R/M byte and operand size can be set.
+        """
 
         ##########################################################
         #  OPCODE 00: 1 BYTE OPERANDS, MOD R/M BYTE IS FOR DEST  #
@@ -74,7 +78,7 @@ class TestX64():
         assert match is not None
 
 
-    def test_add_immediate( self ):
+    def test_basic_immediate( self ):
 
         ##########################################
         #  OPCODE 04: 1 BYTE IMMEDIATE INTO %AL  #
@@ -92,6 +96,53 @@ class TestX64():
 
         assembly = bytes([0x05, 0x08, 0x00, 0x00, 0x00])
         function, match = self.helper("add", "0x8", "%eax", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+
+    def test_basic_operand_size_prefix( self ):
+
+        ############################################
+        #  8 BIT OPERANDS WITH 64 BIT PREFIX BYTE  #
+        ############################################
+
+        #           Address mode | source         | destination
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([PREFIX_64_BIT_OPERAND, 0x00, modRmByte])
+        function, match = self.helper("add", "%cl", "[%rax]", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ############################################
+        #  8 BIT OPERANDS WITH 16 BIT PREFIX BYTE  #
+        ############################################
+
+        #           Address mode | source         | destination
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([PREFIX_16_BIT_OPERAND, 0x00, modRmByte])
+        function, match = self.helper("add", "%cl", "[%rax]", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #############################################
+        #  32 BIT OPERANDS WITH 64 BIT PREFIX BYTE  #
+        #############################################
+
+        #           Address mode | source         | destination
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([PREFIX_64_BIT_OPERAND, 0x01, modRmByte])
+        function, match = self.helper("add", "%rcx", "[%rax]", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #############################################
+        #  32 BIT OPERANDS WITH 16 BIT PREFIX BYTE  #
+        #############################################
+
+        #           Address mode | source         | destination
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([PREFIX_16_BIT_OPERAND, 0x01, modRmByte])
+        function, match = self.helper("add", "%cx", "[%rax]", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 

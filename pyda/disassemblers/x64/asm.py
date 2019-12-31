@@ -178,7 +178,7 @@ def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
 
     logger.debug("prefixSize: {}, infoSize: {}, sizeBit: {}".format(prefixSize, infoSize, sizeBit))
 
-    if prefixSize is not None and infoSize != REG_SIZE_8 and infoSize is None and canPromote:
+    if prefixSize is not None and infoSize != REG_SIZE_8 and canPromote and sizeBit != 0:
         logger.debug("Using prefix size")
         return prefixSize
 

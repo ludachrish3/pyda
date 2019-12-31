@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from argparse import ArgumentParser
 import traceback
 import os
@@ -11,7 +9,7 @@ import logging
 
 logger = logging.getLogger(__package__)
 
-if __name__ == "__main__":
+def main():
 
     debugLevels = [
         "DEBUG",
@@ -52,3 +50,7 @@ if __name__ == "__main__":
         logger.error("An error occurred while analyzing the binary: {}".format(e))
         traceback.print_tb(e.__traceback__)
         exit(1)
+
+if __name__ == "__main__":
+
+    main()
