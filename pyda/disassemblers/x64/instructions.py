@@ -37,64 +37,64 @@ oneByteOpcodes = {
 
     0x00: X64InstructionInfo("add",   modRm=MODRM_DEST),
     0x01: X64InstructionInfo("add",   modRm=MODRM_DEST),
-    0x02: X64InstructionInfo("add",   modRm=MODRM_DEST),
-    0x03: X64InstructionInfo("add",   modRm=MODRM_DEST),
+    0x02: X64InstructionInfo("add",   modRm=MODRM_SOURCE),
+    0x03: X64InstructionInfo("add",   modRm=MODRM_SOURCE),
     0x04: X64InstructionInfo("add",   srcIsImmediate=True),
     0x05: X64InstructionInfo("add",   srcIsImmediate=True),
 #   0x06: Invalid
 #   0x07: Invalid
     0x08: X64InstructionInfo("or",    modRm=MODRM_DEST),
     0x09: X64InstructionInfo("or",    modRm=MODRM_DEST),
-    0x0a: X64InstructionInfo("or",    modRm=MODRM_DEST),
-    0x0b: X64InstructionInfo("or",    modRm=MODRM_DEST),
+    0x0a: X64InstructionInfo("or",    modRm=MODRM_SOURCE),
+    0x0b: X64InstructionInfo("or",    modRm=MODRM_SOURCE),
     0x0c: X64InstructionInfo("or",    srcIsImmediate=True),
     0x0d: X64InstructionInfo("or",    srcIsImmediate=True),
 #   0x0e: Invalid
 #   0x0f: 2 byte operand prefix
     0x10: X64InstructionInfo("adc",   modRm=MODRM_DEST),
     0x11: X64InstructionInfo("adc",   modRm=MODRM_DEST),
-    0x12: X64InstructionInfo("adc",   modRm=MODRM_DEST),
-    0x13: X64InstructionInfo("adc",   modRm=MODRM_DEST),
+    0x12: X64InstructionInfo("adc",   modRm=MODRM_SOURCE),
+    0x13: X64InstructionInfo("adc",   modRm=MODRM_SOURCE),
     0x14: X64InstructionInfo("adc",   srcIsImmediate=True),
     0x15: X64InstructionInfo("adc",   srcIsImmediate=True),
 #   0x16: Invalid
 #   0x17: Invalid
     0x18: X64InstructionInfo("sbb",   modRm=MODRM_DEST),
     0x19: X64InstructionInfo("sbb",   modRm=MODRM_DEST),
-    0x1a: X64InstructionInfo("sbb",   modRm=MODRM_DEST),
-    0x1b: X64InstructionInfo("sbb",   modRm=MODRM_DEST),
+    0x1a: X64InstructionInfo("sbb",   modRm=MODRM_SOURCE),
+    0x1b: X64InstructionInfo("sbb",   modRm=MODRM_SOURCE),
     0x1c: X64InstructionInfo("sbb",   srcIsImmediate=True),
     0x1d: X64InstructionInfo("sbb",   srcIsImmediate=True),
 #   0x1e: Invalid
 #   0x1f: Invalid
     0x20: X64InstructionInfo("and",   modRm=MODRM_DEST),
     0x21: X64InstructionInfo("and",   modRm=MODRM_DEST),
-    0x22: X64InstructionInfo("and",   modRm=MODRM_DEST),
-    0x23: X64InstructionInfo("and",   modRm=MODRM_DEST),
+    0x22: X64InstructionInfo("and",   modRm=MODRM_SOURCE),
+    0x23: X64InstructionInfo("and",   modRm=MODRM_SOURCE),
     0x24: X64InstructionInfo("and",   srcIsImmediate=True),
     0x25: X64InstructionInfo("and",   srcIsImmediate=True),
 #   0x26: Something in 64-bit
 #   0x27: Invalid
     0x28: X64InstructionInfo("sub",   modRm=MODRM_DEST),
     0x29: X64InstructionInfo("sub",   modRm=MODRM_DEST),
-    0x2a: X64InstructionInfo("sub",   modRm=MODRM_DEST),
-    0x2b: X64InstructionInfo("sub",   modRm=MODRM_DEST),
+    0x2a: X64InstructionInfo("sub",   modRm=MODRM_SOURCE),
+    0x2b: X64InstructionInfo("sub",   modRm=MODRM_SOURCE),
     0x2c: X64InstructionInfo("sub",   srcIsImmediate=True),
     0x2d: X64InstructionInfo("sub",   srcIsImmediate=True),
 #   0x2e: Something in 64-bit
 #   0x2f: Invalid
     0x30: X64InstructionInfo("xor",   modRm=MODRM_DEST),
     0x31: X64InstructionInfo("xor",   modRm=MODRM_DEST),
-    0x32: X64InstructionInfo("xor",   modRm=MODRM_DEST),
-    0x33: X64InstructionInfo("xor",   modRm=MODRM_DEST),
+    0x32: X64InstructionInfo("xor",   modRm=MODRM_SOURCE),
+    0x33: X64InstructionInfo("xor",   modRm=MODRM_SOURCE),
     0x34: X64InstructionInfo("xor",   srcIsImmediate=True),
     0x35: X64InstructionInfo("xor",   srcIsImmediate=True),
 #   0x36: Something in 64-bit
 #   0x37: Invalid
     0x38: X64InstructionInfo("cmp",   modRm=MODRM_DEST),
     0x39: X64InstructionInfo("cmp",   modRm=MODRM_DEST),
-    0x3a: X64InstructionInfo("cmp",   modRm=MODRM_DEST),
-    0x3b: X64InstructionInfo("cmp",   modRm=MODRM_DEST),
+    0x3a: X64InstructionInfo("cmp",   modRm=MODRM_SOURCE),
+    0x3b: X64InstructionInfo("cmp",   modRm=MODRM_SOURCE),
     0x3c: X64InstructionInfo("cmp",   srcIsImmediate=True),
     0x3d: X64InstructionInfo("cmp",   srcIsImmediate=True),
 #   0x3e: Something in 64-bit
