@@ -484,8 +484,14 @@ def handleImmediate( instruction, binary ):
     Arguments:      instruction - X64Instruction object with its info member set
                     binary      - bytes remaining to be processed for an instruction
 
-    Return:         The number of bytes consumed when processing the immediate
+    Return:         The number of bytes consumed when processing the immediate.
+                    -1 is returned if not enough bytes remain to form the value.
     """
+
+    # Check whether there are enough bytes for the instruction
+    if len(binary) < instruction.source.size:
+        logger.error("There are only {} bytes remaining, but {} are expected".format(len(binary), instruction.source.size))
+        return -1
 
     numBytes = instruction.source.size
     instruction.bytes += list(binary[:numBytes])
@@ -597,6 +603,10 @@ def disassemble( function ):
         if curInstruction.source is not None and curInstruction.source.isImmediate:
             logger.debug("Handling the immeidate")
             numImmediateBytes = handleImmediate(curInstruction, binary)
+            if numImmediateBytes < 0:
+                offTheRails = True
+                continue
+
             binary = binary[numImmediateBytes:]
 
         logger.debug(curInstruction)

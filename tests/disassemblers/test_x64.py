@@ -70,6 +70,7 @@ class TestX64():
         assert len(function.instructions) == 1
         assert match is not None
 
+
     def test_add_immediate( self ):
 
         ###############################
@@ -86,8 +87,7 @@ class TestX64():
         #  1 BYTE IMMEDIATE INTO %EAX  #
         ################################
 
-        immediate = 0x08
-        assembly = bytes([0x05, immediate])
+        assembly = bytes([0x05, 0x08, 0x00, 0x00, 0x00])
         function, match = self.helper("add", "0x8", "%eax", assembly)
         assert len(function.instructions) == 1
         assert match is not None
