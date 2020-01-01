@@ -112,6 +112,8 @@ class X64Operand( Operand ):
         self.displacement = 0           # Value of the displacement from the register value
         self.indirect = False           # Whether the addressing is indirect
         self.modRm = False              # Whether the Mod R/M byte applies
+        self.scale = 0                  # Factor to multiply the index by if SIB byte is present
+        self.index = None               # Index register if SIB byte is present
 
     def __repr__( self ):
 
@@ -357,9 +359,9 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
     return True
 
 
-def handleSibByte( instruction, binary ):
+def handleSibByte( operand, sibByte ):
 
-    sibByte = binary[0]
+    return 1
 
 
 def handleOperandAddressing( operand, binary ):
@@ -376,63 +378,64 @@ def handleOperandAddressing( operand, binary ):
     """
 
     modRmByte = binary[0]
-    mod     = modRmByte & ADDR_MOD_MASK
-    regOrOp = (modRmByte & ADDR_REG_MASK) >> 3
-    regmem  = modRmByte & ADDR_RM_MASK
+    mod       = modRmByte & ADDR_MOD_MASK
+    regOrOp   = (modRmByte & ADDR_REG_MASK) >> 3
+    regmem    = modRmByte & ADDR_RM_MASK
+    addrBytes = 0
+    displaceBytes = 0
 
     logger.debug("mod: {}, reg: {}, r/m: {}".format(mod >> 6, regOrOp, regmem))
 
     # Process the addressing if the Mod R/M byte applies to this operand
     if operand.modRm:
 
+        # The value is always regmem if the Mod R/M refers to this operand.
+        operand.value = regmem
+
+        if mod == MOD_REGISTER:
+            logger.debug("Operand is the value in a register")
+            return addrBytes
+
+        # The address is indirect if it is not MOD_REGISTER mode.
+        operand.indirect = True
+
+        # Process a SIB byte if the value is ESP
+        if regmem == REG_RSP:
+            logger.debug("REQUIRES SIB BYTE")
+            sibBytes = handleSibByte(operand, binary[1])
+            addrBytes += sibBytes
+
         if mod == MOD_INDIRECT:
 
-            # TODO: Go to the SIB if the value is ESP
-            if regmem == REG_RSP:
-                logger.debug("REQUIRES SIB BYTE")
-
-            # TODO: Calculate the absolute address by figuring out what the address
-            # of the next instruction is. That is what value should be in RIP.
-            elif regmem == REG_RBP:
+            if regmem == REG_RBP:
                 logger.debug("Indirect register 4 byte displacement from RIP")
-                operand.indirect = True
-                operand.displacement = int.from_bytes(binary[1:5], "little", signed=True)
                 operand.value = REG_RIP
-                return 4
+                displaceBytes = 4
 
             else:
-            # TODO: Do a 4 byte displacement if the value is EBP
-                logger.debug("Operand is address in register value")
-                operand.indirect = True
-                operand.value = regmem
-            return 1
+                logger.debug("Operand is register value")
 
         elif mod == MOD_1_BYTE_DISP:
             logger.debug("Operand is a register value with a 1 byte displacement")
-            operand.indirect = True
-            operand.displacement = int.from_bytes(binary[1:2], "little", signed=True)
-            operand.value = regmem
-            return 1
+            displaceBytes = 1
 
         elif mod == MOD_4_BYTE_DISP:
             logger.debug("Operand is a register value with a 4 byte displacement")
-            operand.indirect = True
-            operand.displacement = int.from_bytes(binary[1:5], "little", signed=True)
-            operand.value = regmem
-            return 4
-
-        elif mod == MOD_REGISTER:
-            logger.debug("Operand is the value in a register")
-            operand.value = regmem
+            displaceBytes = 4
 
         else:
-            logger.debug("Something else")
+            logger.warning("Invalid addressing mode")
+
+        # Save the displacement value if there are any displacement bytes
+        if displaceBytes > 0:
+            operand.displacement = int.from_bytes(binary[addrBytes:addrBytes+displaceBytes], "little", signed=True)
 
     # Otherwise, set the value as long as this operand is not an immediate
     elif not operand.isImmediate:
+        logger.debug("Mod R/M byte is not for this operand")
         operand.value = regOrOp
 
-    return 0
+    return addrBytes + displaceBytes
 
 
 def handleModRmByte( instruction, binary ):
@@ -467,15 +470,21 @@ def handleModRmByte( instruction, binary ):
     # Set the operand addressing properties as long as they are not None
     direction = instruction.info.direction
     if instruction.source is not None:
-        logger.debug("Handling source operand")
         numBytesConsumed += handleOperandAddressing(instruction.source, binary)
+        logger.debug("After handling source: {}".format(numBytesConsumed))
 
     if instruction.dest is not None:
-        logger.debug("Handling dest operand")
         numBytesConsumed += handleOperandAddressing(instruction.dest,   binary)
+        logger.debug("After handling dest: {}".format(numBytesConsumed))
 
-    instruction.bytes += list(binary[:numBytesConsumed])
+    if numBytesConsumed <= len(binary):
+        instruction.bytes += list(binary[:numBytesConsumed])
+
+    else:
+        return 0
+
     return numBytesConsumed
+
 
 def handleImmediate( instruction, binary ):
     """
@@ -597,7 +606,13 @@ def disassemble( function ):
         if curInstruction.info.modRm != MODRM_NONE:
             logger.debug("There is an RM mod byte")
             numModRmBytes = handleModRmByte(curInstruction, binary)
-            binary = binary[numModRmBytes:]
+            if numModRmBytes > 0:
+                binary = binary[numModRmBytes:]
+
+            else:
+                binary += bytes(curInstruction.bytes)
+                offTheRails = True
+                continue
 
         # Handle an immediate value if there is one
         if curInstruction.source is not None and curInstruction.source.isImmediate:

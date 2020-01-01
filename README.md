@@ -17,7 +17,8 @@ optional arguments:
 
 ## TODO
 
-* Add tests for all defined instructions
+* Get 100% code coverage in tests (or close to it)
+* Cross compile for the Raspberry Pi
 * Create a disassembler for ARM (whatever version is on the Raspberry Pi v4)
 * Come up with an abstraction layer for instructions so that decompiling all ISAs is the same. Will possibly need to break instructions up into multiple ones or combine instructions into one
 * Figure out how global variables and functions are linked to values (like how does calling printf() get figured out)
