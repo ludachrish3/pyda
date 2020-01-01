@@ -113,35 +113,56 @@ class X64Operand( Operand ):
         self.indirect = False           # Whether the addressing is indirect
         self.modRm = False              # Whether the Mod R/M byte applies
         self.scale = 0                  # Factor to multiply the index by if SIB byte is present
-        self.index = None               # Index register if SIB byte is present
+        self.index = 0                  # Index register if SIB byte is present
 
     def __repr__( self ):
 
-        if self.isImmediate and self.value < 0:
+        if self.isImmediate and self.value is not None and self.value < 0:
             return "-0x{:x}".format(abs(self.value))
 
-        elif self.isImmediate:
+        if self.isImmediate and self.value is not None:
             return "0x{:x}".format(abs(self.value))
 
-        else:
-            # If this is an indirect value, use the name of the 64 bit register
-            if self.indirect:
-                regName = REG_NAMES[self.value][REG_SIZE_64]
+        if not self.indirect:
+            regName = REG_NAMES[self.value][self.size]
+            return regName
 
-            else:
-                regName = REG_NAMES[self.value][self.size]
+        # If this is an indirect value, use the name of the 64 bit register
+        regName    = ""
+        displace   = ""
+        scaleIndex = ""
 
-            if self.indirect and self.displacement == 0:
-                return "[%{}]".format(regName)
+        # If the value was not changed to None because of SIB displacement,
+        # set it to the name according to the register name dictionary.
+        if self.value is not None:
+            regName    = REG_NAMES[self.value][REG_SIZE_64]
+        indexName  = REG_NAMES[self.index][REG_SIZE_64]
 
-            elif self.indirect and self.displacement < 0:
-                return "[%{}] - 0x{:x}".format(regName, abs(self.displacement))
+        # Handle the displacement value sign
+        if self.displacement < 0:
+            displace = " - 0x{:x}".format(abs(self.displacement))
 
-            elif self.indirect and self.displacement > 0:
-                return "[%{}] + 0x{:x}".format(regName, self.displacement)
+        elif self.displacement > 0:
+            displace = " + 0x{:x}".format(self.displacement)
 
-            else:
-                return "%{}".format(regName)
+        # Handle the scale and index values. They should only be there if
+        # scale is greater than 0.
+        if self.scale > 0:
+            scaleString = ""
+            plusString  = ""
+
+            # Only print the scale value if it is not 1 to make it more clean
+            if self.scale > 1:
+                scaleString = "{scale} * ".format(scale=self.scale)
+
+            # Only have a plus if there is a base to add. There won't be a base
+            # if the SIB byte designated a displacement instead of a base.
+            if regName != "":
+                plusString = " + "
+
+            scaleIndex = "{plus}{scale}{index}".format(plus=plusString, scale=scaleString, index=indexName)
+
+        return "[{base}{scaleIndex}]{disp}".format(base=regName, scaleIndex=scaleIndex, disp=displace)
 
 
 def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
@@ -359,9 +380,39 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
     return True
 
 
-def handleSibByte( operand, sibByte ):
+def handleSibByte( operand, addrMode, sibByte ):
+    """
+    Description:    Parses the Scale Index Base (SIB) byte and determines
+                    whether a displacement value will follow.
 
-    return 1
+                    If the addressing mode was indirect from the Mod R/M byte
+                    and the base is %ebp, then a 4 byte displacement will follow
+                    the SIB byte.
+
+    Arguments:      operand  - X64Operand object
+                    addrMode - Address mode from the Mod R/M byte
+                    sibByte  - SIB byte to process
+
+    Return:         Whether there will be a 4 byte displacement value.
+    """
+
+    scale = 2 ** ((sibByte & SIB_SCALE_MASK) >> 6)
+    index = (sibByte & SIB_INDEX_MASK) >> 3
+    base  = sibByte & SIB_BASE_MASK
+
+    logger.debug("scale: {}, index: {}, base: {}".format(scale, index, base))
+    operand.scale = scale
+    operand.index = index
+
+    # A mode of indrect and a base of %rbp means that displacement bytes will
+    # follow the SIB byte. Set the value to None because there will not be a
+    # base value if there is a displacement.
+    if addrMode == MOD_INDIRECT and base == REG_RBP:
+        operand.value = None
+        return True
+
+    operand.value = base
+    return False
 
 
 def handleOperandAddressing( operand, binary ):
@@ -383,6 +434,7 @@ def handleOperandAddressing( operand, binary ):
     regmem    = modRmByte & ADDR_RM_MASK
     addrBytes = 0
     displaceBytes = 0
+    isSibDisplace = False
 
     logger.debug("mod: {}, reg: {}, r/m: {}".format(mod >> 6, regOrOp, regmem))
 
@@ -401,15 +453,18 @@ def handleOperandAddressing( operand, binary ):
 
         # Process a SIB byte if the value is ESP
         if regmem == REG_RSP:
-            logger.debug("REQUIRES SIB BYTE")
-            sibBytes = handleSibByte(operand, binary[1])
-            addrBytes += sibBytes
+            isSibDisplace = handleSibByte(operand, mod, binary[1])
+            addrBytes += 1
 
         if mod == MOD_INDIRECT:
 
             if regmem == REG_RBP:
                 logger.debug("Indirect register 4 byte displacement from RIP")
                 operand.value = REG_RIP
+                displaceBytes = 4
+
+            elif isSibDisplace:
+                logger.debug("SIB displacement bytes")
                 displaceBytes = 4
 
             else:
@@ -426,9 +481,11 @@ def handleOperandAddressing( operand, binary ):
         else:
             logger.warning("Invalid addressing mode")
 
-        # Save the displacement value if there are any displacement bytes
+        # Save the displacement value if there are any displacement bytes. The
+        # Mod R/M byte as well as any additional addressing bytes, like the SIB
+        # byte, must be skipped to get to the displacement bytes.
         if displaceBytes > 0:
-            operand.displacement = int.from_bytes(binary[addrBytes:addrBytes+displaceBytes], "little", signed=True)
+            operand.displacement = int.from_bytes(binary[1+addrBytes:1+addrBytes+displaceBytes], "little", signed=True)
 
     # Otherwise, set the value as long as this operand is not an immediate
     elif not operand.isImmediate:
@@ -454,9 +511,6 @@ def handleModRmByte( instruction, binary ):
     mod     = modRmByte & ADDR_MOD_MASK
     regOrOp = (modRmByte & ADDR_REG_MASK) >> 3
     regmem  = modRmByte & ADDR_RM_MASK
-
-    logger.debug("byte: {:02x}".format(modRmByte))
-    logger.debug("mod: {}, reg: {}, r/m: {}".format(mod >> 6, regOrOp, regmem))
 
     # If the instruction has an extended opcode, the REG value is actually
     # part of the opcode.
@@ -604,7 +658,7 @@ def disassemble( function ):
 
         # If the instruction has a Mod R/M byte, parse it next
         if curInstruction.info.modRm != MODRM_NONE:
-            logger.debug("There is an RM mod byte")
+            logger.debug("There is a mod RM byte")
             numModRmBytes = handleModRmByte(curInstruction, binary)
             if numModRmBytes > 0:
                 binary = binary[numModRmBytes:]

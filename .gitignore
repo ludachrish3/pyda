@@ -13,8 +13,9 @@
 # Hide the build directory that gets created by setup.py
 build
 
-# Hide the coverage directory that is created when using pytest-cov
+# Hide the coverage directories that are created when using pytest-cov
 htmlcov
+srccov
 
 # Allow the .gitignore file
 !.gitignore
