@@ -120,6 +120,12 @@ oneByteOpcodes = {
 #   0x61: Invalid
 #   0x62: Invalid
 
+    0x68: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32),
+    0x69: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32),    # TODO: Figure out a way to handle an instruction with multiple sources
+    0x6a: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_8),
+    0x6b: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_8),
+
+
     0x70: X64InstructionInfo("jo",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Overflow
     0x71: X64InstructionInfo("jno",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not overflow
     0x72: X64InstructionInfo("jb",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than (unsigned)
