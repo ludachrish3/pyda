@@ -29,7 +29,7 @@ class Instruction():
 
         bytesStr = " ".join([f"{x:02x}" for x in self.bytes])
         operandStr = ", ".join([str(x) for x in operands])
-        return f"{self.addr: >6}: {bytesStr: <20} {self.mnemonic: <7} {operandStr}"
+        return f"{self.addr: >6x}:  {bytesStr: <20}  {self.mnemonic: <7} {operandStr}"
 
 
 class Operand():

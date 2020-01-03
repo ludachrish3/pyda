@@ -68,7 +68,7 @@ def analyzeFile(filename):
 
                 if funcName[0] != '_':
                     instructions = x64asm.disassemble(functionToAnalyze)
-                    logger.info("{funcName} Instructions (src, dst)")
+                    logger.info(f"{funcName} Instructions (src, dst)")
 
                     for inst in instructions:
                         logger.info(inst)
