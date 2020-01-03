@@ -647,6 +647,17 @@ class ElfBinary(binary.Binary):
 
 
     def parseSymbolTable(self, fd):
+        """
+        Description:    Parses the symbol table and creates symbol objects for
+                        all entries.
+
+        Arguments:      fd - File descriptor of the open binary file.
+
+        Return:         None
+        """
+
+        if SECTION_NAME_SYMBOL_TABLE not in self._sections:
+            return False
 
         symbolData = self._sections[SECTION_NAME_SYMBOL_TABLE].data
         index = 0
@@ -705,6 +716,8 @@ class ElfBinary(binary.Binary):
                     self._globalVariablesByAddr[newSymbol.name] = newSymbol
                     logger.debug(f"Global symbol: {newSymbol}")
 
+        return True
+
 
     def analyze(self, fd):
 
@@ -720,7 +733,10 @@ class ElfBinary(binary.Binary):
         self.parseSectionHdrs(fd)
 
         # Parse the symbol table
-        self.parseSymbolTable(fd)
+        hasSymbolTable = self.parseSymbolTable(fd)
+        if not hasSymbolTable:
+            logger.info("There is no symbol table. A brute force search for functions must be performed.")
+            # TODO: Brute force search for what looks like the start of a function
 
 
     def getFunctionByName(self, name):
@@ -732,6 +748,7 @@ class ElfBinary(binary.Binary):
 
         else:
             return None
+
 
     def getFunctionByAddr(self, addr):
 
