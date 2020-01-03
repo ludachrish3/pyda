@@ -17,7 +17,6 @@ optional arguments:
 
 ## TODO
 
-* Change all strings to f-strings (f"blah blah blah")
 * Get 100% code coverage in tests (or close to it)
 * Cross compile for the Raspberry Pi
 * Create a disassembler for ARM (whatever version is on the Raspberry Pi v4)
