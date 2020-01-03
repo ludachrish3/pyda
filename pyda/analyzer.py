@@ -62,13 +62,13 @@ def analyzeFile(filename):
 
             functionToAnalyze = exe.getFunctionByName(funcName)
 
-            logger.debug("Function: {}".format(functionToAnalyze.assembly))
+            logger.debug(f"Function: {functionToAnalyze.assembly}")
 
             if exe.getISA() == binary.ISA_X86_64:
 
                 if funcName[0] != '_':
                     instructions = x64asm.disassemble(functionToAnalyze)
-                    logger.info("{} Instructions (src, dst)".format(funcName))
+                    logger.info("{funcName} Instructions (src, dst)")
 
                     for inst in instructions:
                         logger.info(inst)

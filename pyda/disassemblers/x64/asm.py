@@ -22,14 +22,16 @@ class X64Instruction( Instruction ):
         self.info = copy.deepcopy(info)
         self.mnemonic= copy.deepcopy(info.mnemonic)
 
+        info = self.info
+
         #############################
         #  DETERMINE OPERAND SIZES  #
         #############################
 
-        self.info.srcOperandSize = getOperandSize(opcode, self.prefixSize, self.info.srcOperandSize, self.info.srcCanPromote)
-        self.info.dstOperandSize = getOperandSize(opcode, self.prefixSize, self.info.dstOperandSize)
+        info.srcOperandSize = getOperandSize(opcode, self.prefixSize, info.srcOperandSize, info.srcCanPromote)
+        info.dstOperandSize = getOperandSize(opcode, self.prefixSize, info.dstOperandSize)
 
-        logger.debug("source size: {}, dest size: {}".format(self.info.srcOperandSize, self.info.dstOperandSize))
+        logger.debug(f"source size: {info.srcOperandSize}, dest size: {info.dstOperandSize}")
 
         #################################
         #  DETERMINE OPERAND DIRECTION  #
@@ -37,18 +39,16 @@ class X64Instruction( Instruction ):
 
         # If direction is already set, the default rules for direction apply
         # This should only be true in cases where an override is necessary
-        if self.info.direction is None:
+        if info.direction is None:
 
             # The direction is always to the register or memory if there is an immediate
-            if self.info.srcIsImmediate:
-                self.info.direction = OP_DIR_TO_REG
+            if info.srcIsImmediate:
+                info.direction = OP_DIR_TO_REG
 
             # Otherwise, the direction bit, which is the 2nd least significant
             # bit, is the indicator of which direction to use
             else:
-                self.info.direction = (opcode & OP_DIR_MASK) >> 1
-
-        logger.debug("direction: {}".format(self.info.direction))
+                info.direction = (opcode & OP_DIR_MASK) >> 1
 
         #####################
         #  CREATE OPERANDS  #
@@ -56,49 +56,49 @@ class X64Instruction( Instruction ):
 
         # Handle sign extension if the bit it meaningful
         if opcode & OP_SIGN_MASK:
-            self.info.signExtension = True
+            info.signExtension = True
 
         # Handle setup if there is a register code in the opcode
-        if self.info.registerCode:
+        if info.registerCode:
             register = opcode & REG_MASK
 
             # If the source is an immeidate, it is also assumed that the value
             # is being put into the register specified by the register code.
-            if self.info.direction == OP_DIR_TO_REG or self.info.srcIsImmediate:
+            if info.direction == OP_DIR_TO_REG or info.srcIsImmediate:
                 logger.debug("The destination is the register")
-                self.dest = X64Operand(size=self.info.dstOperandSize, value=register)
+                self.dest = X64Operand(size=info.dstOperandSize, value=register)
 
                 # Only add a source if it is an immediate. Otherwise, there
                 # should not be a source if the register code is specified.
-                if self.info.srcIsImmediate:
-                    self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=True)
+                if info.srcIsImmediate:
+                    self.source = X64Operand(size=info.srcOperandSize, isImmediate=True)
 
-            elif self.info.direction == OP_DIR_FROM_REG:
+            elif info.direction == OP_DIR_FROM_REG:
                 logger.debug("The source is the register")
-                self.source = X64Operand(size=self.info.srcOperandSize, value=register)
+                self.source = X64Operand(size=info.srcOperandSize, value=register)
 
             else:
                 logger.debug("An invalid direction was specified")
 
         else:
             # Create a source operand as long as the size isn't 0
-            if self.info.srcOperandSize != REG_SIZE_0:
-                self.source = X64Operand(size=self.info.srcOperandSize, isImmediate=self.info.srcIsImmediate)
+            if info.srcOperandSize != REG_SIZE_0:
+                self.source = X64Operand(size=info.srcOperandSize, isImmediate=info.srcIsImmediate)
 
             # Create s destination operand as long as the size isn't 0 and the
             # instruction is a jump, which would not have a destination.
-            if not self.info.relativeJump and self.info.dstOperandSize != REG_SIZE_0:
-                self.dest   = X64Operand(size=self.info.dstOperandSize)
+            if not info.relativeJump and info.dstOperandSize != REG_SIZE_0:
+                self.dest   = X64Operand(size=info.dstOperandSize)
 
         ################################
         #  SET MOD R/M OPERAND STATUS  #
         ################################
 
-        if self.info.modRm == MODRM_SOURCE:
+        if info.modRm == MODRM_SOURCE:
             logger.debug("Source gets the mod r/m byte")
             self.source.modRm = True
 
-        elif self.info.modRm == MODRM_DEST:
+        elif info.modRm == MODRM_DEST:
             logger.debug("Dest gets the mod r/m byte")
             self.dest.modRm = True
 
@@ -117,52 +117,47 @@ class X64Operand( Operand ):
 
     def __repr__( self ):
 
-        if self.isImmediate and self.value is not None and self.value < 0:
-            return "-0x{:x}".format(abs(self.value))
+        value    = self.value
+        scale    = self.scale
+        index    = self.index
+        displace = self.displacement
 
-        if self.isImmediate and self.value is not None:
-            return "0x{:x}".format(abs(self.value))
+        if self.isImmediate and value is not None:
+            return f"{hex(value)}"
 
         if not self.indirect:
-            regName = REG_NAMES[self.value][self.size]
+            regName = REG_NAMES[value][self.size]
             return regName
 
         # If this is an indirect value, use the name of the 64 bit register
-        regName    = ""
-        displace   = ""
-        scaleIndex = ""
+        regName       = ""
+        displaceStr   = ""
+        scaleIndexStr = ""
 
         # If the value was not changed to None because of SIB displacement,
         # set it to the name according to the register name dictionary.
-        if self.value is not None:
-            regName    = REG_NAMES[self.value][REG_SIZE_64]
-        indexName  = REG_NAMES[self.index][REG_SIZE_64]
+        if value is not None:
+            regName    = REG_NAMES[value][REG_SIZE_64]
+        indexName  = REG_NAMES[index][REG_SIZE_64]
 
         # Handle the displacement value sign
-        if self.displacement < 0:
-            displace = " - 0x{:x}".format(abs(self.displacement))
-
-        elif self.displacement > 0:
-            displace = " + 0x{:x}".format(self.displacement)
+        if displace != 0:
+            displaceStr = f" {'+' if displace > 0 else '-'} {hex(abs(displace))}"
 
         # Handle the scale and index values. They should only be there if
         # scale is greater than 0.
-        if self.scale > 0:
+        if scale > 0:
             scaleString = ""
-            plusString  = ""
 
             # Only print the scale value if it is not 1 to make it more clean
-            if self.scale > 1:
-                scaleString = "{scale} * ".format(scale=self.scale)
+            if scale > 1:
+                scaleString = f" {scale} * "
 
             # Only have a plus if there is a base to add. There won't be a base
             # if the SIB byte designated a displacement instead of a base.
-            if regName != "":
-                plusString = " + "
+            scaleIndexStr = f"{' +' if regName != '' else ''}{scaleString}{indexName}"
 
-            scaleIndex = "{plus}{scale}{index}".format(plus=plusString, scale=scaleString, index=indexName)
-
-        return "[{base}{scaleIndex}]{disp}".format(base=regName, scaleIndex=scaleIndex, disp=displace)
+        return f"[{regName}{scaleIndexStr}]{displaceStr}"
 
 
 def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
@@ -199,7 +194,7 @@ def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
 
     sizeBit = opcode & OP_SIZE_MASK
 
-    logger.debug("prefixSize: {}, infoSize: {}, sizeBit: {}".format(prefixSize, infoSize, sizeBit))
+    logger.debug(f"prefixSize: {prefixSize}, infoSize: {infoSize}, sizeBit: {sizeBit}")
 
     if prefixSize is not None and infoSize != REG_SIZE_8 and canPromote and sizeBit != 0:
         logger.debug("Using prefix size")
@@ -287,7 +282,7 @@ def handleOpcode( instruction, binary ):
 
     # Check for the opcode being a 1 byte opcode
     elif binary[0] in oneByteOpcodes:
-        logger.debug("A 1 byte opcode was found: {:02x}".format(binary[0]))
+        logger.debug(f"A 1 byte opcode was found: {binary[0]:02x}")
         instruction.setAttributes(binary[0], oneByteOpcodes[binary[0]])
         numOpcodeBytes = 1
 
@@ -400,7 +395,7 @@ def handleSibByte( operand, addrMode, sibByte ):
     index = (sibByte & SIB_INDEX_MASK) >> 3
     base  = sibByte & SIB_BASE_MASK
 
-    logger.debug("scale: {}, index: {}, base: {}".format(scale, index, base))
+    logger.debug(f"scale: {scale}, index: {index}, base: {base}")
     operand.scale = scale
     operand.index = index
 
@@ -436,7 +431,7 @@ def handleOperandAddressing( operand, binary ):
     displaceBytes = 0
     isSibDisplace = False
 
-    logger.debug("mod: {}, reg: {}, r/m: {}".format(mod >> 6, regOrOp, regmem))
+    logger.debug(f"mod: {mod >> 6}, reg: {regOrOp}, r/m: {regmem}")
 
     # Process the addressing if the Mod R/M byte applies to this operand
     if operand.modRm:
@@ -516,7 +511,7 @@ def handleModRmByte( instruction, binary ):
     # part of the opcode.
     if instruction.info.extOpcode:
 
-        logger.debug("Found an opcode that needs to be extended: {:x}".format(instruction.bytes[-1]))
+        logger.debug(f"Found an opcode that needs to be extended: {instruction.bytes[-1]:x}")
         opcodeSuccess = handleExtendedOpcode(instruction, regOrOp)
         if not opcodeSuccess:
             return 0
@@ -525,11 +520,11 @@ def handleModRmByte( instruction, binary ):
     direction = instruction.info.direction
     if instruction.source is not None:
         numBytesConsumed += handleOperandAddressing(instruction.source, binary)
-        logger.debug("After handling source: {}".format(numBytesConsumed))
+        logger.debug(f"After handling source: {numBytesConsumed}")
 
     if instruction.dest is not None:
         numBytesConsumed += handleOperandAddressing(instruction.dest,   binary)
-        logger.debug("After handling dest: {}".format(numBytesConsumed))
+        logger.debug(f"After handling dest: {numBytesConsumed}")
 
     if numBytesConsumed <= len(binary):
         instruction.bytes += list(binary[:numBytesConsumed])
@@ -553,7 +548,7 @@ def handleImmediate( instruction, binary ):
 
     # Check whether there are enough bytes for the instruction
     if len(binary) < instruction.source.size:
-        logger.error("There are only {} bytes remaining, but {} are expected".format(len(binary), instruction.source.size))
+        logger.error(f"There are only {len(binary)} bytes remaining, but {instruction.source.size} are expected")
         return -1
 
     numBytes = instruction.source.size
@@ -625,7 +620,7 @@ def disassemble( function ):
         # If things have gone off the rails, consume each byte and add a
         # default instruction
         if offTheRails:
-            logger.warning("Adding an unknown byte: {:02x}".format(binary[0]))
+            logger.warning(f"Adding an unknown byte: {binary[0]:02x}")
 
             # Create an instruction with the byte and advance the address
             curInstruction.bytes.append(binary[0])
@@ -639,7 +634,7 @@ def disassemble( function ):
         # Find all prefix bytes and set the appropriate settings in the
         # instruction. Consume all prefix bytes from the binary.
         numPrefixBytes = handlePrefix(curInstruction, binary)
-        logger.debug("There were {} prefix bytes".format(numPrefixBytes))
+        logger.debug(f"There were {numPrefixBytes} prefix bytes")
         binary = binary[numPrefixBytes:]
 
         # Replace the instruction with the one that corresponds to the opcode.

@@ -27,11 +27,9 @@ class Instruction():
 
         operands = operands + self.extraOperands
 
-        return "{addr: <6} {bytes: <20} {mnemonic: <7}{operands}".format(
-                addr="{:x}:".format(self.addr),
-                bytes=" ".join(["{:02x}".format(x) for x in self.bytes]),
-                mnemonic=self.mnemonic,
-                operands=", ".join([str(x) for x in operands]))
+        bytesStr = " ".join([f"{x:02x}" for x in self.bytes])
+        operandStr = ", ".join([str(x) for x in operands])
+        return f"{self.addr: >6}: {bytesStr: <20} {self.mnemonic: <7} {operandStr}"
 
 
 class Operand():

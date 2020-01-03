@@ -66,9 +66,7 @@ class Function():
 
     def __repr__(self):
 
-        return "{{name: {},".format(self.name) \
-             + " addr: 0x{0:0>8x},".format(self.addr)  \
-             + " size: {}}}".format(self.size)
+        return f"name: {self.name}, addr: 0x{self.addr:0>8x}, size: {self.size}"
 
 class AnalysisError(Exception):
     pass

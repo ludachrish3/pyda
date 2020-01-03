@@ -14,7 +14,7 @@ class TestX64():
 
         # Create a new function with the assembly and disassemble it
         function = Function(name='testFunc', addr=0, size=0, assembly=assembly)
-        assemblyRe = re.compile(r'0:\s+{assembly}\s+{mnemonic}\s+{src},\s+{dst}'.format(
+        assemblyRe = re.compile(r'\s*0:\s+{assembly}\s+{mnemonic}\s+{src},\s+{dst}'.format(
             assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
             mnemonic=mnemonic, src=re.escape(src), dst=re.escape(dst)))
 

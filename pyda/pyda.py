@@ -47,7 +47,7 @@ def main():
         binaryFile = analyzer.analyzeFile(args.file)
 
     except Exception as e:
-        logger.error("An error occurred while analyzing the binary: {}".format(e))
+        logger.error(f"An error occurred while analyzing the binary: {e}")
         traceback.print_tb(e.__traceback__)
         exit(1)
 

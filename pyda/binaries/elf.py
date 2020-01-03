@@ -293,10 +293,12 @@ class ElfBinary(binary.Binary):
 
 
     def __repr__(self):
-        return "Architecture: {}\n".format(self.arch) + \
-               "Endianness:   {}\n".format(self.endianness) + \
-               "File Type:    {}\n".format(TYPE_STR[self._type]) + \
-               "ISA:          {}".format(ISA_STR[self.isa])
+        return (
+            f"Architecture: {self.arch}\n"
+            f"Endianness:   {self.endianness}\n"
+            f"File Type:    {TYPE_STR[self._type]}\n"
+            f"ISA:          {ISA_STR[self.isa]}"
+        )
 
 
     def bytesToInt(self, byteArray, signed=False):
@@ -328,7 +330,7 @@ class ElfBinary(binary.Binary):
 
         # Make sure that the index is sane
         if index < 0 or index >= section.fileSize:
-            raise IndexError("The requested string index is out of bounds of the string table: {}".format(index))
+            raise IndexError(f"The requested string index is out of bounds of the string table: {index}")
 
         # Set the position in the file to the beginning of the string based
         # on the table offset and the section's index.
@@ -355,7 +357,7 @@ class ElfBinary(binary.Binary):
             self.addrSize = 8
 
         else:
-            raise binary.AnalysisError("The architecture could not be determined: {}".format(arch))
+            raise binary.AnalysisError(f"The architecture could not be determined: {arch}")
 
 
     def setEndianness(self, endianness):
@@ -366,7 +368,7 @@ class ElfBinary(binary.Binary):
             self.endianness = binary.BIN_ENDIAN_BIG
 
         else:
-            raise binary.AnalysisError("The endianness could not be determined: {}".format(endianness))
+            raise binary.AnalysisError(f"The endianness could not be determined: {endianness}")
 
 
     def setFileType(self, fileType):
@@ -375,7 +377,7 @@ class ElfBinary(binary.Binary):
 
         # Make sure that the file type is one of the defined types
         if fileTypeVal not in ALLOWED_TYPES:
-            raise binary.AnalysisError("The ELF file type could not be determined: {}".format(fileTypeVal))
+            raise binary.AnalysisError(f"The ELF file type could not be determined: {fileTypeVal}")
 
         # Do not allow relocatable files for now because they are not supported
         if fileTypeVal == TYPE_RELOC:
@@ -394,7 +396,7 @@ class ElfBinary(binary.Binary):
         isaVal = self.bytesToInt(isa)
 
         if isaVal not in ALLOWED_ISAS:
-            raise binary.AnalysisError("The ISA could not be determined: {}".format(isaVal))
+            raise binary.AnalysisError(f"The ISA could not be determined: {isaVal}")
 
         # Many ISAs are not currently suported, so throw exceptions for them
         if isaVal == ISA_X86:
@@ -423,61 +425,61 @@ class ElfBinary(binary.Binary):
     def setStartAddr(self, startAddr):
 
         self.startAddr = self.bytesToInt(startAddr)
-        logger.debug("Start addr:            0x{0:0>8x}".format(self.startAddr))
+        logger.debug(f"Start addr:            0x{self.startAddr:0>8x}")
 
 
     def setProgHdrOffset(self, offset):
 
         self.progHdrOffset = self.bytesToInt(offset)
-        logger.debug("Program header offset: 0x{0:<8x}".format(self.progHdrOffset))
+        logger.debug(f"Program header offset: 0x{self.progHdrOffset:<8x}")
 
 
     def setSectionHdrOffset(self, offset):
 
         self.sectionHdrOffset = self.bytesToInt(offset)
-        logger.debug("Section header offset: 0x{0:<8x}".format(self.sectionHdrOffset))
+        logger.debug(f"Section header offset: 0x{self.sectionHdrOffset:<8x}")
 
     def setFlags(self, flags):
 
         self.flags = self.bytesToInt(flags)
 
         if self.flags != 0:
-            raise binary.AnalysisError("Flags were set for the architecture, but they cannot be handled: {0:<8}".format(self.flags))
+            raise binary.AnalysisError(f"Flags were set for the architecture, but they cannot be handled: {self.flags:<8}")
 
 
     def setElfHdrSize(self, hdrSize):
 
         self.elfHdrSize = self.bytesToInt(hdrSize)
-        logger.debug("ELF header size: {}".format(self.elfHdrSize))
+        logger.debug(f"ELF header size: {self.elfHdrSize}")
 
 
     def setProgHdrEntrySize(self, entrySize):
 
         self.progHdrEntrySize = self.bytesToInt(entrySize)
-        logger.debug("Program header entry size: {}".format(self.progHdrEntrySize))
+        logger.debug(f"Program header entry size: {self.progHdrEntrySize}")
 
     def setNumProgHdrEntries(self, numEntries):
 
         self.numProgHdrEntries = self.bytesToInt(numEntries)
-        logger.debug("Number of program header entries: {}".format(self.numProgHdrEntries))
+        logger.debug(f"Number of program header entries: {self.numProgHdrEntries}")
 
 
     def setSectionHdrEntrySize(self, entrySize):
 
         self.sectionHdrEntrySize = self.bytesToInt(entrySize)
-        logger.debug("Section header entry size: {}".format(self.sectionHdrEntrySize))
+        logger.debug(f"Section header entry size: {self.sectionHdrEntrySize}")
 
 
     def setNumSectionHdrEntries(self, numEntries):
 
         self.numSectionHdrEntries = self.bytesToInt(numEntries)
-        logger.debug("Number of section header entries: {}".format(self.numSectionHdrEntries))
+        logger.debug(f"Number of section header entries: {self.numSectionHdrEntries}")
 
 
     def setNameIndex(self, index):
 
         self._sectionNameIndex = self.bytesToInt(index)
-        logger.debug("Index of the section that contains the section names: {}".format(self._sectionNameIndex))
+        logger.debug(f"Index of the section that contains the section names: {self._sectionNameIndex}")
 
 
     def parseElfHeader(self, fd):
@@ -499,12 +501,12 @@ class ElfBinary(binary.Binary):
         # value. Anything else is considered an error.
         elfVersion = self.readInt(fd, 1)
         if elfVersion != VERSION_CURRENT:
-            raise binary.AnalysisError("An invalid ELF version number was found: {}".format(elfVersion))
+            raise binary.AnalysisError(f"An invalid ELF version number was found: {elfVersion}")
 
         # Get the OS (not usually set, so not used by this module)
         fileOs = self.readInt(fd, 1)
         if fileOs != 0:
-            raise NotImplementedError("The OS is not supported: {}".format(OS_STR[fileOs]))
+            raise NotImplementedError(f"The OS is not supported: {OS_STR[fileOs]}")
 
         # Skip over the padding bytes
         fd.read(8)
@@ -583,8 +585,6 @@ class ElfBinary(binary.Binary):
 
             newSegment.alignment = self.readInt(fd, addrSize)
 
-            #logger.debug("Segment [{}]: {}".format(entry, newSegment))
-
             self.segments.append(newSegment)
 
     def parseSectionHdrs(self, fd):
@@ -640,8 +640,6 @@ class ElfBinary(binary.Binary):
 
             # Now that the section's name is known, it can be correctly assigned
             self._sections[section.name] = section
-
-            #logger.debug("Section: {}".format(section))
 
         # Remove the list of sections because they have been converted into a
         # dictionary keyed on section name.
@@ -700,12 +698,12 @@ class ElfBinary(binary.Binary):
                 if newSymbol.type == SYMBOL_TYPE_FUNCTION:
                     self.functionsByName[newSymbol.name] = newSymbol
                     self.functionsByAddr[newSymbol.value] = newSymbol
-                    logger.debug("Function symbol: {}".format(newSymbol))
+                    logger.debug(f"Function symbol: {newSymbol}")
 
                 elif newSymbol.type == SYMBOL_TYPE_OBJECT:
                     self._globalVariablesByName[newSymbol.name] = newSymbol
                     self._globalVariablesByAddr[newSymbol.name] = newSymbol
-                    logger.debug("Global symbol: {}".format(newSymbol))
+                    logger.debug(f"Global symbol: {newSymbol}")
 
 
     def analyze(self, fd):
@@ -762,7 +760,7 @@ class ElfSegment():
             self._type = segmentType
 
         else:
-            raise binary.AnalysisError("An invalid segment type was found: {}".format(segmentType))
+            raise binary.AnalysisError(f"An invalid segment type was found: {segmentType}")
 
         self.flags        = 0
         self.offset       = 0
@@ -774,14 +772,16 @@ class ElfSegment():
 
     def __repr__(self):
 
-        return "{{type: {},".format(SEGMENT_TYPE_STR[self._type]) \
-             + " flags: {},".format(self.flags)                   \
-             + " offset: {},".format(self.offset)                 \
-             + " virtualAddr: {},".format(self.virtualAddr)       \
-             + " physicalAddr: {},".format(self.physicalAddr)     \
-             + " fileSize: {},".format(self.fileSize)             \
-             + " memorySize: {},".format(self.memorySize)         \
-             + " alignment: {}}}".format(self.alignment)
+        return (
+            f"type: {SEGMENT_TYPE_STR[self.type]},"
+            f" flags: {self.flags},"
+            f" offset: {self.offset},"
+            f" virtualAddr: {self.virtualAddr},"
+            f" physicalAddr: {self.physicalAddr},"
+            f" fileSize: {self.fileSize},"
+            f" memorySize: {self.memorySize},"
+            f" alignment: {self.alignment}"
+        )
 
 
 class ElfSection():
@@ -792,7 +792,7 @@ class ElfSection():
             self._type = sectionType
 
         else:
-            raise binary.AnalysisError("An invalid section type was found: {}".format(sectionType))
+            raise binary.AnalysisError(f"An invalid section type was found: {sectionType}")
 
         self._nameIndex  = nameIndex
         self.name        = name
@@ -809,16 +809,18 @@ class ElfSection():
 
     def __repr__(self):
 
-        return "{{type: {},".format(SECTION_TYPE_STR[self._type]) \
-             + " name: {},".format(self.name)                     \
-             + " flags: {},".format(self.flags)                   \
-             + " virtualAddr: {},".format(self.virtualAddr)       \
-             + " fileOffset: {},".format(self.fileOffset)         \
-             + " fileSize: {},".format(self.fileSize)             \
-             + " link: {},".format(self.link)                     \
-             + " info: {},".format(self.info)                     \
-             + " alignment: {}".format(self.alignment)            \
-             + " entrySize: {}}}".format(self.entrySize)
+        return (
+            f"type: {SECTION_TYPE_STR[self._type]}",
+            f" name: {self.name},"
+            f" flags: {self.flags},"
+            f" virtualAddr: {self.virtualAddr},"
+            f" fileOffset: {self.fileOffset},"
+            f" fileSize: {self.fileSize},"
+            f" link: {self.link},"
+            f" info: {self.info},"
+            f" alignment: {self.alignment}"
+            f" entrySize: {self.entrySize}"
+        )
 
 
 class ElfSymbol():
@@ -843,10 +845,12 @@ class ElfSymbol():
 
     def __repr__(self):
 
-        return "{{name: {},".format(self.name) \
-             + " value: {0:0>8x},".format(self.value) \
-             + " type: {},".format(SYMBOL_TYPE_STR[self.type]) \
-             + " bind: {},".format(SYMBOL_BIND_STR[self.bind]) \
-             + " size: {},".format(self.size) \
-             + " visibility: {},".format(SYMBOL_VIS_STR[self.visibility]) \
-             + " section index: {}}}".format(self.sectionIndex)
+        return (
+            f"name: {self.name},"
+            f" value: {self.value:0>8x},"
+            f" type: {SYMBOL_TYPE_STR[self.type]},"
+            f" bind: {SYMBOL_BIND_STR[self.bind]},"
+            f" size: {self.size},"
+            f" visibility: {SYMBOL_VIS_STR[self.visibility]},"
+            f" section index: {self.sectionIndex}"
+        )
