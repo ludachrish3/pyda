@@ -210,6 +210,7 @@ SECTION_NAME_SECTION_NAMES = ".shstrtab"
 SECTION_NAME_STRING_TABLE = ".strtab"
 SECTION_NAME_DYN_STRING_TABLE = ".dynstr"
 SECTION_NAME_SYMBOL_TABLE = ".symtab"
+SECTION_NAME_GLOBAL_OFFSET_TABLE = ".got"
 SECTION_NAME_INIT = ".init"
 SECTION_NAME_DATA = ".data"
 SECTION_NAME_TEXT = ".text"
@@ -648,6 +649,41 @@ class ElfBinary(binary.Binary):
         del self._sectionList
 
 
+    def addSymbol( self, fd, symbol, codeOffset, globalOffset ):
+        """
+        Description:    Adds a symbol to dictionaries so it can be looked up by
+                        name and by address. The offsets are used to make sure
+                        the address is calculated to match up with how the
+                        binary calls it.
+
+        Arguments:      fd           - Flle descriptor to read from for assembly
+                        symbol       - ElfSymbol object to update and add
+                        codeOffset   - Offset for functions
+                        globalOffset - Offset for global variables
+
+        Return:         None
+        """
+
+        if symbol.type == SYMBOL_TYPE_FUNCTION:
+
+            # Save the assembly bytes of the function with the object so that
+            # the file is no longer needed. The address offset of the .text
+            # section must be subtracted to get the file location of the
+            # function. The value for the symbol is the virtual address.
+            if symbol.value > 0 and symbol.size > 0:
+                fd.seek(symbol.value - codeOffset)
+                symbol.assembly = fd.read(symbol.size)
+
+                self.functionsByName[symbol.name] = symbol
+                self.functionsByAddr[symbol.value] = symbol
+                logger.debug(f"Function symbol: {symbol}")
+
+        elif symbol.type == SYMBOL_TYPE_OBJECT:
+            self._globalVariablesByName[symbol.name] = symbol
+            self._globalVariablesByAddr[symbol.value] = symbol
+            logger.debug(f"Global symbol: {symbol}")
+
+
     def parseSymbolTable(self, fd):
         """
         Description:    Parses the symbol table and creates symbol objects for
@@ -661,8 +697,11 @@ class ElfBinary(binary.Binary):
         if SECTION_NAME_SYMBOL_TABLE not in self._sections:
             return False
 
-        symbolData = self._sections[SECTION_NAME_SYMBOL_TABLE].data
-        index = 0
+        symbolData  = self._sections[SECTION_NAME_SYMBOL_TABLE].data
+        codeSection = self._sections[SECTION_NAME_TEXT]
+        globSection = self._sections[SECTION_NAME_GLOBAL_OFFSET_TABLE]
+        codeOffset  = codeSection.virtualAddr - codeSection.fileOffset
+        globOffset  = globSection.virtualAddr - globSection.fileOffset
 
         if self.arch == binary.BIN_ARCH_32BIT:
             for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].fileSize, 16):
@@ -677,18 +716,7 @@ class ElfBinary(binary.Binary):
                 newSymbol.visibility   = symbolOther & 0x3
                 newSymbol.sectionIndex = self.bytesToInt(symbolData[pos+14:pos+16])
 
-                # Save the assembly bytes of the function with the object so that
-                # the file is no longer needed
-                fd.seek(newSymbol.value)
-                newSymbol.assembly = fd.read(newSymbol.size)
-
-                if newSymbol.type == SYMBOL_TYPE_FUNCTION:
-                    self.functionsByName[newSymbol.name] = newSymbol
-                    self.functionsByAddr[newSymbol.value] = newSymbol
-
-                elif newSymbol.type == SYMBOL_TYPE_OBJECT:
-                    self._globalVariablesByName[newSymbol.name] = newSymbol
-                    self._globalVariablesByAddr[newSymbol.name] = newSymbol
+                self.addSymbol(fd, newSymbol, codeOffset, globOffset)
 
         elif self.arch == binary.BIN_ARCH_64BIT:
             for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].fileSize, 24):
@@ -703,20 +731,7 @@ class ElfBinary(binary.Binary):
                 newSymbol.value        = self.bytesToInt(symbolData[pos+8:pos+16])
                 newSymbol.size         = self.bytesToInt(symbolData[pos+16:pos+24])
 
-                # Save the assembly bytes of the function with the object so that
-                # the file is no longer needed
-                fd.seek(newSymbol.value)
-                newSymbol.assembly = fd.read(newSymbol.size)
-
-                if newSymbol.type == SYMBOL_TYPE_FUNCTION:
-                    self.functionsByName[newSymbol.name] = newSymbol
-                    self.functionsByAddr[newSymbol.value] = newSymbol
-                    logger.debug(f"Function symbol: {newSymbol}")
-
-                elif newSymbol.type == SYMBOL_TYPE_OBJECT:
-                    self._globalVariablesByName[newSymbol.name] = newSymbol
-                    self._globalVariablesByAddr[newSymbol.name] = newSymbol
-                    logger.debug(f"Global symbol: {newSymbol}")
+                self.addSymbol(fd, newSymbol, codeOffset, globOffset)
 
         return True
 
