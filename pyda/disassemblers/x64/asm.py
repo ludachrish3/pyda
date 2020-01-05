@@ -14,6 +14,7 @@ class X64Instruction( Instruction ):
 
         self.prefixSize = None  # The size operands should be based on the prefix
         self.addressSize = 8
+        self.extendedBase = False
 
     def setAttributes( self, opcode, info ):
 
@@ -68,6 +69,11 @@ class X64Instruction( Instruction ):
                 logger.debug("The destination is the register")
                 self.dest = X64Operand(size=info.dstOperandSize, value=register)
 
+                # Extend the value of the destination if the instruction has a
+                # base extension prefix.
+                if self.extendedBase:
+                    self.dest.value += REG_EXTEND
+
                 # Only add a source if it is an immediate. Otherwise, there
                 # should not be a source if the register code is specified.
                 if info.srcIsImmediate:
@@ -76,6 +82,11 @@ class X64Instruction( Instruction ):
             elif info.direction == OP_DIR_FROM_REG:
                 logger.debug("The source is the register")
                 self.source = X64Operand(size=info.srcOperandSize, value=register)
+
+                # Extend the value of the source if the instruction has a
+                # base extension prefix.
+                if self.extendedBase:
+                    self.source.value += REG_EXTEND
 
             else:
                 logger.debug("An invalid direction was specified")
@@ -232,6 +243,7 @@ def handlePrefix( instruction, binary ):
     for byte in binary:
 
         # TODO: Add support for group 1 and 2 prefixes
+        #
 
         # Group 3 prefixes
         if byte == PREFIX_64_BIT_OPERAND:
@@ -249,6 +261,18 @@ def handlePrefix( instruction, binary ):
             logger.debug("Found the 32-bit address prefix")
             instruction.addressSize = 4
             instruction.bytes.append(byte)
+
+        # REX prefixes
+        elif byte & 0xf0 == PREFIX_REX_MASK:
+
+            # The base value of the register is extended
+            if byte & PREFIX_REX_B_MASK == PREFIX_REX_B_MASK:
+                instruction.extendedBase = True
+
+            else:
+                logger.debug("Unhandled REX prefix was found.")
+                return numPrefixBytes
+
 
         # If a prefix is not found, proceed to the next step
         else:
@@ -459,14 +483,15 @@ def handleSibByte( operand, addrMode, sibByte ):
     return False
 
 
-def handleOperandAddressing( operand, binary ):
+def handleOperandAddressing( instruction, operand, binary ):
     """
     Description:    Figures out addressing mode for an operand based on the
                     Mod R/M byte.
 
-    Arguments:      operand - X64Operand object
-                    binary  - Remaining bytes to disassemble, starting with the
-                              Mod R/M byte
+    Arguments:      instruction - X64Instruction object
+                    operand     - X64Operand object
+                    binary      - Remaining bytes to disassemble, starting with
+                                  the Mod R/M byte
 
     Return:         Number of bytes needed for addressing, not including the
                     Mod R/M byte.
@@ -487,6 +512,12 @@ def handleOperandAddressing( operand, binary ):
 
         # The value is always regmem if the Mod R/M refers to this operand.
         operand.value = regmem
+
+        # If the instruction has a prefix that tells it so extend the base,
+        # add the value to extend the register value.
+        if instruction.extendedBase:
+            logger.debug("Extending register base value")
+            operand.value += REG_EXTEND
 
         if mod == MOD_REGISTER:
             logger.debug("Operand is the value in a register")
@@ -568,11 +599,11 @@ def handleModRmByte( instruction, binary ):
     # Set the operand addressing properties as long as they are not None
     direction = instruction.info.direction
     if instruction.source is not None:
-        numBytesConsumed += handleOperandAddressing(instruction.source, binary)
+        numBytesConsumed += handleOperandAddressing(instruction, instruction.source, binary)
         logger.debug(f"After handling source: {numBytesConsumed}")
 
     if instruction.dest is not None:
-        numBytesConsumed += handleOperandAddressing(instruction.dest,   binary)
+        numBytesConsumed += handleOperandAddressing(instruction, instruction.dest, binary)
         logger.debug(f"After handling dest: {numBytesConsumed}")
 
     if numBytesConsumed <= len(binary):

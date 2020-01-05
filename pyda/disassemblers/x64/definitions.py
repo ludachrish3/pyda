@@ -4,6 +4,12 @@ PREFIX_16_BIT_OPERAND = 0x66
 PREFIX_32_BIT_ADDRESS = 0x67
 PREFIX_2_BYTE_OPCODE  = 0x0f
 
+PREFIX_REX_MASK       = 0x40 # All REX prefixes start with 0x4
+PREFIX_REX_B_MASK     = 0x00000001
+PREFIX_REX_X_MASK     = 0x00000010
+PREFIX_REX_R_MASK     = 0x00000100
+PREFIX_REX_W_MASK     = 0x00001000
+
 # Opcode masks
 OP_SIZE_MASK = 0b00000001
 OP_DIR_MASK  = 0b00000010
@@ -41,6 +47,16 @@ REG_RSP  = 0b00000100
 REG_RBP  = 0b00000101
 REG_RSI  = 0b00000110
 REG_RDI  = 0b00000111
+REG_R8   = 0b00001000
+REG_R9   = 0b00001001
+REG_R10  = 0b00001010
+REG_R11  = 0b00001011
+REG_R12  = 0b00001100
+REG_R13  = 0b00001101
+REG_R14  = 0b00001110
+REG_R15  = 0b00001111
+
+REG_EXTEND = 0b00001000   # Extension value when extending a register from its base
 
 # Unofficial values for registers that can be used to identify them.
 # They will all start with a 1 at the most significant bit to differentiate
@@ -113,5 +129,53 @@ REG_NAMES = {
         REG_SIZE_32: "%eip",
         REG_SIZE_16: "%ip",
         REG_SIZE_8:  REG_NAME_UNDEF,
+    },
+    REG_R8: {
+        REG_SIZE_64: "%r8",
+        REG_SIZE_32: "%r8",
+        REG_SIZE_16: "%r8",
+        REG_SIZE_8:  "%r8",
+    },
+    REG_R9: {
+        REG_SIZE_64: "%r9",
+        REG_SIZE_32: "%r9",
+        REG_SIZE_16: "%r9",
+        REG_SIZE_8:  "%r9",
+    },
+    REG_R10: {
+        REG_SIZE_64: "%r10",
+        REG_SIZE_32: "%r10",
+        REG_SIZE_16: "%r10",
+        REG_SIZE_8:  "%r10",
+    },
+    REG_R11: {
+        REG_SIZE_64: "%r11",
+        REG_SIZE_32: "%r11",
+        REG_SIZE_16: "%r11",
+        REG_SIZE_8:  "%r11",
+    },
+    REG_R12: {
+        REG_SIZE_64: "%r12",
+        REG_SIZE_32: "%r12",
+        REG_SIZE_16: "%r12",
+        REG_SIZE_8:  "%r12",
+    },
+    REG_R13: {
+        REG_SIZE_64: "%r13",
+        REG_SIZE_32: "%r13",
+        REG_SIZE_16: "%r13",
+        REG_SIZE_8:  "%r13",
+    },
+    REG_R14: {
+        REG_SIZE_64: "%r14",
+        REG_SIZE_32: "%r14",
+        REG_SIZE_16: "%r14",
+        REG_SIZE_8:  "%r14",
+    },
+    REG_R15: {
+        REG_SIZE_64: "%r15",
+        REG_SIZE_32: "%r15",
+        REG_SIZE_16: "%r15",
+        REG_SIZE_8:  "%r15",
     },
 }
