@@ -186,8 +186,12 @@ oneByteOpcodes = {
     0xc9: X64InstructionInfo("leave", srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
 
     0xe8: X64InstructionInfo("call",  relativeJump=True, srcOperandSize=REG_SIZE_32),
-
+    0xe9: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32),
+#   0xea: Invalid
     0xeb: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_8),
+
+    0xfe: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),
+    0xff: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True),
 }
 
 twoByteOpcodes = {
@@ -212,4 +216,5 @@ twoByteOpcodes = {
     0xb7: X64InstructionInfo("movzx", modRm=MODRM_SOURCE, srcCanPromote=False, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32),
     0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,  srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_32),
     0xbf: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,  srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32),
+
 }

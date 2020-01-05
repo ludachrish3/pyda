@@ -368,6 +368,49 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
         else:
             logger.debug("An invalid Mod R/M value was received")
             return False
+
+    elif instruction.bytes[-1] in [0xfe]:
+
+        if modRmOpValue == 0:
+            instruction.mnemonic = "inc"
+
+        elif modRmOpValue == 1:
+            instruction.mnemonic = "dec"
+
+        else:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
+    elif instruction.bytes[-1] in [0xff]:
+        # TODO: Update info about operands in each case
+
+        if modRmOpValue == 0:
+            instruction.mnemonic = "inc"
+
+        elif modRmOpValue == 1:
+            instruction.mnemonic = "dec"
+
+        elif modRmOpValue == 2:
+            instruction.mnemonic = "call"
+            instruction.info.relativeJump = True
+
+        elif modRmOpValue == 3:
+            instruction.mnemonic = "callf"
+
+        elif modRmOpValue == 4:
+            instruction.mnemonic = "jmp"
+            instruction.info.relativeJump = True
+
+        elif modRmOpValue == 5:
+            instruction.mnemonic = "jmpf"
+
+        elif modRmOpValue == 6:
+            instruction.mnemonic = "push"
+
+        else:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
     else:
         logger.debug("An unsupported extended opcode was found")
         return False

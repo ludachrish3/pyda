@@ -641,6 +641,8 @@ class ElfBinary(binary.Binary):
             # Now that the section's name is known, it can be correctly assigned
             self._sections[section.name] = section
 
+        logger.debug(f"Sections: {self._sections}")
+
         # Remove the list of sections because they have been converted into a
         # dictionary keyed on section name.
         del self._sectionList
@@ -827,11 +829,11 @@ class ElfSection():
     def __repr__(self):
 
         return (
-            f"type: {SECTION_TYPE_STR[self._type]}",
+            f"type: {SECTION_TYPE_STR[self._type]},"
             f" name: {self.name},"
             f" flags: {self.flags},"
-            f" virtualAddr: {self.virtualAddr},"
-            f" fileOffset: {self.fileOffset},"
+            f" virtualAddr: {hex(self.virtualAddr)},"
+            f" fileOffset: {hex(self.fileOffset)},"
             f" fileSize: {self.fileSize},"
             f" link: {self.link},"
             f" info: {self.info},"
