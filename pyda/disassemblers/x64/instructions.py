@@ -179,7 +179,14 @@ oneByteOpcodes = {
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SOURCE),
 #   0x8e: X64InstructionInfo("mov",   modRm=MODRM_SOURCE), TODO: A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
     0x8f: X64InstructionInfo("pop",   extOpcode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x90: X64InstructionInfo("nop",   srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
+    0x90: X64InstructionInfo("nop",   srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0), # This is a special case of exchange instructions that would swap EAX with EAX
+    0x91: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0x92: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0x93: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0x94: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0x95: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0x96: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0x97: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
 
     0xb0: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
     0xb1: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),

@@ -330,7 +330,7 @@ class ElfBinary(binary.Binary):
         section = self._sections[sectionName]
 
         # Make sure that the index is sane
-        if index < 0 or index >= section.fileSize:
+        if index < 0 or index >= section.size:
             raise IndexError(f"The requested string index is out of bounds of the string table: {index}")
 
         # Set the position in the file to the beginning of the string based
@@ -576,7 +576,7 @@ class ElfBinary(binary.Binary):
             newSegment.offset       = self.readInt(fd, addrSize)
             newSegment.virtualAddr  = self.readInt(fd, addrSize)
             newSegment.physicalAddr = self.readInt(fd, addrSize)
-            newSegment.fileSize     = self.readInt(fd, addrSize)
+            newSegment.size         = self.readInt(fd, addrSize)
             newSegment.memorySize   = self.readInt(fd, addrSize)
 
             # Now is the appropriate time to check for the flags field if the
@@ -606,7 +606,7 @@ class ElfBinary(binary.Binary):
             newSection.flags = self.readInt(fd, addrSize)
             newSection.virtualAddr = self.readInt(fd, addrSize)
             newSection.fileOffset = self.readInt(fd, addrSize)
-            newSection.fileSize = self.readInt(fd, addrSize)
+            newSection.size = self.readInt(fd, addrSize)
             newSection.link = self.readInt(fd, 4)
             newSection.info = self.readInt(fd, 4)
             newSection.alignment = self.readInt(fd, addrSize)
@@ -624,14 +624,14 @@ class ElfBinary(binary.Binary):
         # it can be used to look up the names of other sections.
         sectionNameSection = self._sections[SECTION_NAME_SECTION_NAMES]
         fd.seek(sectionNameSection.fileOffset)
-        self._sections[SECTION_NAME_SECTION_NAMES].data = fd.read(sectionNameSection.fileSize)
+        self._sections[SECTION_NAME_SECTION_NAMES].data = fd.read(sectionNameSection.size)
 
         # Save each section as a byte string so that the file does not need to
         # be read from anymore.
         for section in self._sectionList:
 
             fd.seek(section.fileOffset)
-            section.data = fd.read(section.fileSize)
+            section.data = fd.read(section.size)
 
         # Now that all data is stored in objects for sections rather than just
         # in the file, get the section names from the string table.
@@ -694,17 +694,31 @@ class ElfBinary(binary.Binary):
         Return:         None
         """
 
-        if SECTION_NAME_SYMBOL_TABLE not in self._sections:
-            return False
-
-        symbolData  = self._sections[SECTION_NAME_SYMBOL_TABLE].data
         codeSection = self._sections[SECTION_NAME_TEXT]
         globSection = self._sections[SECTION_NAME_GLOBAL_OFFSET_TABLE]
         codeOffset  = codeSection.virtualAddr - codeSection.fileOffset
         globOffset  = globSection.virtualAddr - globSection.fileOffset
 
+        if SECTION_NAME_SYMBOL_TABLE not in self._sections:
+            logger.debug("There is no symbol table. A brute force search must be done.")
+            # Create one big function that is the entire .text section if there
+            # is no symbol table. This will be parsed out later into separate
+            # functions.
+            newSymbol = ElfSymbol()
+            newSymbol.setName(f"func_{codeSection.virtualAddr}")
+            newSymbol.value      = codeSection.virtualAddr
+            newSymbol.size       = codeSection.size
+            newSymbol.bind       = SYMBOL_BIND_GLOBAL
+            newSymbol.type       = SYMBOL_TYPE_FUNCTION
+            newSymbol.visibility = SYMBOL_VIS_DEFAULT
+
+            self.addSymbol(fd, newSymbol, codeOffset, globOffset)
+            return
+
+        symbolData  = self._sections[SECTION_NAME_SYMBOL_TABLE].data
+
         if self.arch == binary.BIN_ARCH_32BIT:
-            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].fileSize, 16):
+            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].size, 16):
                 newSymbol = ElfSymbol()
                 newSymbol.setName(self.getStringFromTable(SECTION_NAME_STRING_TABLE, self.bytesToInt(symbolData[pos:pos+4])))
                 newSymbol.value        = self.bytesToInt(symbolData[pos+4:pos+8])
@@ -719,7 +733,7 @@ class ElfBinary(binary.Binary):
                 self.addSymbol(fd, newSymbol, codeOffset, globOffset)
 
         elif self.arch == binary.BIN_ARCH_64BIT:
-            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].fileSize, 24):
+            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].size, 24):
                 newSymbol = ElfSymbol()
                 newSymbol.setName(self.getStringFromTable(SECTION_NAME_STRING_TABLE, self.bytesToInt(symbolData[pos:pos+4])))
                 symbolInfo             = symbolData[pos+4]
@@ -732,8 +746,6 @@ class ElfBinary(binary.Binary):
                 newSymbol.size         = self.bytesToInt(symbolData[pos+16:pos+24])
 
                 self.addSymbol(fd, newSymbol, codeOffset, globOffset)
-
-        return True
 
 
     def analyze(self, fd):
@@ -750,10 +762,7 @@ class ElfBinary(binary.Binary):
         self.parseSectionHdrs(fd)
 
         # Parse the symbol table
-        hasSymbolTable = self.parseSymbolTable(fd)
-        if not hasSymbolTable:
-            logger.info("There is no symbol table. A brute force search for functions must be performed.")
-            # TODO: Brute force search for what looks like the start of a function
+        self.parseSymbolTable(fd)
 
 
     def getFunctionByName(self, name):
@@ -800,9 +809,9 @@ class ElfSegment():
         self.offset       = 0
         self.virtualAddr  = 0
         self.physicalAddr = 0
-        self.fileSize     = 0
+        self.size         = 0
         self.memorySize   = 0
-        self.alignment   = 0
+        self.alignment    = 0
 
     def __repr__(self):
 
@@ -812,7 +821,7 @@ class ElfSegment():
             f" offset: {self.offset},"
             f" virtualAddr: {self.virtualAddr},"
             f" physicalAddr: {self.physicalAddr},"
-            f" fileSize: {self.fileSize},"
+            f" size: {self.size},"
             f" memorySize: {self.memorySize},"
             f" alignment: {self.alignment}"
         )
@@ -833,7 +842,7 @@ class ElfSection():
         self.flags       = 0
         self.virtualAddr = 0
         self.fileOffset  = 0
-        self.fileSize    = 0
+        self.size        = 0
         self.link        = 0
         self.info        = 0
         self.alignment   = 0
@@ -849,7 +858,7 @@ class ElfSection():
             f" flags: {self.flags},"
             f" virtualAddr: {hex(self.virtualAddr)},"
             f" fileOffset: {hex(self.fileOffset)},"
-            f" fileSize: {self.fileSize},"
+            f" size: {self.size},"
             f" link: {self.link},"
             f" info: {self.info},"
             f" alignment: {self.alignment}"
