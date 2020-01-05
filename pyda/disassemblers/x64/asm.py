@@ -273,6 +273,8 @@ def handlePrefix( instruction, binary ):
                 logger.debug("Unhandled REX prefix was found.")
                 return numPrefixBytes
 
+            instruction.bytes.append(byte)
+
 
         # If a prefix is not found, proceed to the next step
         else:
@@ -513,12 +515,6 @@ def handleOperandAddressing( instruction, operand, binary ):
         # The value is always regmem if the Mod R/M refers to this operand.
         operand.value = regmem
 
-        # If the instruction has a prefix that tells it so extend the base,
-        # add the value to extend the register value.
-        if instruction.extendedBase:
-            logger.debug("Extending register base value")
-            operand.value += REG_EXTEND
-
         if mod == MOD_REGISTER:
             logger.debug("Operand is the value in a register")
             return addrBytes
@@ -555,6 +551,14 @@ def handleOperandAddressing( instruction, operand, binary ):
 
         else:
             logger.warning("Invalid addressing mode")
+
+        # If the instruction has a prefix that tells it so extend the base,
+        # add the value to extend the register value.
+        if instruction.extendedBase:
+            logger.debug(f"Extending register base value before: {operand.value:x}")
+            operand.value += REG_EXTEND
+            logger.debug(f"Extending register base value after: {operand.value:x}")
+
 
         # Save the displacement value if there are any displacement bytes. The
         # Mod R/M byte as well as any additional addressing bytes, like the SIB

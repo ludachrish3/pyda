@@ -17,6 +17,7 @@ optional arguments:
 
 ## TODO
 
+* Add support for the segment register prefixes
 * In order to find functions in a stripped binary, start at beginning of .text section. Start disassembling and consider all jumps that can be taken. If there are no jumps left and a ret instruction is reached, then that is the end of the function. All instructions after it (not including NOPs) are another function.
 * Come up with a way to find functions in stripped binaries
 * Figure out how global variables and functions are linked to values (like how does calling printf() get figured out)

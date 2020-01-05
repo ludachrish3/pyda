@@ -14,9 +14,16 @@ class TestX64():
 
         # Create a new function with the assembly and disassemble it
         function = Function(name='testFunc', addr=0, size=0, assembly=assembly)
-        assemblyRe = re.compile(r'\s*0:\s+{assembly}\s+{mnemonic}\s+{src},\s+{dst}'.format(
-            assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
-            mnemonic=mnemonic, src=re.escape(src), dst=re.escape(dst)))
+
+        if dst == "":
+            assemblyRe = re.compile(r'\s*0:\s+{assembly}\s+{mnemonic}\s+{src}'.format(
+                assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
+                mnemonic=mnemonic, src=re.escape(src)))
+
+        else:
+            assemblyRe = re.compile(r'\s*0:\s+{assembly}\s+{mnemonic}\s+{src},\s+{dst}'.format(
+                assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
+                mnemonic=mnemonic, src=re.escape(src), dst=re.escape(dst)))
 
         disassemble(function)
 
@@ -160,6 +167,7 @@ class TestX64():
         assert len(function.instructions) == 1
         assert match is not None
 
+
     def test_basic_sib_byte( self ):
 
         #########################
@@ -201,5 +209,48 @@ class TestX64():
         sibByte   = (3 << 6)     | (REG_RAX << 3) | REG_RBP
         assembly = bytes([0x01, modRmByte, sibByte, 0x03])
         function, match = self.helper("add", "%ecx", "[%rbp + 8 * %rax] + 0x3", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+
+    def test_rex_b_prefix( self ):
+
+        ##########################################
+        #  REGISTER IN OPCODE WITH REX.B PREFIX  #
+        ##########################################
+
+        rexByte = PREFIX_REX_MASK | PREFIX_REX_B_MASK
+
+        assembly = bytes([rexByte, 0x55])
+        function, match = self.helper("push", "%r13", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ##############################
+        #  MOD/RM WITH REX.B PREFIX  #
+        ##############################
+
+        rexByte = PREFIX_REX_MASK | PREFIX_REX_B_MASK
+
+        #           Address mode    | source         | destination
+        modRmByte = MOD_1_BYTE_DISP | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([rexByte, 0x01, modRmByte, 0x42])
+        function, match = self.helper("add", "%ecx", "[%r8] + 0x42", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #########################
+        #  SIB BYTE WITH REX.B  #
+        #########################
+
+        rexByte = PREFIX_REX_MASK | PREFIX_REX_B_MASK
+
+        #           Address mode | source         | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Index          | Base
+        sibByte   = (2 << 6)     | (REG_RAX << 3) | REG_RBX
+        assembly = bytes([rexByte, 0x01, modRmByte, sibByte])
+        function, match = self.helper("add", "%ecx", "[%r11 + 4 * %rax]", assembly)
         assert len(function.instructions) == 1
         assert match is not None
