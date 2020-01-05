@@ -339,6 +339,12 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
+    elif instruction.bytes[-1] in [0x8f]:
+
+        if modRmOpValue != 0:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
     elif instruction.bytes[-1] in [0xc0, 0xc1]:
 
         if modRmOpValue == 0:

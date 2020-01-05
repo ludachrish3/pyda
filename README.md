@@ -17,11 +17,12 @@ optional arguments:
 
 ## TODO
 
+* Come up with a way to find functions in stripped binaries
+* Figure out how global variables and functions are linked to values (like how does calling printf() get figured out)
 * Get 100% code coverage in tests (or close to it)
 * Cross compile for the Raspberry Pi
 * Create a disassembler for ARM (whatever version is on the Raspberry Pi v4)
 * Come up with an abstraction layer for instructions so that decompiling all ISAs is the same. Will possibly need to break instructions up into multiple ones or combine instructions into one
-* Figure out how global variables and functions are linked to values (like how does calling printf() get figured out)
 * Support both Intel and AT&T assembly syntax
 * Generate a set of known function prototypes and variable types for type inference
 * Visual representation of the stack

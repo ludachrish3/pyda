@@ -73,7 +73,7 @@ oneByteOpcodes = {
     0x23: X64InstructionInfo("and",   modRm=MODRM_SOURCE),
     0x24: X64InstructionInfo("and",   srcIsImmediate=True),
     0x25: X64InstructionInfo("and",   srcIsImmediate=True),
-#   0x26: Something in 64-bit
+#   0x26: ES Segment Register Prefix
 #   0x27: Invalid
     0x28: X64InstructionInfo("sub",   modRm=MODRM_DEST),
     0x29: X64InstructionInfo("sub",   modRm=MODRM_DEST),
@@ -81,7 +81,7 @@ oneByteOpcodes = {
     0x2b: X64InstructionInfo("sub",   modRm=MODRM_SOURCE),
     0x2c: X64InstructionInfo("sub",   srcIsImmediate=True),
     0x2d: X64InstructionInfo("sub",   srcIsImmediate=True),
-#   0x2e: Something in 64-bit
+#   0x2e: CS Segment Register Prefix
 #   0x2f: Invalid
     0x30: X64InstructionInfo("xor",   modRm=MODRM_DEST),
     0x31: X64InstructionInfo("xor",   modRm=MODRM_DEST),
@@ -89,7 +89,7 @@ oneByteOpcodes = {
     0x33: X64InstructionInfo("xor",   modRm=MODRM_SOURCE),
     0x34: X64InstructionInfo("xor",   srcIsImmediate=True),
     0x35: X64InstructionInfo("xor",   srcIsImmediate=True),
-#   0x36: Something in 64-bit
+#   0x36: SS Segment Register Prefix
 #   0x37: Invalid
     0x38: X64InstructionInfo("cmp",   modRm=MODRM_DEST),
     0x39: X64InstructionInfo("cmp",   modRm=MODRM_DEST),
@@ -97,9 +97,24 @@ oneByteOpcodes = {
     0x3b: X64InstructionInfo("cmp",   modRm=MODRM_SOURCE),
     0x3c: X64InstructionInfo("cmp",   srcIsImmediate=True),
     0x3d: X64InstructionInfo("cmp",   srcIsImmediate=True),
-#   0x3e: Something in 64-bit
+#   0x3e: DS Segment Register Prefix
 #   0x3f: Invalid
-
+#   0x40: REX Prefix
+#   0x41: REX.B Prefix
+#   0x42: REX.X Prefix
+#   0x43: REX.XB Prefix
+#   0x44: REX.R Prefix
+#   0x45: REX.RB Prefix
+#   0x46: REX.RX Prefix
+#   0x47: REX.RXB Prefix
+#   0x48: REX.W Prefix (64-bit operand size prefix)
+#   0x49: REX.WB Prefix
+#   0x4a: REX.WX Prefix
+#   0x4b: REX.WXB Prefix
+#   0x4c: REX.WR Prefix
+#   0x4d: REX.WRB Prefix
+#   0x4e: REX.WRX Prefix
+#   0x4f: REX.WRXB Prefix
     0x50: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
     0x51: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
     0x52: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
@@ -119,13 +134,19 @@ oneByteOpcodes = {
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
-
+    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # TODO: The source cannot be promoted, but the destination can. Must be able to support promotion of only one operand at a time.
+#   0x64: FS Segment Register Prefix
+#   0x65: GS Segment Register Prefix
+#   0x66: 16-bit Operand Size Prefix
+#   0x67: 32-bit Address Size Prefix
     0x68: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32),
     0x69: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32),    # TODO: Figure out a way to handle an instruction with multiple sources
     0x6a: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_8),
     0x6b: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_8),
-
-
+#   0x6c: Debug input port to string
+#   0x6d: Debug input port to string
+#   0x6e: Debug output string to port
+#   0x6f: Debug output string to port
     0x70: X64InstructionInfo("jo",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Overflow
     0x71: X64InstructionInfo("jno",   relativeJump=True, srcOperandSize=REG_SIZE_8), # Not overflow
     0x72: X64InstructionInfo("jb",    relativeJump=True, srcOperandSize=REG_SIZE_8), # Less than (unsigned)
@@ -154,10 +175,11 @@ oneByteOpcodes = {
     0x89: X64InstructionInfo("mov",   modRm=MODRM_DEST),
     0x8a: X64InstructionInfo("mov",   modRm=MODRM_SOURCE),
     0x8b: X64InstructionInfo("mov",   modRm=MODRM_SOURCE),
-
+#   0x8c: X64InstructionInfo("mov",   modRm=MODRM_SOURCE), TODO: A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte or a memory location that is always a word long
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SOURCE),
-
-    0x90: X64InstructionInfo("nop", srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
+#   0x8e: X64InstructionInfo("mov",   modRm=MODRM_SOURCE), TODO: A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
+    0x8f: X64InstructionInfo("pop",   extOpcode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
+    0x90: X64InstructionInfo("nop",   srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
 
     0xb0: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
     0xb1: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
