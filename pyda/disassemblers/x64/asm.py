@@ -595,15 +595,15 @@ def handleOperandAddressing( instruction, operand, binary ):
         # If the instruction has a prefix that tells it so extend the base,
         # add the value to extend the register value.
         if instruction.extendedBase:
-            logger.debug(f"Extending register base value before: {operand.value:x}")
+            logger.debug("Extending register to one of the R registers")
             operand.value += REG_EXTEND
-            logger.debug(f"Extending register base value after: {operand.value:x}")
 
         # Save the displacement value if there are any displacement bytes. The
         # Mod R/M byte as well as any additional addressing bytes, like the SIB
         # byte, must be skipped to get to the displacement bytes.
         if displaceBytes > 0:
             operand.displacement = int.from_bytes(binary[1+addrBytes:1+addrBytes+displaceBytes], "little", signed=True)
+            logger.debug(f"Adding displacement to the operand: {operand.displacement:x}")
 
     # Otherwise, set the value as long as this operand is not an immediate
     elif not operand.isImmediate:
@@ -692,9 +692,9 @@ def handleImmediate( instruction, binary ):
 
     return numBytes
 
-def resolveRelativeAddr( instruction ):
+def resolveRelativeAddr( instruction, operand ):
     """
-    Description:    Resolves any relative memory addresses if there are any.
+    Description:    Resolves the relative memory address if there is one.
 
                     If the instruction is a relative address, the it is:
                     [%rip] + displacement
@@ -704,13 +704,12 @@ def resolveRelativeAddr( instruction ):
                     the current instruction plus the number of bytes in it.
 
     Arguments:      instruction - X64Instruction object
+                    operand     - X64Operand object. Can also be None.
 
     Return:         None
     """
 
-    operand = instruction.source
-
-    if operand.indirect and operand.value == REG_RIP:
+    if operand is not None and operand.indirect and operand.value == REG_RIP:
         logger.debug("Relative indirect memory reference")
         ripValue = instruction.addr + len(instruction.bytes)
         operand.indirect = False
@@ -799,8 +798,8 @@ def disassemble( function ):
 
         # Resolve any addresses that are relative now that the value of RIP can
         # be calculated because all bytes of the current isntruction are consumed.
-        if curInstruction.source is not None:
-            resolveRelativeAddr(curInstruction)
+        resolveRelativeAddr(curInstruction, curInstruction.source)
+        resolveRelativeAddr(curInstruction, curInstruction.dest)
 
         logger.debug(curInstruction)
 
