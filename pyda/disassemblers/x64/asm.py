@@ -128,6 +128,11 @@ class X64Operand( Operand ):
         self.scale = 0                  # Factor to multiply the index by if SIB byte is present
         self.index = 0                  # Index register if SIB byte is present
 
+        # Immediates max out at a size of 32 bits. Even if a prefix said
+        # operands are 64 bits, that only applies to registers, not immediates.
+        if isImmediate and size > REG_SIZE_32:
+            self.size = REG_SIZE_32
+
     def __repr__( self ):
 
         value    = self.value
