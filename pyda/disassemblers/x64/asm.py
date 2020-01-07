@@ -13,6 +13,7 @@ class X64Instruction( Instruction ):
         super().__init__(mnemonic, addr, source, dest, extraOperands)
 
         self.prefixSize = None  # The size operands should be based on the prefix
+        self.segmentPrefix = 0  # Opcode of the segment 
         self.addressSize = 8
         self.extendedBase = False
 
@@ -121,6 +122,7 @@ class X64Operand( Operand ):
         super().__init__(size, value)
         self.isImmediate = isImmediate  # Whether the operand is an immediate
         self.displacement = 0           # Value of the displacement from the register value
+        self.segmentReg = 0             # The segment register to use as a base value
         self.indirect = False           # Whether the addressing is indirect
         self.modRm = False              # Whether the Mod R/M byte applies
         self.scale = 0                  # Factor to multiply the index by if SIB byte is present
@@ -141,34 +143,59 @@ class X64Operand( Operand ):
             return regName
 
         # If this is an indirect value, use the name of the 64 bit register
-        regName       = ""
-        displaceStr   = ""
-        scaleIndexStr = ""
+        regName      = ""
+        indexName    = ""
+        scaleStr     = ""
+        segmentStr   = ""
+        displaceStr  = ""
+        baseIndexStr = ""
+
+        # Use a different syntax for segment registers because they are just a
+        # segment name with a displacement separated by a colon.
+        if self.segmentReg in SEGMENT_REG_NAMES:
+            segmentStr = f"{SEGMENT_REG_NAMES[self.segmentReg]}:"
 
         # If the value was not changed to None because of SIB displacement,
         # set it to the name according to the register name dictionary.
         if value is not None:
             regName    = REG_NAMES[value][REG_SIZE_64]
-        indexName  = REG_NAMES[index][REG_SIZE_64]
 
-        # Handle the displacement value sign
-        if displace != 0:
-            displaceStr = f" {'+' if displace > 0 else '-'} {hex(abs(displace))}"
+        # There is only an index if the scale was set to be nonzero, and RSP is
+        # not a valid index register.
+        if scale > 0 and index != REG_RSP:
+            indexName  = REG_NAMES[index][REG_SIZE_64]
 
         # Handle the scale and index values. They should only be there if
-        # scale is greater than 0.
-        if scale > 0:
-            scaleString = ""
+        # scale is greater than 0 and the index has a valid name. It will not
+        # have a valid name if it is RSP because that is not a valid index.
+        if scale > 0 and indexName != "":
 
             # Only print the scale value if it is not 1 to make it more clean
             if scale > 1:
-                scaleString = f" {scale} * "
+                scaleStr = f"{scale} * "
 
-            # Only have a plus if there is a base to add. There won't be a base
-            # if the SIB byte designated a displacement instead of a base.
-            scaleIndexStr = f"{' +' if regName != '' else ''}{scaleString}{indexName}"
+        # Handle combining the base and index values. If at least one value is
+        # not an empty string, then the values need to go in brackets. If both
+        # are set, then they need to be separated by a plus sign. If only one is
+        # set, then just putting them all next to each other in brackets is okay
+        # because one will be nothing and the other will be the only value.
+        if regName != "" or indexName != "":
+            if regName != "" and indexName != "":
+                baseIndexStr = f"[{regName} + {scaleStr}{indexName}]"
 
-        return f"[{regName}{scaleIndexStr}]{displaceStr}"
+            else:
+                baseIndexStr = f"[{regName}{scaleStr}{indexName}]"
+
+        # Handle the displacement value
+        if displace != 0:
+            signStr = ""
+            if baseIndexStr != "" and displace > 0:
+                signStr = " + "
+            elif baseIndexStr != "" and displace < 0:
+                signStr = " - "
+            displaceStr = f"{signStr}{hex(abs(displace))}"
+
+        return f"{segmentStr}{baseIndexStr}{displaceStr}"
 
 
 def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
@@ -242,11 +269,16 @@ def handlePrefix( instruction, binary ):
 
     for byte in binary:
 
-        # TODO: Add support for group 1 and 2 prefixes
-        #
+        # TODO: Add support for group 1 prefixes
+
+        # Group 2 prefixes
+        if byte in PREFIX_SEGMENTS:
+            logger.debug(f"Found a segment register prefix: {byte}")
+            instruction.segmentPrefix = byte
+            instruction.bytes.append(byte)
 
         # Group 3 prefixes
-        if byte == PREFIX_64_BIT_OPERAND:
+        elif byte == PREFIX_64_BIT_OPERAND:
             logger.debug("Found the 64-bit prefix")
             instruction.prefixSize = REG_SIZE_64
             instruction.bytes.append(byte)
@@ -527,6 +559,14 @@ def handleOperandAddressing( instruction, operand, binary ):
             isSibDisplace = handleSibByte(operand, mod, binary[1])
             addrBytes += 1
 
+            # RSP is not a valid index, so there must be a segment register set
+            # to be used as the index.
+            if operand.index == REG_RSP:
+                logger.debug(f"RSP is not a valid index, using {instruction.segmentPrefix}")
+
+                if instruction.segmentPrefix in PREFIX_SEGMENTS:
+                    operand.segmentReg = instruction.segmentPrefix
+
         if mod == MOD_INDIRECT:
 
             if regmem == REG_RBP:
@@ -558,7 +598,6 @@ def handleOperandAddressing( instruction, operand, binary ):
             logger.debug(f"Extending register base value before: {operand.value:x}")
             operand.value += REG_EXTEND
             logger.debug(f"Extending register base value after: {operand.value:x}")
-
 
         # Save the displacement value if there are any displacement bytes. The
         # Mod R/M byte as well as any additional addressing bytes, like the SIB
@@ -691,7 +730,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly
+    binary       = function.assembly[:200]
     instructions = function.instructions
     offTheRails  = False
 
@@ -743,6 +782,7 @@ def disassemble( function ):
                 binary = binary[numModRmBytes:]
 
             else:
+                logger.error("Failed to process the Mod R/M byte")
                 binary += bytes(curInstruction.bytes)
                 offTheRails = True
                 continue
@@ -757,12 +797,12 @@ def disassemble( function ):
 
             binary = binary[numImmediateBytes:]
 
-        logger.debug(curInstruction)
-
         # Resolve any addresses that are relative now that the value of RIP can
         # be calculated because all bytes of the current isntruction are consumed.
         if curInstruction.source is not None:
             resolveRelativeAddr(curInstruction)
+
+        logger.debug(curInstruction)
 
         # Add the instruction and advance the address
         instructions.append(curInstruction)

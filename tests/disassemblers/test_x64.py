@@ -254,3 +254,89 @@ class TestX64():
         function, match = self.helper("add", "%ecx", "[%r11 + 4 * %rax]", assembly)
         assert len(function.instructions) == 1
         assert match is not None
+
+    def test_segment_reg_prefix( self ):
+
+        #################
+        #  ES REGISTER  #
+        #################
+
+        #           Address mode | destination    | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Invalid Reg    | Use Displacement
+        sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
+        assembly = bytes([PREFIX_REG_ES, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "%ES:0x28", "%rcx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #######################################
+        #  CS REGISTER  AND NO 64-BIT PREFIX  #
+        #######################################
+
+        #           Address mode | destination    | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Invalid Reg    | Use Displacement
+        sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
+        assembly = bytes([PREFIX_REG_CS, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "%CS:0x28", "%ecx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #################
+        #  SS REGISTER  #
+        #################
+
+        #           Address mode | destination    | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Invalid Reg    | Use Displacement
+        sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
+        assembly = bytes([PREFIX_REG_SS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "%SS:0x28", "%rcx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #################
+        #  DS REGISTER  #
+        #################
+
+        #           Address mode | destination    | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Invalid Reg    | Use Displacement
+        sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
+        assembly = bytes([PREFIX_REG_DS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "%DS:0x28", "%rcx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #################
+        #  FS REGISTER  #
+        #################
+
+        #           Address mode | destination    | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Invalid Reg    | Use Displacement
+        sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
+        assembly = bytes([PREFIX_REG_FS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "%FS:0x28", "%rcx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #################
+        #  GS REGISTER  #
+        #################
+
+        #           Address mode | destination    | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Invalid Reg    | Use Displacement
+        sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
+        assembly = bytes([PREFIX_REG_GS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "%GS:0x28", "%rcx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None

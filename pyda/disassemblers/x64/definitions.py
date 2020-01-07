@@ -4,6 +4,31 @@ PREFIX_16_BIT_OPERAND = 0x66
 PREFIX_32_BIT_ADDRESS = 0x67
 PREFIX_2_BYTE_OPCODE  = 0x0f
 
+PREFIX_REG_ES = 0x26
+PREFIX_REG_CS = 0x2e
+PREFIX_REG_SS = 0x36
+PREFIX_REG_DS = 0x3e
+PREFIX_REG_FS = 0x64
+PREFIX_REG_GS = 0x65
+
+PREFIX_SEGMENTS = [
+    PREFIX_REG_ES,
+    PREFIX_REG_CS,
+    PREFIX_REG_SS,
+    PREFIX_REG_DS,
+    PREFIX_REG_FS,
+    PREFIX_REG_GS,
+]
+
+SEGMENT_REG_NAMES = {
+    PREFIX_REG_ES: "%ES",
+    PREFIX_REG_CS: "%CS",
+    PREFIX_REG_SS: "%SS",
+    PREFIX_REG_DS: "%DS",
+    PREFIX_REG_FS: "%FS",
+    PREFIX_REG_GS: "%GS",
+}
+
 PREFIX_REX_MASK       = 0x40 # All REX prefixes start with 0x4
 PREFIX_REX_B_MASK     = 0x00000001
 PREFIX_REX_X_MASK     = 0x00000010
@@ -61,7 +86,7 @@ REG_EXTEND = 0b00001000   # Extension value when extending a register from its b
 # Unofficial values for registers that can be used to identify them.
 # They will all start with a 1 at the most significant bit to differentiate
 # them from the standard, official registers.
-REG_RIP  = 0b10000000
+REG_RIP = 0b10000000
 
 REG_SIZE_64 = 8
 REG_SIZE_32 = 4
