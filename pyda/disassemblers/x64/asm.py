@@ -31,7 +31,7 @@ class X64Instruction( Instruction ):
         #############################
 
         info.srcOperandSize = getOperandSize(opcode, self.prefixSize, info.srcOperandSize, info.srcCanPromote)
-        info.dstOperandSize = getOperandSize(opcode, self.prefixSize, info.dstOperandSize)
+        info.dstOperandSize = getOperandSize(opcode, self.prefixSize, info.dstOperandSize, info.dstCanPromote)
 
         logger.debug(f"source size: {info.srcOperandSize}, dest size: {info.dstOperandSize}")
 
@@ -127,11 +127,6 @@ class X64Operand( Operand ):
         self.modRm = False              # Whether the Mod R/M byte applies
         self.scale = 0                  # Factor to multiply the index by if SIB byte is present
         self.index = 0                  # Index register if SIB byte is present
-
-        # Immediates max out at a size of 32 bits. Even if a prefix said
-        # operands are 64 bits, that only applies to registers, not immediates.
-        if isImmediate and size > REG_SIZE_32:
-            self.size = REG_SIZE_32
 
     def __repr__( self ):
 
@@ -239,7 +234,8 @@ def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
 
     logger.debug(f"prefixSize: {prefixSize}, infoSize: {infoSize}, sizeBit: {sizeBit}")
 
-    if prefixSize is not None and infoSize != REG_SIZE_8 and canPromote and sizeBit != 0:
+    if prefixSize is not None and infoSize != REG_SIZE_8 and not (infoSize is None and sizeBit == 0) and canPromote:
+        # TODO: Handle demotions, like for c7 with a 16-bit prefix. This should be allowed.
         logger.debug("Using prefix size")
         return prefixSize
 
@@ -311,7 +307,6 @@ def handlePrefix( instruction, binary ):
                 return numPrefixBytes
 
             instruction.bytes.append(byte)
-
 
         # If a prefix is not found, proceed to the next step
         else:
@@ -734,7 +729,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:200]
+    binary       = function.assembly[:300]
     instructions = function.instructions
     offTheRails  = False
 
