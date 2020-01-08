@@ -13,7 +13,7 @@ class X64Instruction( Instruction ):
         super().__init__(mnemonic, addr, source, dest, extraOperands)
 
         self.prefixSize = None  # The size operands should be based on the prefix
-        self.segmentPrefix = 0  # Opcode of the segment 
+        self.segmentPrefix = 0  # Opcode of the segment
         self.addressSize = 8
         self.extendedBase = False
 
@@ -30,8 +30,8 @@ class X64Instruction( Instruction ):
         #  DETERMINE OPERAND SIZES  #
         #############################
 
-        info.srcOperandSize = getOperandSize(opcode, self.prefixSize, info.srcOperandSize, info.srcCanPromote)
-        info.dstOperandSize = getOperandSize(opcode, self.prefixSize, info.dstOperandSize, info.dstCanPromote)
+        info.srcOperandSize = getOperandSize(opcode, self.prefixSize, info.srcOperandSize, info.srcMaxSize)
+        info.dstOperandSize = getOperandSize(opcode, self.prefixSize, info.dstOperandSize, info.dstMaxSize)
 
         logger.debug(f"source size: {info.srcOperandSize}, dest size: {info.dstOperandSize}")
 
@@ -198,7 +198,7 @@ class X64Operand( Operand ):
         return f"{segmentStr}{baseIndexStr}{displaceStr}"
 
 
-def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
+def getOperandSize( opcode, prefixSize, infoSize, maxSize ):
     """
     Description:    Figures out what the operand size should be based on the
                     opcode, the size of the instruction if one was set by a
@@ -225,7 +225,7 @@ def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
     Arguments:      opcode     - The instruction opcode
                     prefixSize - The size based on a prefix byte
                     infoSize   - The size from the table of opcodes
-                    canPromote - Whether the size can be promoted
+                    maxSize    - The maximum allowed size for the operand
 
     Return:         The size that should be used for the operand.
     """
@@ -234,25 +234,35 @@ def getOperandSize( opcode, prefixSize, infoSize, canPromote=True ):
 
     logger.debug(f"prefixSize: {prefixSize}, infoSize: {infoSize}, sizeBit: {sizeBit}")
 
-    if prefixSize is not None and infoSize != REG_SIZE_8 and not (infoSize is None and sizeBit == 0) and canPromote:
-        # TODO: Handle demotions, like for c7 with a 16-bit prefix. This should be allowed.
+    # If there is a prefix size within the allowed range and there is no info
+    # size override, trust the size bit to determine the default size of the
+    # operand. If the bit is 0, then the operand is 8 bits and cannot be changed
+    # Or if an info size is specified because then the size bit doesn't matter.
+    if prefixSize is not None and prefixSize <= maxSize and ((infoSize is None and sizeBit != 0) or (infoSize is not None)):
         logger.debug("Using prefix size")
         return prefixSize
 
-    elif infoSize is not None:
+    elif infoSize is not None and infoSize <= maxSize:
         logger.debug("Using info size")
         return infoSize
+
+    # If the info size somehow exceeds the maximum, use the maximum instead
+    # because the size bit shold not be used if an info size was specified.
+    elif infoSize is not None and infoSize > maxSize:
+        logger.debug("Using the max size")
+        return maxSize
 
     elif sizeBit == 0:
         logger.debug("Using bit size 8")
         return REG_SIZE_8
 
-    elif sizeBit == 1:
+    elif sizeBit == 1 and maxSize >= REG_SIZE_32:
         logger.debug("Using bit size 32")
         return REG_SIZE_32
 
     else:
-        logger.debug("The size of the operand could not be determined")
+        logger.debug("Using the max size because max is lower than 32 bits")
+        return maxSize
 
 
 def handlePrefix( instruction, binary ):
