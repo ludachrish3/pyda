@@ -357,7 +357,7 @@ def handleOpcode( instruction, binary ):
     # The opcode is not a valid 1 or 2 byte opcode, so keep the new instruction
     # the same as the one that was passed in.
     else:
-        logger.debug("No valid opcode was found")
+        logger.warning("No valid opcode was found")
 
     # Append the opcode bytes to the instruction's list of bytes
     instruction.bytes += list(binary[0:numOpcodeBytes])
@@ -739,7 +739,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:300]
+    binary       = function.assembly[:500]
     instructions = function.instructions
     offTheRails  = False
 
@@ -779,7 +779,7 @@ def disassemble( function ):
             # continue processing the next instructions as default instructions.
             # Also add back the current instructions bytes so that they don't
             # get lost.
-            binary += bytes(curInstruction.bytes)
+            binary = bytes(curInstruction.bytes) + binary
             offTheRails = True
             continue
 
@@ -792,7 +792,7 @@ def disassemble( function ):
 
             else:
                 logger.error("Failed to process the Mod R/M byte")
-                binary += bytes(curInstruction.bytes)
+                binary = bytes(curInstruction.bytes) + binary
                 offTheRails = True
                 continue
 
