@@ -770,16 +770,48 @@ class TestX64():
         #############################################
 
         #           Address mode | destination    | source
-        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
         assembly = bytes([0x63, modRmByte])
-        function, match = self.helper("movsxd", "[%rax]", "%ecx", assembly)
+        function, match = self.helper("movsxd", "%ax", "%ecx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
         #           Address mode | destination    | source
-        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
         assembly = bytes([PREFIX_64_BIT_OPERAND, 0x63, modRmByte])
-        function, match = self.helper("movsxd", "[%rax]", "%rcx", assembly)
+        function, match = self.helper("movsxd", "%ax", "%rcx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ######################################
+        #  MOVE BETWEEN REGISTER AND MEMORY  #
+        ######################################
+
+        #           Address mode | source         | destination
+        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([0x88, modRmByte])
+        function, match = self.helper("mov", "%cl", "%al", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #           Address mode | source         | destination
+        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([0x89, modRmByte])
+        function, match = self.helper("mov", "%ecx", "%eax", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #           Address mode | destination    | source
+        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([0x8a, modRmByte])
+        function, match = self.helper("mov", "%al", "%cl", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #           Address mode | destination    | source
+        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([0x8b, modRmByte])
+        function, match = self.helper("mov", "%eax", "%ecx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
@@ -799,6 +831,85 @@ class TestX64():
 
         assembly = bytes([0xb2, 0x42])
         function, match = self.helper("mov", "0x42", "%dl", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb3, 0x42])
+        function, match = self.helper("mov", "0x42", "%bl", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb4, 0x42])
+        function, match = self.helper("mov", "0x42", "%ah", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb5, 0x42])
+        function, match = self.helper("mov", "0x42", "%ch", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb6, 0x42])
+        function, match = self.helper("mov", "0x42", "%dh", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb7, 0x42])
+        function, match = self.helper("mov", "0x42", "%bh", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb8, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%eax", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb9, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%ecx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xba, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%edx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xbb, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%ebx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xbc, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%esp", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xbd, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%ebp", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xbe, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%esi", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xbf, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%edi", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #           Address mode | destination must be 0 | source
+        modRmByte = MOD_REGISTER | 0                     | REG_RCX
+        assembly = bytes([0xc6, modRmByte, 0x42])
+        function, match = self.helper("mov", "0x42", "%cl", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #           Address mode | destination must be 0 | source
+        modRmByte = MOD_REGISTER | 0                     | REG_RCX
+        assembly = bytes([0xc7, modRmByte, 0x42, 0x00, 0x00, 0x00])
+        function, match = self.helper("mov", "0x42", "%ecx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
