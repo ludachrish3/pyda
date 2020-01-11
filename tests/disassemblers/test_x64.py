@@ -437,12 +437,12 @@ class TestX64():
         function = Function(name='testFunc', addr=0, size=0, assembly=assembly)
 
         if dst == "":
-            assemblyRe = re.compile(r'\s*0:\s+{assembly}\s+{mnemonic}\s+{src}'.format(
+            assemblyRe = re.compile(r'^\s*0:\s+{assembly}\s+{mnemonic}\s+{src}$'.format(
                 assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
                 mnemonic=mnemonic, src=re.escape(src)))
 
         else:
-            assemblyRe = re.compile(r'\s*0:\s+{assembly}\s+{mnemonic}\s+{src},\s+{dst}'.format(
+            assemblyRe = re.compile(r'^\s*0:\s+{assembly}\s+{mnemonic}\s+{src},\s+{dst}$'.format(
                 assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
                 mnemonic=mnemonic, src=re.escape(src), dst=re.escape(dst)))
 
@@ -765,9 +765,27 @@ class TestX64():
 
     def test_move_instructions ( self ):
 
-        ###########################
-        #  IMMEDIATE TO REGISTER  #
-        ###########################
+        #############################################
+        #  MOVE WITH CONVERSION AND SIGN EXTENSION  #
+        #############################################
+
+        #           Address mode | destination    | source
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([0x63, modRmByte])
+        function, match = self.helper("movsxd", "[%rax]", "%ecx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #           Address mode | destination    | source
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RAX
+        assembly = bytes([PREFIX_64_BIT_OPERAND, 0x63, modRmByte])
+        function, match = self.helper("movsxd", "[%rax]", "%rcx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ################################
+        #  MOVE IMMEDIATE TO REGISTER  #
+        ################################
 
         assembly = bytes([0xb0, 0x42])
         function, match = self.helper("mov", "0x42", "%al", assembly)
@@ -807,11 +825,95 @@ class TestX64():
         assert len(function.instructions) == 1
         assert match is not None
 
+        assembly = bytes([0x54])
+        function, match = self.helper("push", "%rsp", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x55])
+        function, match = self.helper("push", "%rbp", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x56])
+        function, match = self.helper("push", "%rsi", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x57])
+        function, match = self.helper("push", "%rdi", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x68, 0xff, 0xff, 0xff, 0xff])
+        function, match = self.helper("push", "-0x1", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x6a, 0xff])
+        function, match = self.helper("push", "-0x1", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
         assembly = bytes([0x9c])
         function, match = self.helper("pushf", "%rflags", "", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
+
+    def test_pop_instructions( self ):
+
+        assembly = bytes([0x58])
+        function, match = self.helper("pop", "%rax", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x59])
+        function, match = self.helper("pop", "%rcx", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x5a])
+        function, match = self.helper("pop", "%rdx", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x5b])
+        function, match = self.helper("pop", "%rbx", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x5c])
+        function, match = self.helper("pop", "%rsp", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x5d])
+        function, match = self.helper("pop", "%rbp", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x5e])
+        function, match = self.helper("pop", "%rsi", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x5f])
+        function, match = self.helper("pop", "%rdi", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        #           Address mode | regOrOpmust be 0 | Destination
+        modRmByte = MOD_INDIRECT | 0                | REG_RCX
+        assembly = bytes([0x8f, modRmByte])
+        function, match = self.helper("pop", "[%rcx]", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x9d])
+        function, match = self.helper("popf", "%rflags", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
 
 
     def test_exchange_instructions( self ):
@@ -825,4 +927,4 @@ class TestX64():
         function, match = self.helper("xchg", "%eax", "%ecx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
-        
+

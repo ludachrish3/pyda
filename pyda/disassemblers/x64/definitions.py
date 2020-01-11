@@ -206,6 +206,8 @@ REG_NAMES = {
     },
     REG_RFLAGS: {
         REG_SIZE_64: "%rflags",
+        REG_SIZE_32: REG_NAME_UNDEF,
         REG_SIZE_16: "%eflags",
+        REG_SIZE_8:  REG_NAME_UNDEF,
     },
 }

@@ -5,7 +5,7 @@ class X64InstructionInfo():
     def __init__( self, mnemonic, registerCode=False, direction=None,
                   modRm=MODRM_NONE, extOpcode=False, srcIsImmediate=False,
                   srcOperandSize=None, dstOperandSize=None, relativeJump=False,
-                  signExtension=False,
+                  signExtension=False, isFlagsReg=False,
                   srcMaxSize=REG_SIZE_64, dstMaxSize=REG_SIZE_64, signExtBit=False):
 
         # Opcode info
@@ -16,6 +16,7 @@ class X64InstructionInfo():
         self.extOpcode     = extOpcode      # Whether the opcode is extended into the ModR/M
         self.signExtBit    = signExtBit     # Whether the sign extension bit of the opcode means anything
         self.signExtension = signExtension  # Whether the sign should be extended
+        self.isFlagsReg    = isFlagsReg     # Whether the value of the register if the flags register
         self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
 
         # Operand info
@@ -125,33 +126,33 @@ oneByteOpcodes = {
 #   0x4d: TODO: REX.WRB Prefix
 #   0x4e: TODO: REX.WRX Prefix
 #   0x4f: TODO: REX.WRXB Prefix
-    0x50: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x51: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x52: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x53: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x54: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x55: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x56: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x57: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64),
-    0x58: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x59: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x5a: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x5b: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x5c: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x5d: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x5e: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
-    0x5f: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
+    0x50: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x51: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x52: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x53: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x54: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x55: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x56: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x57: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x59: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
+    0x5a: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
+    0x5b: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
+    0x5c: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
+    0x5d: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
+    0x5e: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
+    0x5f: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
+    0x58: X64InstructionInfo("pop",   registerCode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
-    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # TODO: The source cannot be promoted, but the destination can. Must be able to support promotion of only one operand at a time.
+    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_16), # TODO: The source cannot be promoted, but the destination can. Must be able to support promotion of only one operand at a time.
 #   0x64: FS Segment Register Prefix
 #   0x65: GS Segment Register Prefix
 #   0x66: 16-bit Operand Size Prefix
 #   0x67: TODO: 32-bit Address Size Prefix
-    0x68: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32),
+    0x68: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_0),
     0x69: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32),    # TODO: Figure out a way to handle an instruction with multiple sources
-    0x6a: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_8),
+    0x6a: X64InstructionInfo("push",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_8, dstOperandSize=REG_SIZE_0),
     0x6b: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_8),
 #   0x6c: Debug input port to string
 #   0x6d: Debug input port to string
@@ -188,7 +189,7 @@ oneByteOpcodes = {
 #   0x8c: TODO: X64InstructionInfo("mov",   modRm=MODRM_SOURCE), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte or a memory location that is always a word long
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SOURCE),
 #   0x8e: TODO: X64InstructionInfo("mov",   modRm=MODRM_SOURCE), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
-    0x8f: X64InstructionInfo("pop",   extOpcode=True, direction=OP_DIR_TO_REG,   dstOperandSize=REG_SIZE_64),
+    0x8f: X64InstructionInfo("pop",   modRm=MODRM_DEST, extOpcode=True, dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
     0x90: X64InstructionInfo("nop",   srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0), # This is a special case of exchange instructions that would swap EAX with EAX
     0x91: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
     0x92: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
@@ -201,8 +202,8 @@ oneByteOpcodes = {
 #   0x99: TODO: Sign extend register value to be twice the size, and put the sign extended bits in the equivalent EDX register
 #   0x9a: Invalid
     0x9b: X64InstructionInfo("fwait", srcOperandSize=REG_SIZE_0,  dstOperandSize=REG_SIZE_0),
-    0x9c: X64InstructionInfo("pushf", srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_64),
-    0x9d: X64InstructionInfo("popf",  srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_64),
+    0x9c: X64InstructionInfo("pushf", isFlagsReg=True, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
+    0x9d: X64InstructionInfo("popf",  isFlagsReg=True, dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
     0x9e: X64InstructionInfo("sahf",  srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_16, srcMaxSize=REG_SIZE_16, dstMaxSize=REG_SIZE_16),
     0x9f: X64InstructionInfo("sahf",  srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_16, srcMaxSize=REG_SIZE_16, dstMaxSize=REG_SIZE_16),
 

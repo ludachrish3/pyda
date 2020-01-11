@@ -35,72 +35,45 @@ class X64Instruction( Instruction ):
 
         logger.debug(f"source size: {info.srcOperandSize}, dest size: {info.dstOperandSize}")
 
-        #################################
-        #  DETERMINE OPERAND DIRECTION  #
-        #################################
-
-        # If direction is already set, the default rules for direction apply
-        # This should only be true in cases where an override is necessary
-        if info.direction is None:
-
-            # The direction is always to the register or memory if there is an immediate
-            if info.srcIsImmediate:
-                info.direction = OP_DIR_TO_REG
-
-            # Otherwise, the direction bit, which is the 2nd least significant
-            # bit, is the indicator of which direction to use
-            else:
-                info.direction = (opcode & OP_DIR_MASK) >> 1
-
         #####################
         #  CREATE OPERANDS  #
         #####################
+
+        register = 0
 
         # Handle sign extension if the bit it meaningful
         if opcode & OP_SIGN_MASK:
             info.signExtension = True
 
+        # Handle the register value if the RFLAGS register should be used
+        if info.isFlagsReg:
+            register = REG_RFLAGS
+
         # Handle setup if there is a register code in the opcode
         if info.registerCode:
             register = opcode & REG_MASK
 
-            # If the source is an immeidate, it is also assumed that the value
-            # is being put into the register specified by the register code.
-            if info.direction == OP_DIR_TO_REG or info.srcIsImmediate:
-                logger.debug("The destination is the register")
-                self.dest = X64Operand(size=info.dstOperandSize, value=register)
+            # Extend the value of the destination if the instruction has a
+            # base extension prefix.
+            if self.extendedBase:
+                register += REG_EXTEND
 
-                # Extend the value of the destination if the instruction has a
-                # base extension prefix.
-                if self.extendedBase:
-                    self.dest.value += REG_EXTEND
+        # Create s destination operand as long as the size isn't 0 and the
+        # instruction is a jump, which would not have a destination.
+        if self.dest is None and not info.relativeJump and info.dstOperandSize != REG_SIZE_0:
+            self.dest   = X64Operand(size=info.dstOperandSize, value=register)
 
-                # Only add a source if it is an immediate. Otherwise, there
-                # should not be a source if the register code is specified.
-                if info.srcIsImmediate:
-                    self.source = X64Operand(size=info.srcOperandSize, isImmediate=True)
+            # Set the register to 0 now because the destination is always the
+            # one to get the register value unless there is no destination.
+            # This keeps the source from also getting the value if there is a
+            # destination.
+            register = 0
 
-            elif info.direction == OP_DIR_FROM_REG:
-                logger.debug("The source is the register")
-                self.source = X64Operand(size=info.srcOperandSize, value=register)
+        # Create a source operand as long as the size isn't 0 and it has not
+        # already been created
+        if self.source is None and info.srcOperandSize != REG_SIZE_0:
+            self.source = X64Operand(size=info.srcOperandSize, isImmediate=info.srcIsImmediate, value=register)
 
-                # Extend the value of the source if the instruction has a
-                # base extension prefix.
-                if self.extendedBase:
-                    self.source.value += REG_EXTEND
-
-            else:
-                logger.debug("An invalid direction was specified")
-
-        else:
-            # Create a source operand as long as the size isn't 0
-            if info.srcOperandSize != REG_SIZE_0:
-                self.source = X64Operand(size=info.srcOperandSize, isImmediate=info.srcIsImmediate)
-
-            # Create s destination operand as long as the size isn't 0 and the
-            # instruction is a jump, which would not have a destination.
-            if not info.relativeJump and info.dstOperandSize != REG_SIZE_0:
-                self.dest   = X64Operand(size=info.dstOperandSize)
 
         ################################
         #  SET MOD R/M OPERAND STATUS  #
@@ -650,7 +623,6 @@ def handleModRmByte( instruction, binary ):
             return 0
 
     # Set the operand addressing properties as long as they are not None
-    direction = instruction.info.direction
     if instruction.source is not None:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.source, binary)
         logger.debug(f"After handling source: {numBytesConsumed}")
