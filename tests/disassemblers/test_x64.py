@@ -761,3 +761,68 @@ class TestX64():
         function, match = self.helper("mov", "%GS:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
+
+
+    def test_move_instructions ( self ):
+
+        ###########################
+        #  IMMEDIATE TO REGISTER  #
+        ###########################
+
+        assembly = bytes([0xb0, 0x42])
+        function, match = self.helper("mov", "0x42", "%al", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb1, 0x42])
+        function, match = self.helper("mov", "0x42", "%cl", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0xb2, 0x42])
+        function, match = self.helper("mov", "0x42", "%dl", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+
+    def test_push_instructions( self ):
+
+        assembly = bytes([0x50])
+        function, match = self.helper("push", "%rax", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x51])
+        function, match = self.helper("push", "%rcx", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x52])
+        function, match = self.helper("push", "%rdx", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x53])
+        function, match = self.helper("push", "%rbx", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x9c])
+        function, match = self.helper("pushf", "%rflags", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+
+
+    def test_exchange_instructions( self ):
+
+        assembly = bytes([0x90])
+        function, match = self.helper("nop", "", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        assembly = bytes([0x91])
+        function, match = self.helper("xchg", "%eax", "%ecx", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+        
