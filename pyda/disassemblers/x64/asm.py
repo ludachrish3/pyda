@@ -33,6 +33,33 @@ class X64Instruction( Instruction ):
         info.srcOperandSize = getOperandSize(opcode, self.prefixSize, info.srcOperandSize, info.srcMaxSize)
         info.dstOperandSize = getOperandSize(opcode, self.prefixSize, info.dstOperandSize, info.dstMaxSize)
 
+        # Handle conversion opcodes that sign extends the value in EAX
+        if info.isConversion:
+            if opcode == CONVERT_TO_RAX:
+                if info.dstOperandSize == REG_SIZE_16:
+                    self.mnemonic = "cbw"
+
+                if info.dstOperandSize == REG_SIZE_32:
+                    self.mnemonic = "cwde"
+
+                if info.dstOperandSize == REG_SIZE_64:
+                    self.mnemonic = "cdqe"
+
+            elif opcode == CONVERT_TO_RDX:
+                if info.dstOperandSize == REG_SIZE_16:
+                    self.mnemonic = "cwd"
+
+                if info.dstOperandSize == REG_SIZE_32:
+                    self.mnemonic = "cdq"
+
+                if info.dstOperandSize == REG_SIZE_64:
+                    self.mnemonic = "cqo"
+
+            # Do not continue on to create operands because conversions have
+            # implicit operands based on the opcode.
+            return
+
+
         logger.debug(f"source size: {info.srcOperandSize}, dest size: {info.dstOperandSize}")
 
         #####################

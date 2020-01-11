@@ -5,7 +5,7 @@ class X64InstructionInfo():
     def __init__( self, mnemonic, registerCode=False, direction=None,
                   modRm=MODRM_NONE, extOpcode=False, srcIsImmediate=False,
                   srcOperandSize=None, dstOperandSize=None, relativeJump=False,
-                  signExtension=False, isFlagsReg=False,
+                  signExtension=False, isFlagsReg=False, isConversion=False,
                   srcMaxSize=REG_SIZE_64, dstMaxSize=REG_SIZE_64, signExtBit=False):
 
         # Opcode info
@@ -17,6 +17,7 @@ class X64InstructionInfo():
         self.signExtBit    = signExtBit     # Whether the sign extension bit of the opcode means anything
         self.signExtension = signExtension  # Whether the sign should be extended
         self.isFlagsReg    = isFlagsReg     # Whether the value of the register if the flags register
+        self.isConversion  = isConversion   # Whether the instruction is size conversion
         self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
 
         # Operand info
@@ -145,7 +146,7 @@ oneByteOpcodes = {
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
-    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_16), # TODO: The source cannot be promoted, but the destination can. Must be able to support promotion of only one operand at a time.
+    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SOURCE, signExtension=True, srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_16),
 #   0x64: FS Segment Register Prefix
 #   0x65: GS Segment Register Prefix
 #   0x66: 16-bit Operand Size Prefix
@@ -198,14 +199,19 @@ oneByteOpcodes = {
     0x95: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
     0x96: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
     0x97: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
-#   0x98: TODO: Sign extend register value to be twice the size
-#   0x99: TODO: Sign extend register value to be twice the size, and put the sign extended bits in the equivalent EDX register
+    0x98: X64InstructionInfo("",      isConversion=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
+    0x99: X64InstructionInfo("",      isConversion=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
 #   0x9a: Invalid
     0x9b: X64InstructionInfo("fwait", srcOperandSize=REG_SIZE_0,  dstOperandSize=REG_SIZE_0),
     0x9c: X64InstructionInfo("pushf", isFlagsReg=True, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
     0x9d: X64InstructionInfo("popf",  isFlagsReg=True, dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
     0x9e: X64InstructionInfo("sahf",  srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_16, srcMaxSize=REG_SIZE_16, dstMaxSize=REG_SIZE_16),
     0x9f: X64InstructionInfo("sahf",  srcOperandSize=REG_SIZE_16, dstOperandSize=REG_SIZE_16, srcMaxSize=REG_SIZE_16, dstMaxSize=REG_SIZE_16),
+#   0xa0: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8), TODO: Requires a segment register prefix
+#   0xa1: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), TODO: Requires a segment register prefix
+#   0xa2: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8), TODO: Requires a segment register prefix
+#   0xa3: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), TODO: Requires a segment register prefix
+#   0xa4: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), TODO: Requires a segment register prefix
 
 #   0xa9: srcMaxSize=REG_SIZE_32
 
