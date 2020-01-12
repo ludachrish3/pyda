@@ -33,10 +33,10 @@ SEGMENT_REG_NAMES = {
 }
 
 PREFIX_REX_MASK       = 0x40 # All REX prefixes start with 0x4
-PREFIX_REX_B_MASK     = 0x00000001
-PREFIX_REX_X_MASK     = 0x00000010
-PREFIX_REX_R_MASK     = 0x00000100
-PREFIX_REX_W_MASK     = 0x00001000
+PREFIX_REX_B_MASK     = 0b00000001
+PREFIX_REX_X_MASK     = 0b00000010
+PREFIX_REX_R_MASK     = 0b00000100
+PREFIX_REX_W_MASK     = 0b00001000
 
 # Opcode masks
 OP_SIZE_MASK = 0b00000001
@@ -161,51 +161,51 @@ REG_NAMES = {
     },
     REG_R8: {
         REG_SIZE_64: "%r8",
-        REG_SIZE_32: "%r8",
-        REG_SIZE_16: "%r8",
-        REG_SIZE_8:  "%r8",
+        REG_SIZE_32: "%r8d",
+        REG_SIZE_16: "%r8w",
+        REG_SIZE_8:  "%r8b",
     },
     REG_R9: {
         REG_SIZE_64: "%r9",
-        REG_SIZE_32: "%r9",
-        REG_SIZE_16: "%r9",
-        REG_SIZE_8:  "%r9",
+        REG_SIZE_32: "%r9d",
+        REG_SIZE_16: "%r9w",
+        REG_SIZE_8:  "%r9b",
     },
     REG_R10: {
         REG_SIZE_64: "%r10",
-        REG_SIZE_32: "%r10",
-        REG_SIZE_16: "%r10",
-        REG_SIZE_8:  "%r10",
+        REG_SIZE_32: "%r10d",
+        REG_SIZE_16: "%r10w",
+        REG_SIZE_8:  "%r10b",
     },
     REG_R11: {
         REG_SIZE_64: "%r11",
-        REG_SIZE_32: "%r11",
-        REG_SIZE_16: "%r11",
-        REG_SIZE_8:  "%r11",
+        REG_SIZE_32: "%r11d",
+        REG_SIZE_16: "%r11w",
+        REG_SIZE_8:  "%r11b",
     },
     REG_R12: {
         REG_SIZE_64: "%r12",
-        REG_SIZE_32: "%r12",
-        REG_SIZE_16: "%r12",
-        REG_SIZE_8:  "%r12",
+        REG_SIZE_32: "%r12d",
+        REG_SIZE_16: "%r12w",
+        REG_SIZE_8:  "%r12b",
     },
     REG_R13: {
         REG_SIZE_64: "%r13",
-        REG_SIZE_32: "%r13",
-        REG_SIZE_16: "%r13",
-        REG_SIZE_8:  "%r13",
+        REG_SIZE_32: "%r13d",
+        REG_SIZE_16: "%r13w",
+        REG_SIZE_8:  "%r13b",
     },
     REG_R14: {
         REG_SIZE_64: "%r14",
-        REG_SIZE_32: "%r14",
-        REG_SIZE_16: "%r14",
-        REG_SIZE_8:  "%r14",
+        REG_SIZE_32: "%r14d",
+        REG_SIZE_16: "%r14w",
+        REG_SIZE_8:  "%r14b",
     },
     REG_R15: {
         REG_SIZE_64: "%r15",
-        REG_SIZE_32: "%r15",
-        REG_SIZE_16: "%r15",
-        REG_SIZE_8:  "%r15",
+        REG_SIZE_32: "%r15d",
+        REG_SIZE_16: "%r15w",
+        REG_SIZE_8:  "%r15b",
     },
     REG_RFLAGS: {
         REG_SIZE_64: "%rflags",

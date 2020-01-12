@@ -52,7 +52,7 @@ oneByteOpcodes = {
     0x02: X64InstructionInfo("add",   modRm=MODRM_SOURCE),
     0x03: X64InstructionInfo("add",   modRm=MODRM_SOURCE),
     0x04: X64InstructionInfo("add",   srcIsImmediate=True),
-    0x05: X64InstructionInfo("add",   srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x05: X64InstructionInfo("add",   srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x06: Invalid
 #   0x07: Invalid
     0x08: X64InstructionInfo("or",    modRm=MODRM_DEST),
@@ -60,7 +60,7 @@ oneByteOpcodes = {
     0x0a: X64InstructionInfo("or",    modRm=MODRM_SOURCE),
     0x0b: X64InstructionInfo("or",    modRm=MODRM_SOURCE),
     0x0c: X64InstructionInfo("or",    srcIsImmediate=True),
-    0x0d: X64InstructionInfo("or",    srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x0d: X64InstructionInfo("or",    srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x0e: Invalid
 #   0x0f: 2 byte operand prefix
     0x10: X64InstructionInfo("adc",   modRm=MODRM_DEST),
@@ -68,7 +68,7 @@ oneByteOpcodes = {
     0x12: X64InstructionInfo("adc",   modRm=MODRM_SOURCE),
     0x13: X64InstructionInfo("adc",   modRm=MODRM_SOURCE),
     0x14: X64InstructionInfo("adc",   srcIsImmediate=True),
-    0x15: X64InstructionInfo("adc",   srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x15: X64InstructionInfo("adc",   srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x16: Invalid
 #   0x17: Invalid
     0x18: X64InstructionInfo("sbb",   modRm=MODRM_DEST),
@@ -76,7 +76,7 @@ oneByteOpcodes = {
     0x1a: X64InstructionInfo("sbb",   modRm=MODRM_SOURCE),
     0x1b: X64InstructionInfo("sbb",   modRm=MODRM_SOURCE),
     0x1c: X64InstructionInfo("sbb",   srcIsImmediate=True),
-    0x1d: X64InstructionInfo("sbb",   srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x1d: X64InstructionInfo("sbb",   srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x1e: Invalid
 #   0x1f: Invalid
     0x20: X64InstructionInfo("and",   modRm=MODRM_DEST),
@@ -84,7 +84,7 @@ oneByteOpcodes = {
     0x22: X64InstructionInfo("and",   modRm=MODRM_SOURCE),
     0x23: X64InstructionInfo("and",   modRm=MODRM_SOURCE),
     0x24: X64InstructionInfo("and",   srcIsImmediate=True),
-    0x25: X64InstructionInfo("and",   srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x25: X64InstructionInfo("and",   srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x26: ES Segment Register Prefix
 #   0x27: Invalid
     0x28: X64InstructionInfo("sub",   modRm=MODRM_DEST),
@@ -92,7 +92,7 @@ oneByteOpcodes = {
     0x2a: X64InstructionInfo("sub",   modRm=MODRM_SOURCE),
     0x2b: X64InstructionInfo("sub",   modRm=MODRM_SOURCE),
     0x2c: X64InstructionInfo("sub",   srcIsImmediate=True),
-    0x2d: X64InstructionInfo("sub",   srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x2d: X64InstructionInfo("sub",   srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x2e: CS Segment Register Prefix
 #   0x2f: Invalid
     0x30: X64InstructionInfo("xor",   modRm=MODRM_DEST),
@@ -100,7 +100,7 @@ oneByteOpcodes = {
     0x32: X64InstructionInfo("xor",   modRm=MODRM_SOURCE),
     0x33: X64InstructionInfo("xor",   modRm=MODRM_SOURCE),
     0x34: X64InstructionInfo("xor",   srcIsImmediate=True),
-    0x35: X64InstructionInfo("xor",   srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x35: X64InstructionInfo("xor",   srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x36: SS Segment Register Prefix
 #   0x37: Invalid
     0x38: X64InstructionInfo("cmp",   modRm=MODRM_DEST),
@@ -108,25 +108,25 @@ oneByteOpcodes = {
     0x3a: X64InstructionInfo("cmp",   modRm=MODRM_SOURCE),
     0x3b: X64InstructionInfo("cmp",   modRm=MODRM_SOURCE),
     0x3c: X64InstructionInfo("cmp",   srcIsImmediate=True),
-    0x3d: X64InstructionInfo("cmp",   srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x3d: X64InstructionInfo("cmp",   srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x3e: DS Segment Register Prefix
 #   0x3f: Invalid
-#   0x40: TODO: REX Prefix
+#   0x40: REX Prefix (does nothing)
 #   0x41: REX.B Prefix
-#   0x42: TODO: REX.X Prefix
-#   0x43: TODO: REX.XB Prefix
-#   0x44: TODO: REX.R Prefix
-#   0x45: TODO: REX.RB Prefix
-#   0x46: TODO: REX.RX Prefix
-#   0x47: TODO: REX.RXB Prefix
+#   0x42: REX.X Prefix
+#   0x43: REX.XB Prefix
+#   0x44: REX.R Prefix
+#   0x45: REX.RB Prefix
+#   0x46: REX.RX Prefix
+#   0x47: REX.RXB Prefix
 #   0x48: REX.W Prefix (64-bit operand size prefix)
-#   0x49: TODO: REX.WB Prefix
-#   0x4a: TODO: REX.WX Prefix
-#   0x4b: TODO: REX.WXB Prefix
-#   0x4c: TODO: REX.WR Prefix
-#   0x4d: TODO: REX.WRB Prefix
-#   0x4e: TODO: REX.WRX Prefix
-#   0x4f: TODO: REX.WRXB Prefix
+#   0x49: REX.WB Prefix
+#   0x4a: REX.WX Prefix
+#   0x4b: REX.WXB Prefix
+#   0x4c: REX.WR Prefix
+#   0x4d: REX.WRB Prefix
+#   0x4e: REX.WRX Prefix
+#   0x4f: REX.WRXB Prefix
     0x50: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
     0x51: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
     0x52: X64InstructionInfo("push",  registerCode=True, direction=OP_DIR_FROM_REG, srcOperandSize=REG_SIZE_64, dstOperandSize=REG_SIZE_0),
@@ -176,7 +176,7 @@ oneByteOpcodes = {
     0x7e: X64InstructionInfo("jle",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_8), # Less than or equal (signed)
     0x7f: X64InstructionInfo("jgt",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_8), # Greater than (signed)
     0x80: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True),
-    0x81: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcMaxSize=REG_SIZE_32),
+    0x81: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
 #   0x82: Invalid
     0x83: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
     0x84: X64InstructionInfo("test",  modRm=MODRM_DEST),
@@ -212,9 +212,15 @@ oneByteOpcodes = {
 #   0xa2: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8), TODO: Requires a segment register prefix
 #   0xa3: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), TODO: Requires a segment register prefix
 #   0xa4: X64InstructionInfo("mov",   srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), TODO: Requires a segment register prefix
-
-#   0xa9: srcMaxSize=REG_SIZE_32
-
+    0xa8: X64InstructionInfo("test",  srcIsImmediate=True, srcOperandSize=REG_SIZE_8, dstOperandSize=REG_SIZE_8),
+    0xa9: X64InstructionInfo("test",  srcIsImmediate=True, signExtension=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32),
+#   TODO: String operations
+#   0xaa:
+#   0xab:
+#   0xac:
+#   0xad:
+#   0xae:
+#   0xaf:
     0xb0: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
     0xb1: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
     0xb2: X64InstructionInfo("mov",   registerCode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8,  dstOperandSize=REG_SIZE_8),
@@ -235,11 +241,16 @@ oneByteOpcodes = {
     0xc1: X64InstructionInfo("",      modRm=MODRM_DEST,  extOpcode=True, srcIsImmediate=True, srcOperandSize=REG_SIZE_8),
     0xc2: X64InstructionInfo("ret",   relativeJump=True, srcOperandSize=REG_SIZE_16),
     0xc3: X64InstructionInfo("ret",   srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
-
+#   0xc4: Invalid
+#   0xc5: Invalid
     0xc6: X64InstructionInfo("mov",   modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True),
     0xc7: X64InstructionInfo("mov",   modRm=MODRM_DEST, srcIsImmediate=True, signExtension=True, srcMaxSize=REG_SIZE_32),
-
+#   0xc8: TODO: Enter, which has 2 sources and 1 destination
     0xc9: X64InstructionInfo("leave", srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0),
+
+#   0xd4: Invalid
+#   0xd5: Invalid
+#   0xd6: Invalid
 
     0xe8: X64InstructionInfo("call",  relativeJump=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32),
     0xe9: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32),

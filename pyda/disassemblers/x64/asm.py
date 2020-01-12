@@ -14,8 +14,10 @@ class X64Instruction( Instruction ):
 
         self.prefixSize = None  # The size operands should be based on the prefix
         self.segmentPrefix = 0  # Opcode of the segment
-        self.addressSize = 8
-        self.extendedBase = False
+        self.addressSize   = REG_SIZE_64
+        self.extendBase    = False
+        self.extendIndex   = False
+        self.extendReg     = False
 
     def setAttributes( self, opcode, info ):
 
@@ -80,10 +82,8 @@ class X64Instruction( Instruction ):
         if info.registerCode:
             register = opcode & REG_MASK
 
-            # Extend the value of the destination if the instruction has a
-            # base extension prefix.
-            if self.extendedBase:
-                register += REG_EXTEND
+            if self.extendBase:
+                register |= REG_EXTEND
 
         # Create s destination operand as long as the size isn't 0 and the
         # instruction is a jump, which would not have a destination.
@@ -126,7 +126,7 @@ class X64Operand( Operand ):
         self.indirect = False           # Whether the addressing is indirect
         self.modRm = False              # Whether the Mod R/M byte applies
         self.scale = 0                  # Factor to multiply the index by if SIB byte is present
-        self.index = 0                  # Index register if SIB byte is present
+        self.index = None               # Index register if SIB byte is present
 
     def __repr__( self ):
 
@@ -162,7 +162,7 @@ class X64Operand( Operand ):
 
         # There is only an index if the scale was set to be nonzero, and RSP is
         # not a valid index register.
-        if scale > 0 and index != REG_RSP:
+        if scale > 0 and index is not None and index != REG_RSP:
             indexName  = REG_NAMES[index][REG_SIZE_64]
 
         # Handle the scale and index values. They should only be there if
@@ -288,10 +288,25 @@ def handlePrefix( instruction, binary ):
             instruction.segmentPrefix = byte
             instruction.bytes.append(byte)
 
-        # Group 3 prefixes
-        elif byte == PREFIX_64_BIT_OPERAND:
-            logger.debug("Found the 64-bit prefix")
-            instruction.prefixSize = REG_SIZE_64
+        # REX prefixes
+        elif byte & 0xf0 == PREFIX_REX_MASK:
+
+            # The base value of the register is extended
+            if byte & PREFIX_REX_W_MASK == PREFIX_REX_W_MASK:
+                logger.debug("64-bit operand size prefix")
+                instruction.prefixSize = REG_SIZE_64
+
+            if byte & PREFIX_REX_R_MASK == PREFIX_REX_R_MASK:
+                logger.debug("Extended reg field prefix")
+                instruction.extendReg = True
+
+            if byte & PREFIX_REX_X_MASK == PREFIX_REX_X_MASK:
+                logger.debug("Extended SIB index field prefix")
+                instruction.extendIndex = True
+
+            if byte & PREFIX_REX_B_MASK == PREFIX_REX_B_MASK:
+                instruction.extendBase = True
+
             instruction.bytes.append(byte)
 
         elif byte == PREFIX_16_BIT_OPERAND:
@@ -303,19 +318,6 @@ def handlePrefix( instruction, binary ):
         elif byte == PREFIX_32_BIT_ADDRESS:
             logger.debug("Found the 32-bit address prefix")
             instruction.addressSize = 4
-            instruction.bytes.append(byte)
-
-        # REX prefixes
-        elif byte & 0xf0 == PREFIX_REX_MASK:
-
-            # The base value of the register is extended
-            if byte & PREFIX_REX_B_MASK == PREFIX_REX_B_MASK:
-                instruction.extendedBase = True
-
-            else:
-                logger.debug("Unhandled REX prefix was found.")
-                return numPrefixBytes
-
             instruction.bytes.append(byte)
 
         # If a prefix is not found, proceed to the next step
@@ -549,6 +551,9 @@ def handleOperandAddressing( instruction, operand, binary ):
     displaceBytes = 0
     isSibDisplace = False
 
+    if instruction.extendReg:
+        regOrOp |= REG_EXTEND
+
     logger.debug(f"mod: {mod >> 6}, reg: {regOrOp}, r/m: {regmem}")
 
     # Process the addressing if the Mod R/M byte applies to this operand
@@ -556,6 +561,11 @@ def handleOperandAddressing( instruction, operand, binary ):
 
         # The value is always regmem if the Mod R/M refers to this operand.
         operand.value = regmem
+
+        # Extend the value if the instruction has a base extension prefix.
+        if instruction.extendBase:
+            logger.debug("Extending value")
+            operand.value |= REG_EXTEND
 
         if mod == MOD_REGISTER:
             logger.debug("Operand is the value in a register")
@@ -568,6 +578,13 @@ def handleOperandAddressing( instruction, operand, binary ):
         if regmem == REG_RSP:
             isSibDisplace = handleSibByte(operand, mod, binary[1])
             addrBytes += 1
+
+            if instruction.extendIndex and operand.index is not None:
+                operand.index |= REG_EXTEND
+
+            # Extend the value if the instruction has a base extension prefix.
+            if instruction.extendBase:
+                operand.value |= REG_EXTEND
 
             # RSP is not a valid index, so there must be a segment register set
             # to be used as the index.
@@ -602,12 +619,6 @@ def handleOperandAddressing( instruction, operand, binary ):
         else:
             logger.warning("Invalid addressing mode")
 
-        # If the instruction has a prefix that tells it so extend the base,
-        # add the value to extend the register value.
-        if instruction.extendedBase:
-            logger.debug("Extending register to one of the R registers")
-            operand.value += REG_EXTEND
-
         # Save the displacement value if there are any displacement bytes. The
         # Mod R/M byte as well as any additional addressing bytes, like the SIB
         # byte, must be skipped to get to the displacement bytes.
@@ -633,6 +644,9 @@ def handleModRmByte( instruction, binary ):
     Return:         The number of bytes consumed when processing the Mod R/M bytes
                     If an error occurs 0 is returned
     """
+
+    if len(binary) == 0:
+        return 0
 
     numBytesConsumed = 1
     modRmByte = binary[0]
@@ -738,7 +752,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:500]
+    binary       = function.assembly[:1000]
     instructions = function.instructions
     offTheRails  = False
 

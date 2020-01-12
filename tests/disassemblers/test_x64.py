@@ -455,6 +455,85 @@ class TestX64():
         # Return the function for analysis and the regex match object
         return function, match
 
+    def test_rex_prefixes( self ):
+
+        ########################
+        #  REX 64-BIT OPERAND  #
+        ########################
+
+        #           Address mode | source         | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Index          | Base
+        sibByte   = (2 << 6)     | (REG_RAX << 3) | REG_RBX
+        assembly = bytes([PREFIX_REX_MASK | PREFIX_REX_R_MASK, 0x01, modRmByte, sibByte])
+        function, match = self.helper("add", "%r9d", "[%rbx + 4 * %rax]", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ##########################
+        #  REX EXTEND REG FIELD  #
+        ##########################
+
+        #           Address mode | source         | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Index          | Base
+        sibByte   = (2 << 6)     | (REG_RAX << 3) | REG_RBX
+        assembly = bytes([PREFIX_REX_MASK | PREFIX_REX_W_MASK, 0x01, modRmByte, sibByte])
+        function, match = self.helper("add", "%rcx", "[%rbx + 4 * %rax]", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ################################
+        #  REX EXTEND SIB INDEX FIELD  #
+        ################################
+
+        #           Address mode | source         | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Index          | Base
+        sibByte   = (2 << 6)     | (REG_RAX << 3) | REG_RBX
+        assembly = bytes([PREFIX_REX_MASK | PREFIX_REX_X_MASK, 0x01, modRmByte, sibByte])
+        function, match = self.helper("add", "%ecx", "[%rbx + 4 * %r8]", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ###############################
+        #  REX EXTEND SIB BASE FIELD  #
+        ###############################
+
+        #           Address mode | source         | SIB
+        modRmByte = MOD_INDIRECT | (REG_RCX << 3) | REG_RSP
+
+        #           Scale        | Index          | Base
+        sibByte   = (2 << 6)     | (REG_RAX << 3) | REG_RBX
+        assembly = bytes([PREFIX_REX_MASK | PREFIX_REX_B_MASK, 0x01, modRmByte, sibByte])
+        function, match = self.helper("add", "%ecx", "[%r11 + 4 * %rax]", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ######################################
+        #  REX EXTEND OPCODE REGISTER FIELD  #
+        ######################################
+
+        assembly = bytes([PREFIX_REX_MASK | PREFIX_REX_B_MASK, 0x55])
+        function, match = self.helper("push", "%r13", "", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
+        ##########################
+        #  REX EXTEND R/M FIELD  #
+        ##########################
+
+        #           Address mode | source         | destination
+        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+
+        assembly = bytes([PREFIX_REX_MASK | PREFIX_REX_B_MASK, 0x01, modRmByte])
+        function, match = self.helper("add", "%ecx", "%r8d", assembly)
+        assert len(function.instructions) == 1
+        assert match is not None
+
 
     def test_basic_no_immediate( self ):
         """
