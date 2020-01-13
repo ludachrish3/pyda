@@ -28,7 +28,15 @@ class Instruction():
         operands = operands + self.extraOperands
 
         bytesStr = " ".join([f"{x:02x}" for x in self.bytes])
-        operandStr = ", ".join([str(x) for x in operands])
+
+        # Do not show operands if the instruction is a NOP because sometimes
+        # NOP instructions create operands, but they don't mean anything.
+        if self.mnemonic != "nop":
+            operandStr = ", ".join([str(x) for x in operands])
+
+        else:
+            operandStr = ""
+
         return f"{self.addr: >6x}:  {bytesStr: <20}  {self.mnemonic: <7} {operandStr}"
 
 

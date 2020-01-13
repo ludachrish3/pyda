@@ -101,7 +101,6 @@ class X64Instruction( Instruction ):
         if self.source is None and info.srcOperandSize != REG_SIZE_0:
             self.source = X64Operand(size=info.srcOperandSize, isImmediate=info.srcIsImmediate, value=register)
 
-
         ################################
         #  SET MOD R/M OPERAND STATUS  #
         ################################
@@ -752,7 +751,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:1000]
+    binary       = function.assembly[:1700]
     instructions = function.instructions
     offTheRails  = False
 

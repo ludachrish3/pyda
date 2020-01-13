@@ -191,7 +191,7 @@ oneByteOpcodes = {
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SOURCE),
 #   0x8e: TODO: X64InstructionInfo("mov",   modRm=MODRM_SOURCE), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
     0x8f: X64InstructionInfo("pop",   modRm=MODRM_DEST, extOpcode=True, dstOperandSize=REG_SIZE_64, srcOperandSize=REG_SIZE_0),
-    0x90: X64InstructionInfo("nop",   srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_0), # This is a special case of exchange instructions that would swap EAX with EAX
+    0x90: X64InstructionInfo("nop"), # This is a special case of exchange instructions that would swap EAX with EAX
     0x91: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
     0x92: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
     0x93: X64InstructionInfo("xchg",  registerCode=True, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32),
@@ -262,6 +262,25 @@ oneByteOpcodes = {
 }
 
 twoByteOpcodes = {
+    0x1f: X64InstructionInfo("nop",   modRm=MODRM_SOURCE),
+
+    0x40: X64InstructionInfo("cmovo",  modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Overflow
+    0x41: X64InstructionInfo("cmovno", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Not overflow
+    0x42: X64InstructionInfo("cmovb",  modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Less than (unsigned)
+    0x43: X64InstructionInfo("cmovae", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Greater than or equal (unsigned)
+    0x44: X64InstructionInfo("cmove",  modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Equal
+    0x45: X64InstructionInfo("cmovne", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Not equal
+    0x46: X64InstructionInfo("cmovbe", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Less than or equal (unsigned)
+    0x47: X64InstructionInfo("cmova",  modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Greater than (unsigned)
+    0x48: X64InstructionInfo("cmovs",  modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Signed
+    0x49: X64InstructionInfo("cmovns", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Unsigned
+    0x4a: X64InstructionInfo("cmovp",  modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Parity
+    0x4b: X64InstructionInfo("cmovnp", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Not parity
+    0x4c: X64InstructionInfo("cmovlt", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Less than (signed)
+    0x4d: X64InstructionInfo("cmovge", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Greater than or equal (signed)
+    0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Less than or equal (signed)
+    0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SOURCE, srcOperandSize=REG_SIZE_32, dstOperandSize=REG_SIZE_32), # Greater than (signed)
+
     0x80: X64InstructionInfo("jo",    relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32), # Overflow
     0x81: X64InstructionInfo("jno",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32), # Not overflow
     0x82: X64InstructionInfo("jb",    relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32), # Less than (unsigned)
