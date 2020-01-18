@@ -27,7 +27,13 @@ class X64Instruction( Instruction ):
         self.info = copy.deepcopy(info)
         self.mnemonic = copy.deepcopy(info.mnemonic)
 
+        logger.debug(f"src:  {self.info.srcKwargs}")
+        logger.debug(f"dst:  {self.info.dstKwargs}")
+        logger.debug(f"inst: {self.info.instKwargs}")
+
         info = self.info
+        srcKwargs = self.info.srcKwargs
+        dstKwargs = self.info.dstKwargs
 
         # Handle renaming the mnemonic for Group 1 prefixes
         # TODO: There are special cases for some of these, so that will need to
@@ -45,29 +51,35 @@ class X64Instruction( Instruction ):
         #  DETERMINE OPERAND SIZES  #
         #############################
 
-        info.srcOperandSize = getOperandSize(opcode, self.prefixSize, info.srcOperandSize, info.srcMaxSize)
-        info.dstOperandSize = getOperandSize(opcode, self.prefixSize, info.dstOperandSize, info.dstMaxSize)
+        srcSize    = srcKwargs.get("size",    None)
+        srcMaxSize = srcKwargs.get("maxSize", REG_SIZE_64)
+
+        dstSize    = dstKwargs.get("size",    None)
+        dstMaxSize = dstKwargs.get("maxSize", REG_SIZE_64)
+
+        srcKwargs["size"] = getOperandSize(opcode, self.prefixSize, srcSize, srcMaxSize)
+        dstKwargs["size"] = getOperandSize(opcode, self.prefixSize, dstSize, dstMaxSize)
 
         # Handle conversion opcodes that sign extends the value in EAX
         if info.isConversion:
             if opcode == CONVERT_TO_RAX:
-                if info.dstOperandSize == REG_SIZE_16:
+                if dstKwargs["size"] == REG_SIZE_16:
                     self.mnemonic = "cbw"
 
-                if info.dstOperandSize == REG_SIZE_32:
+                if dstKwargs["size"] == REG_SIZE_32:
                     self.mnemonic = "cwde"
 
-                if info.dstOperandSize == REG_SIZE_64:
+                if dstKwargs["size"] == REG_SIZE_64:
                     self.mnemonic = "cdqe"
 
             elif opcode == CONVERT_TO_RDX:
-                if info.dstOperandSize == REG_SIZE_16:
+                if dstKwargs["size"] == REG_SIZE_16:
                     self.mnemonic = "cwd"
 
-                if info.dstOperandSize == REG_SIZE_32:
+                if dstKwargs["size"] == REG_SIZE_32:
                     self.mnemonic = "cdq"
 
-                if info.dstOperandSize == REG_SIZE_64:
+                if dstKwargs["size"] == REG_SIZE_64:
                     self.mnemonic = "cqo"
 
             # Do not continue on to create operands because conversions have
@@ -76,7 +88,7 @@ class X64Instruction( Instruction ):
             # to be disassembled corretly.
             return
 
-        logger.debug(f"source size: {info.srcOperandSize}, dest size: {info.dstOperandSize}")
+        logger.debug(f"source size: {srcKwargs['size']}, dest size: {dstKwargs['size']}")
 
         #####################
         #  CREATE OPERANDS  #
@@ -88,10 +100,6 @@ class X64Instruction( Instruction ):
         if opcode & OP_SIGN_MASK:
             info.signExtension = True
 
-        # Handle the register value if the RFLAGS register should be used
-        if info.isFlagsReg:
-            register = REG_RFLAGS
-
         # Handle setup if there is a register code in the opcode
         if info.registerCode:
             register = opcode & REG_MASK
@@ -99,10 +107,13 @@ class X64Instruction( Instruction ):
             if self.extendBase:
                 register |= REG_EXTEND
 
-        # Create s destination operand as long as the size isn't 0 and the
-        # instruction is a jump, which would not have a destination.
-        if self.dest is None and not info.relativeJump and info.dstOperandSize != REG_SIZE_0:
-            self.dest   = X64Operand(size=info.dstOperandSize, value=register)
+        # Create a destination operand as long as the size isn't 0 and the
+        # instruction is not a jump, which would not have a destination.
+        if self.dest is None and not info.relativeJump and dstKwargs["size"] != REG_SIZE_0:
+            if "value" not in dstKwargs:
+                dstKwargs["value"] = register
+
+            self.dest = X64Operand(**dstKwargs)
 
             # Set the register to 0 now because the destination is always the
             # one to get the register value unless there is no destination.
@@ -112,8 +123,11 @@ class X64Instruction( Instruction ):
 
         # Create a source operand as long as the size isn't 0 and it has not
         # already been created
-        if self.source is None and info.srcOperandSize != REG_SIZE_0:
-            self.source = X64Operand(size=info.srcOperandSize, isImmediate=info.srcIsImmediate, value=register)
+        if self.source is None and srcKwargs["size"] != REG_SIZE_0:
+            if "value" not in srcKwargs:
+                srcKwargs["value"] = register
+
+            self.source = X64Operand(**srcKwargs)
 
         ################################
         #  SET MOD R/M OPERAND STATUS  #
@@ -130,9 +144,10 @@ class X64Instruction( Instruction ):
 
 class X64Operand( Operand ):
 
-    def __init__( self, size=REG_SIZE_32, value=0, isImmediate=False ):
+    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, isImmediate=False ):
 
         super().__init__(size, value)
+        self.maxSize = maxSize          # The maximum size allowed for the operand
         self.isImmediate = isImmediate  # Whether the operand is an immediate
         self.displacement = 0           # Value of the displacement from the register value
         self.segmentReg = 0             # The segment register to use as a base value
@@ -249,38 +264,44 @@ def getOperandSize( opcode, prefixSize, infoSize, maxSize ):
 
     # If a register size is 0, that means it should not exist and the size
     # should remain 0 no matter what.
-    if infoSize == REG_SIZE_0:
+    if infoSize in [ REG_SIZE_0, REG_SIZE_8 ]:
         return infoSize
+
+    # If there is no infoSize and the size bit is 0, the operand is 8 bits.
+    elif infoSize is None and sizeBit == 0:
+        return REG_SIZE_8
 
     # If there is a prefix size within the allowed range and there is no info
     # size override, trust the size bit to determine the default size of the
     # operand. If the bit is 0, then the operand is 8 bits and cannot be changed
     # Or if an info size is specified because then the size bit doesn't matter.
-    if prefixSize is not None and prefixSize <= maxSize and ((infoSize is None and sizeBit != 0) or (infoSize is not None)):
+    if prefixSize is not None and prefixSize <= maxSize:
         logger.debug("Using prefix size")
-        return prefixSize
+        size = prefixSize
 
     elif infoSize is not None and infoSize <= maxSize:
         logger.debug("Using info size")
-        return infoSize
+        size = infoSize
 
-    # If the info size somehow exceeds the maximum, use the maximum instead
-    # because the size bit shold not be used if an info size was specified.
     elif infoSize is not None and infoSize > maxSize:
-        logger.debug("Using the max size")
-        return maxSize
+        logger.debug("Using max size")
+        size = maxSize
 
-    elif sizeBit == 0:
+    elif infoSize is None and sizeBit == 0:
         logger.debug("Using bit size 8")
         return REG_SIZE_8
 
-    elif sizeBit == 1 and maxSize >= REG_SIZE_32:
+    elif infoSize is None and sizeBit == 1:
         logger.debug("Using bit size 32")
-        return REG_SIZE_32
+        size = REG_SIZE_32
 
-    else:
-        logger.debug("Using the max size because max is lower than 32 bits")
-        return maxSize
+    # If the info size somehow exceeds the maximum, use the maximum instead
+    # because the size bit shold not be used if an info size was specified.
+    if size > maxSize:
+        logger.debug("Capping to max size")
+        size = maxSize
+
+    return size
 
 
 def handlePrefix( instruction, binary ):
@@ -524,11 +545,11 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 2:
-            newInfo = X64InstructionInfo("not", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0)
+            newInfo = X64InstructionInfo("not", modRm=MODRM_DEST, src_size=REG_SIZE_0)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 3:
-            newInfo = X64InstructionInfo("neg", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0)
+            newInfo = X64InstructionInfo("neg", modRm=MODRM_DEST, src_size=REG_SIZE_0)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 4:
@@ -821,7 +842,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:4800]
+    binary       = function.assembly[:5000]
     instructions = function.instructions
     offTheRails  = False
 
