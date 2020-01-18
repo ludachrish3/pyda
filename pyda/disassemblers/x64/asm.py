@@ -12,8 +12,9 @@ class X64Instruction( Instruction ):
     def __init__( self, mnemonic="byte", addr=0, source=None, dest=None, extraOperands=[] ):
         super().__init__(mnemonic, addr, source, dest, extraOperands)
 
-        self.prefixSize = None  # The size operands should be based on the prefix
-        self.segmentPrefix = 0  # Opcode of the segment
+        self.prefixSize = None      # The size operands should be based on the prefix
+        self.segmentPrefix = 0      # Opcode of the segment
+        self.lockRepeatPrefix = 0   # Lock or repeat prefix
         self.addressSize   = REG_SIZE_64
         self.extendBase    = False
         self.extendIndex   = False
@@ -24,9 +25,21 @@ class X64Instruction( Instruction ):
         # Create deep copies so that the dictionary of infos remains unchanged
         # and this specific instruction's info can be updated as needed.
         self.info = copy.deepcopy(info)
-        self.mnemonic= copy.deepcopy(info.mnemonic)
+        self.mnemonic = copy.deepcopy(info.mnemonic)
 
         info = self.info
+
+        # Handle renaming the mnemonic for Group 1 prefixes
+        # TODO: There are special cases for some of these, so that will need to
+        # be handled in the future.
+        if self.lockRepeatPrefix == PREFIX_LOCK:
+            self.mnemonic = "lock " + self.mnemonic
+
+        elif self.lockRepeatPrefix == PREFIX_REPEAT_NZERO:
+            self.mnemonic = "repnz " + self.mnemonic
+
+        elif self.lockRepeatPrefix == PREFIX_REPEAT_ZERO:
+            self.mnemonic = "repz " + self.mnemonic
 
         #############################
         #  DETERMINE OPERAND SIZES  #
@@ -58,9 +71,10 @@ class X64Instruction( Instruction ):
                     self.mnemonic = "cqo"
 
             # Do not continue on to create operands because conversions have
-            # implicit operands based on the opcode.
+            # implicit operands based on the opcode. They all use some form of
+            # EAX, so leaving them with a value of zero is good enough for it
+            # to be disassembled corretly.
             return
-
 
         logger.debug(f"source size: {info.srcOperandSize}, dest size: {info.dstOperandSize}")
 
@@ -284,11 +298,14 @@ def handlePrefix( instruction, binary ):
 
     for byte in binary:
 
-        # TODO: Add support for group 1 prefixes
+        # Group 1 prefixes
+        if byte in [ PREFIX_LOCK, PREFIX_REPEAT_NZERO, PREFIX_REPEAT_ZERO ]:
+            logger.debug(f"Found a lock/repeat prefix: {byte:02x}")
+            instruction.lockRepeatPrefix = byte
 
         # Group 2 prefixes
         if byte in PREFIX_SEGMENTS:
-            logger.debug(f"Found a segment register prefix: {byte}")
+            logger.debug(f"Found a segment register prefix: {byte:02x}")
             instruction.segmentPrefix = byte
             instruction.bytes.append(byte)
 
@@ -383,7 +400,7 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
                     False on failure
     """
 
-    if instruction.bytes[-1] in [0x80, 0x81, 0x83]:
+    if instruction.bytes[-1] in [ 0x80, 0x81, 0x83 ]:
 
         if modRmOpValue == 0:
             instruction.mnemonic = "add"
@@ -413,13 +430,13 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
-    elif instruction.bytes[-1] in [0x8f]:
+    elif instruction.bytes[-1] in [ 0x8f ]:
 
         if modRmOpValue != 0:
             logger.debug("An invalid Mod R/M value was received")
             return False
 
-    elif instruction.bytes[-1] in [0xc0, 0xc1]:
+    elif instruction.bytes[-1] in [ 0xc0, 0xc1 ]:
 
         if modRmOpValue == 0:
             instruction.mnemonic = "rol"
@@ -449,7 +466,7 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
-    elif instruction.bytes[-1] in [0xfe]:
+    elif instruction.bytes[-1] in [ 0xfe ]:
 
         if modRmOpValue == 0:
             instruction.mnemonic = "inc"
@@ -461,7 +478,7 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
-    elif instruction.bytes[-1] in [0xff]:
+    elif instruction.bytes[-1] in [ 0xff ]:
         # TODO: Update info about operands in each case
 
         if modRmOpValue == 0:
@@ -491,7 +508,7 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
-    elif instruction.bytes[-1] in [0xf6, 0xf7]:
+    elif instruction.bytes[-1] in [ 0xf6, 0xf7 ]:
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
@@ -804,7 +821,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:5000]
+    binary       = function.assembly[:4800]
     instructions = function.instructions
     offTheRails  = False
 

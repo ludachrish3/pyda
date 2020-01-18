@@ -17,6 +17,7 @@ optional arguments:
 
 ## TODO
 
+* Change opearand options in info objects to be flexible by enabling passing any value that an operand or instruction can have based on a kwargs dictionary. Filter out keys that start with dst for destination specific arguments, src for source specific arguments, op for both source and destination options, and inst for instruction arguments.
 * Change error handling to be try blocks and raising exceptions instead of checking return values. Checking handleOperandAddressing() needs to be done in the case that an invalid segment register is used.
 * In order to find functions in a stripped binary, start at beginning of .text section. Start disassembling and consider all jumps that can be taken. If there are no jumps left and a ret instruction is reached, then that is the end of the function. All instructions after it (not including NOPs) are another function.
 * Come up with a way to find functions in stripped binaries
