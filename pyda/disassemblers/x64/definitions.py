@@ -89,8 +89,9 @@ REG_EXTEND = 0b00001000   # Extension value when extending a register from its b
 # Unofficial values for registers that can be used to identify them.
 # They will all start with a 1 at the most significant bit to differentiate
 # them from the standard, official registers.
-REG_RIP    = 0b10000000
-REG_RFLAGS = 0b10000001
+REG_RIP              = 0b10000000
+REG_RFLAGS           = 0b10000001
+REG_RDX_RAX_COMBINED = 0b10000010
 
 REG_SIZE_64 = 8
 REG_SIZE_32 = 4
@@ -212,5 +213,11 @@ REG_NAMES = {
         REG_SIZE_32: REG_NAME_UNDEF,
         REG_SIZE_16: "%eflags",
         REG_SIZE_8:  REG_NAME_UNDEF,
+    },
+    REG_RDX_RAX_COMBINED: {
+        REG_SIZE_64: "%rdx:%rax",
+        REG_SIZE_32: "%edx:%eax",
+        REG_SIZE_16: "%dx:%ax",
+        REG_SIZE_8:  "%al:%ah",
     },
 }

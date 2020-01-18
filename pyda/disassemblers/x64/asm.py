@@ -500,34 +500,43 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
 
         if modRmOpValue == 0:
             newInfo = X64InstructionInfo("test", modRm=MODRM_DEST)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 1:
             newInfo = X64InstructionInfo("test", modRm=MODRM_DEST)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 2:
             newInfo = X64InstructionInfo("not", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 3:
             newInfo = X64InstructionInfo("neg", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 4:
-            newInfo = X64InstructionInfo("mul", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+            newInfo = X64InstructionInfo("mul", modRm=MODRM_SOURCE)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+            instruction.dest.value = REG_RDX_RAX_COMBINED
 
         elif modRmOpValue == 5:
-            newInfo = X64InstructionInfo("imul", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+            newInfo = X64InstructionInfo("imul", modRm=MODRM_SOURCE)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+            instruction.dest.value = REG_RDX_RAX_COMBINED
 
         elif modRmOpValue == 6:
-            newInfo = X64InstructionInfo("div", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+            newInfo = X64InstructionInfo("div", modRm=MODRM_SOURCE)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+            instruction.dest.value = REG_RDX_RAX_COMBINED
 
         elif modRmOpValue == 7:
-            newInfo = X64InstructionInfo("idiv", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+            newInfo = X64InstructionInfo("idiv", modRm=MODRM_SOURCE)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+            instruction.dest.value = REG_RDX_RAX_COMBINED
 
         else:
             logger.debug("An invalid Mod R/M value was received")
             return False
-
-        logger.debug("Redoing info because of extended opcode")
-        instruction.setAttributes(instruction.bytes[-1], newInfo)
 
     else:
         logger.debug("An unsupported extended opcode was found")
@@ -705,12 +714,13 @@ def handleModRmByte( instruction, binary ):
         if not opcodeSuccess:
             return 0
 
-    # Set the operand addressing properties as long as they are not None
-    if instruction.source is not None:
+    # Set the operand addressing properties as long as they are not None and they
+    # don't their value is 0, which would mean it does not have a certain value.
+    if instruction.source is not None and instruction.source.value == 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.source, binary)
         logger.debug(f"After handling source: {numBytesConsumed}")
 
-    if instruction.dest is not None:
+    if instruction.dest is not None and instruction.dest.value == 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.dest, binary)
         logger.debug(f"After handling dest: {numBytesConsumed}")
 

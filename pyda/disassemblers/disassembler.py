@@ -19,10 +19,10 @@ class Instruction():
         operands = []
 
         # Display the source first, then the destination
-        if self.source is not None:
+        if self.source is not None and str(self.source) != "":
             operands.append(self.source)
 
-        if self.dest is not None:
+        if self.dest is not None and str(self.dest) != "":
             operands.append(self.dest)
 
         operands = operands + self.extraOperands
