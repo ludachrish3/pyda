@@ -257,6 +257,9 @@ oneByteOpcodes = {
 #   0xea: Invalid
     0xeb: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_8),
 
+    0xf6: X64InstructionInfo("",      modRm=MODRM_SOURCE, extOpcode=True),
+    0xf7: X64InstructionInfo("",      modRm=MODRM_SOURCE, extOpcode=True),
+
     0xfe: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),
     0xff: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True),
 }
@@ -297,7 +300,6 @@ twoByteOpcodes = {
     0x8d: X64InstructionInfo("jge",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32), # Greater than or equal (signed)
     0x8e: X64InstructionInfo("jle",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32), # Less than or equal (signed)
     0x8f: X64InstructionInfo("jgt",   relativeJump=True, signExtension=True, srcOperandSize=REG_SIZE_32, srcMaxSize=REG_SIZE_32), # Greater than (signed)
-
     0x90: X64InstructionInfo("seto",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Overflow
     0x91: X64InstructionInfo("setno", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Not Overflow
     0x92: X64InstructionInfo("setb",  modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0, dstOperandSize=REG_SIZE_8),    # Less than (unsigned)

@@ -5,14 +5,14 @@ The goal of this project is to create a Python program that can disassemble and 
 ## Usage
 
 ```
-usage: pyda.py -f FILE [-l] [-h]
+usage: pyda [-l] [-h] file [file ...]
 
 required arguments:
-  -f FILE, --file FILE  the binary file to analyze
+  file               the binary file(s) to analyze
 
 optional arguments:
-  -l , --log-level      Log level to use when printing logs
-  -h, --help            Show this help message and exit
+  -l , --log-level   Log level to use when printing logs
+  -h, --help         Show this help message and exit
 ```
 
 ## TODO

@@ -26,6 +26,20 @@ class TestX64():
 
         ########################
 
+        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
+
+        ########################
+
         size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
@@ -93,6 +107,20 @@ class TestX64():
 
         size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
+
+        ########################
+
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
 
         ########################
 
@@ -166,6 +194,20 @@ class TestX64():
 
         ########################
 
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
+
+        ########################
+
         size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
@@ -233,6 +275,20 @@ class TestX64():
 
         size = getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_32
+
+        ########################
+
+        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
 
         ########################
 
@@ -306,6 +362,20 @@ class TestX64():
 
         ########################
 
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
+
+        ########################
+
         size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
@@ -373,6 +443,20 @@ class TestX64():
 
         size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
+
+        ########################
+
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
 
         ########################
 

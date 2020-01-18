@@ -20,7 +20,7 @@ def main():
 
     parser = ArgumentParser(add_help=False)
     required = parser.add_argument_group("required arguments")
-    required.add_argument("-f", "--file", required=True, help="the binary file to analyze")
+    required.add_argument("file", nargs="+", help="the binary file(s) to analyze")
 
     optional = parser.add_argument_group("optional arguments")
     optional.add_argument("-l", "--log-level", choices=debugLevels, default="INFO", type=str.upper, metavar="", help="Log level to use when printing logs")
@@ -36,20 +36,21 @@ def main():
     logger.addHandler(logHandler)
     logger.setLevel(args.log_level)
 
-    try:
-        os.stat(args.file)
+    # TODO: Add support for handling multiple files together and link them
+    # against each other.
+    for filename in args.file:
 
-    except FileNotFoundError as e:
-        logger.error("The specified file could not be found. Quitting.")
-        exit(1)
+        if not os.path.isfile(filename):
+            logger.error(f"'{filename}' could not be found. Quitting.")
+            exit(1)
 
-    try:
-        binaryFile = analyzer.analyzeFile(args.file)
+        try:
+            binaryFile = analyzer.analyzeFile(filename)
 
-    except Exception as e:
-        logger.error(f"An error occurred while analyzing the binary: {e}")
-        traceback.print_tb(e.__traceback__)
-        exit(1)
+        except Exception as e:
+            logger.error(f"An error occurred while analyzing the binary: {e}")
+            traceback.print_tb(e.__traceback__)
+            exit(1)
 
 if __name__ == "__main__":
 

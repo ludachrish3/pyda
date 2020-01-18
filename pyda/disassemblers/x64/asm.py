@@ -231,7 +231,12 @@ def getOperandSize( opcode, prefixSize, infoSize, maxSize ):
 
     sizeBit = opcode & OP_SIZE_MASK
 
-    logger.debug(f"prefixSize: {prefixSize}, infoSize: {infoSize}, sizeBit: {sizeBit}")
+    logger.debug(f"prefixSize: {prefixSize}, infoSize: {infoSize}, maxSize: {maxSize}, sizeBit: {sizeBit}")
+
+    # If a register size is 0, that means it should not exist and the size
+    # should remain 0 no matter what.
+    if infoSize == REG_SIZE_0:
+        return infoSize
 
     # If there is a prefix size within the allowed range and there is no info
     # size override, trust the size bit to determine the default size of the
@@ -485,6 +490,44 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
         else:
             logger.debug("An invalid Mod R/M value was received")
             return False
+
+    elif instruction.bytes[-1] in [0xf6, 0xf7]:
+
+        # Clear out the source and destination operands because they might be
+        # removed depending on which value is used.
+        instruction.source = None
+        instruction.dest   = None
+
+        if modRmOpValue == 0:
+            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST)
+
+        elif modRmOpValue == 1:
+            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST)
+
+        elif modRmOpValue == 2:
+            newInfo = X64InstructionInfo("not", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0)
+
+        elif modRmOpValue == 3:
+            newInfo = X64InstructionInfo("neg", modRm=MODRM_DEST, srcOperandSize=REG_SIZE_0)
+
+        elif modRmOpValue == 4:
+            newInfo = X64InstructionInfo("mul", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+
+        elif modRmOpValue == 5:
+            newInfo = X64InstructionInfo("imul", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+
+        elif modRmOpValue == 6:
+            newInfo = X64InstructionInfo("div", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+
+        elif modRmOpValue == 7:
+            newInfo = X64InstructionInfo("idiv", modRm=MODRM_SOURCE, dstOperandSize=REG_SIZE_0)
+
+        else:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
+        logger.debug("Redoing info because of extended opcode")
+        instruction.setAttributes(instruction.bytes[-1], newInfo)
 
     else:
         logger.debug("An unsupported extended opcode was found")
@@ -751,7 +794,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:1700]
+    binary       = function.assembly[:5000]
     instructions = function.instructions
     offTheRails  = False
 
