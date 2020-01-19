@@ -144,14 +144,14 @@ class X64Instruction( Instruction ):
 
 class X64Operand( Operand ):
 
-    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, isImmediate=False ):
+    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, segmentReg=0, isImmediate=False, indirect=False ):
 
         super().__init__(size, value)
         self.maxSize = maxSize          # The maximum size allowed for the operand
         self.isImmediate = isImmediate  # Whether the operand is an immediate
+        self.segmentReg = segmentReg    # The segment register to use as a base value
+        self.indirect = indirect        # Whether the addressing is indirect
         self.displacement = 0           # Value of the displacement from the register value
-        self.segmentReg = 0             # The segment register to use as a base value
-        self.indirect = False           # Whether the addressing is indirect
         self.modRm = False              # Whether the Mod R/M byte applies
         self.scale = 0                  # Factor to multiply the index by if SIB byte is present
         self.index = None               # Index register if SIB byte is present
@@ -332,9 +332,10 @@ def handlePrefix( instruction, binary ):
         if byte in [ PREFIX_LOCK, PREFIX_REPEAT_NZERO, PREFIX_REPEAT_ZERO ]:
             logger.debug(f"Found a lock/repeat prefix: {byte:02x}")
             instruction.lockRepeatPrefix = byte
+            instruction.bytes.append(byte)
 
         # Group 2 prefixes
-        if byte in PREFIX_SEGMENTS:
+        elif byte in PREFIX_SEGMENTS:
             logger.debug(f"Found a segment register prefix: {byte:02x}")
             instruction.segmentPrefix = byte
             instruction.bytes.append(byte)
@@ -416,7 +417,7 @@ def handleOpcode( instruction, binary ):
     # The opcode is not a valid 1 or 2 byte opcode, so keep the new instruction
     # the same as the one that was passed in.
     else:
-        logger.warning("No valid opcode was found")
+        logger.warning(f"An invalid opcode was found: {binary[0]:02x}")
 
     # Append the opcode bytes to the instruction's list of bytes
     instruction.bytes += list(binary[0:numOpcodeBytes])
@@ -857,7 +858,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:5000]
+    binary       = function.assembly[:4800]
     instructions = function.instructions
     offTheRails  = False
 

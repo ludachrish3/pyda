@@ -192,15 +192,17 @@ oneByteOpcodes = {
 #   0xa2: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
 #   0xa3: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
 #   0xa4: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
+#   0xa5: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
+#   0xa6: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
+#   0xa7: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
     0xa8: X64InstructionInfo("test",  src_isImmediate=True),
     0xa9: X64InstructionInfo("test",  signExtension=True, src_isImmediate=True, src_maxSize=REG_SIZE_32),
-#   TODO: String operations
-#   0xaa:
-#   0xab:
-#   0xac:
-#   0xad:
-#   0xae:
-#   0xaf:
+    0xaa: X64InstructionInfo("stors", dst_segmentReg=PREFIX_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xab: X64InstructionInfo("stors", dst_segmentReg=PREFIX_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xac: X64InstructionInfo("loads", src_segmentReg=PREFIX_REG_DS, src_indirect=True, src_value=REG_RSI),
+    0xad: X64InstructionInfo("loads", src_segmentReg=PREFIX_REG_DS, src_indirect=True, src_value=REG_RSI),
+    0xae: X64InstructionInfo("scans", src_segmentReg=PREFIX_REG_ES, src_indirect=True, src_value=REG_RDI),
+    0xaf: X64InstructionInfo("scans", src_segmentReg=PREFIX_REG_ES, src_indirect=True, src_value=REG_RDI),
     0xb0: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
     0xb1: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
     0xb2: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
