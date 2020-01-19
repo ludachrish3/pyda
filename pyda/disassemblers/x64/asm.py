@@ -264,12 +264,21 @@ def getOperandSize( opcode, prefixSize, infoSize, maxSize ):
 
     # If a register size is 0, that means it should not exist and the size
     # should remain 0 no matter what.
-    if infoSize in [ REG_SIZE_0, REG_SIZE_8 ]:
+    if infoSize == REG_SIZE_0:
         return infoSize
 
-    # If there is no infoSize and the size bit is 0, the operand is 8 bits.
-    elif infoSize is None and sizeBit == 0:
+    # If the REX 8-bit prefix is not there, then the size remains the normal
+    # 8-bit register. Also, if there is no infoSize and the size bit is 0, the
+    # operand is 8 bits. The REX 8-bit prefix only applies in these cases.
+    if infoSize == REG_SIZE_8 or (infoSize is None and sizeBit == 0):
+        if prefixSize == REG_SIZE_8_REX:
+            return REG_SIZE_8_REX
+
         return REG_SIZE_8
+
+    # The REX 8-bit prefix has no effect if the operand isn't originally 8 bits
+    if prefixSize == REG_SIZE_8_REX:
+        prefixSize = None
 
     # If there is a prefix size within the allowed range and there is no info
     # size override, trust the size bit to determine the default size of the
@@ -332,6 +341,12 @@ def handlePrefix( instruction, binary ):
 
         # REX prefixes
         elif byte & 0xf0 == PREFIX_REX_MASK:
+
+            # If the prefix is just the REX prefix with no other bits set, then
+            # access to the extended 8-bit registers is available.
+            if byte == PREFIX_REX_MASK:
+                logger.debug("8-bit REX operand size prefix")
+                instruction.prefixSize = REG_SIZE_8_REX
 
             # The base value of the register is extended
             if byte & PREFIX_REX_W_MASK == PREFIX_REX_W_MASK:
