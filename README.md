@@ -17,6 +17,7 @@ optional arguments:
 
 ## TODO
 
+* 5a42:   45 84 e4                test   %r12b,%r12b            did not work
 * Change error handling to be try blocks and raising exceptions instead of checking return values. Checking handleOperandAddressing() needs to be done in the case that an invalid segment register is used.
 * In order to find functions in a stripped binary, start at beginning of .text section. Start disassembling and consider all jumps that can be taken. If there are no jumps left and a ret instruction is reached, then that is the end of the function. All instructions after it (not including NOPs) are another function.
 * Come up with a way to find functions in stripped binaries

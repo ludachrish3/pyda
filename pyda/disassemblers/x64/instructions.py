@@ -230,6 +230,11 @@ oneByteOpcodes = {
 #   0xc8: TODO: Enter, which has 2 sources and 1 destination
     0xc9: X64InstructionInfo("leave", op_size=REG_SIZE_0),
 
+    0xd0: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_isImmediate=True, src_value=1),
+    0xd1: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_isImmediate=True, src_value=1),
+    0xd2: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_size=REG_SIZE_8,  src_value=REG_RCX),
+    0xd3: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_size=REG_SIZE_8,  src_value=REG_RCX),
+
 #   0xd4: Invalid
 #   0xd5: Invalid
 #   0xd6: Invalid
@@ -239,6 +244,8 @@ oneByteOpcodes = {
 #   0xea: Invalid
     0xeb: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_8),
 
+    0xf4: X64InstructionInfo("hlt",   src_size=REG_SIZE_0, dst_size=REG_SIZE_0),
+#   0xf5: TODO
     0xf6: X64InstructionInfo("",      modRm=MODRM_SOURCE, extOpcode=True),
     0xf7: X64InstructionInfo("",      modRm=MODRM_SOURCE, extOpcode=True),
 

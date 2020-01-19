@@ -473,7 +473,7 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
-    elif instruction.bytes[-1] in [ 0xc0, 0xc1 ]:
+    elif instruction.bytes[-1] in [ 0xc0, 0xc1, 0xd0, 0xd1, 0xd2, 0xd3 ]:
 
         if modRmOpValue == 0:
             instruction.mnemonic = "rol"
@@ -731,8 +731,10 @@ def handleOperandAddressing( instruction, operand, binary ):
             operand.displacement = int.from_bytes(binary[1+addrBytes:1+addrBytes+displaceBytes], "little", signed=True)
             logger.debug(f"Adding displacement to the operand: {operand.displacement:x}")
 
-    # Otherwise, set the value as long as this operand is not an immediate
-    elif not operand.isImmediate:
+    # Otherwise, set the value as long as this operand is not an immediate and
+    # the value has not been set, which would indicate that tne operand has a
+    # predetermined value and is already set to the correct value.
+    elif not operand.isImmediate and operand.value != 0:
         logger.debug("Mod R/M byte is not for this operand")
         operand.value = regOrOp
 
@@ -858,7 +860,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:4800]
+    binary       = function.assembly[:8000]
     instructions = function.instructions
     offTheRails  = False
 
@@ -915,8 +917,9 @@ def disassemble( function ):
                 offTheRails = True
                 continue
 
-        # Handle an immediate value if there is one
-        if curInstruction.source is not None and curInstruction.source.isImmediate:
+        # Handle an immediate value if there is one and the value has not
+        # already been set by the instruction info object.
+        if curInstruction.source is not None and curInstruction.source.isImmediate and curInstruction.source.value == 0:
             logger.debug("Handling the immeidate")
             numImmediateBytes = handleImmediate(curInstruction, binary)
             if numImmediateBytes < 0:
