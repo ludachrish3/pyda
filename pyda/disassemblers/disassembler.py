@@ -1,3 +1,4 @@
+import copy
 
 OPERAND_TYPE_REG = 1
 OPERAND_TYPE_MEM = 2
@@ -16,7 +17,7 @@ class Instruction():
     def __repr__(self):
 
         reprStr = self.mnemonic
-        operands = []
+        operands = copy.deepcopy(self.extraOperands)
 
         # Display the source first, then the destination
         if self.source is not None and str(self.source) != "":
@@ -24,8 +25,6 @@ class Instruction():
 
         if self.dest is not None and str(self.dest) != "":
             operands.append(self.dest)
-
-        operands = operands + self.extraOperands
 
         bytesStr = " ".join([f"{x:02x}" for x in self.bytes])
 

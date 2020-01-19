@@ -2,7 +2,8 @@ import pytest
 import re
 
 from pyda.binaries.binary import Function
-from pyda.disassemblers.x64.asm import disassemble, getOperandSize
+from pyda.disassemblers.x64.asm import disassemble
+from pyda.disassemblers.x64.instructions import X64Instruction
 from pyda.disassemblers.x64.definitions import *
 
 class TestX64():
@@ -12,590 +13,590 @@ class TestX64():
 
     def test_operand_size( self ):
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_8
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_0
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_32
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8_REX
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_8_REX
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_8_REX
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_8_REX
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_0
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_8_REX
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_8_REX
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_8_REX
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8_REX
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8_REX
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_8_REX
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_8_REX
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8_REX
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_32
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_8
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_0
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_0
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_16
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_16
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_16
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_16
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_16
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_16
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_16
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_16
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_16
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_8)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_16)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_32)
-        assert size == REG_SIZE_8
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_64)
-        assert size == REG_SIZE_8
-
-        ########################
-
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_16
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_16
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_16
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_32
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_32
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_0
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
         ########################
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
         assert size == REG_SIZE_8
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_16)
         assert size == REG_SIZE_16
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_32)
         assert size == REG_SIZE_32
 
-        size = getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
 
@@ -934,7 +935,7 @@ class TestX64():
 
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
-        assembly = bytes([PREFIX_REG_ES, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        assembly = bytes([SEGMENT_REG_ES, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
         function, match = self.helper("mov", "%ES:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
@@ -948,7 +949,7 @@ class TestX64():
 
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
-        assembly = bytes([PREFIX_REG_CS, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        assembly = bytes([SEGMENT_REG_CS, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
         function, match = self.helper("mov", "%CS:0x28", "%ecx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
@@ -962,7 +963,7 @@ class TestX64():
 
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
-        assembly = bytes([PREFIX_REG_SS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        assembly = bytes([SEGMENT_REG_SS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
         function, match = self.helper("mov", "%SS:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
@@ -976,7 +977,7 @@ class TestX64():
 
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
-        assembly = bytes([PREFIX_REG_DS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        assembly = bytes([SEGMENT_REG_DS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
         function, match = self.helper("mov", "%DS:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
@@ -990,7 +991,7 @@ class TestX64():
 
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
-        assembly = bytes([PREFIX_REG_FS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        assembly = bytes([SEGMENT_REG_FS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
         function, match = self.helper("mov", "%FS:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
@@ -1004,7 +1005,7 @@ class TestX64():
 
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
-        assembly = bytes([PREFIX_REG_GS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
+        assembly = bytes([SEGMENT_REG_GS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
         function, match = self.helper("mov", "%GS:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None

@@ -1,4 +1,320 @@
+from pyda.disassemblers.disassembler import Instruction, Operand
 from pyda.disassemblers.x64.definitions import *
+
+import copy
+import logging
+
+logger = logging.getLogger(__name__)
+
+class X64Instruction( Instruction ):
+
+    def __init__( self, mnemonic="byte", addr=0, source=None, dest=None, extraOperands=[] ):
+        super().__init__(mnemonic, addr, source, dest, extraOperands)
+
+        self.prefixSize = None      # The size operands should be based on the prefix
+        self.segmentPrefix = 0      # Opcode of the segment
+        self.lockRepeatPrefix = 0   # Lock or repeat prefix
+        self.addressSize   = REG_SIZE_64
+        self.extendBase    = False
+        self.extendIndex   = False
+        self.extendReg     = False
+
+    def setAttributes( self, opcode, info ):
+
+        # Create deep copies so that the dictionary of infos remains unchanged
+        # and this specific instruction's info can be updated as needed.
+        self.info = copy.deepcopy(info)
+        self.mnemonic = copy.deepcopy(info.mnemonic)
+
+        logger.debug(f"src:  {self.info.srcKwargs}")
+        logger.debug(f"dst:  {self.info.dstKwargs}")
+        logger.debug(f"inst: {self.info.instKwargs}")
+
+        info = self.info
+        srcKwargs  = info.srcKwargs
+        dstKwargs  = info.dstKwargs
+
+        # Update instruction attributes based on the instruction kwargs
+        self.__dict__.update(info.instKwargs)
+
+        # Handle renaming the mnemonic for Group 1 prefixes
+        # TODO: There are special cases for some of these, so that will need to
+        # be handled in the future.
+        if self.lockRepeatPrefix == PREFIX_LOCK:
+            self.mnemonic = "lock " + self.mnemonic
+
+        elif self.lockRepeatPrefix == PREFIX_REPEAT_NZERO:
+            self.mnemonic = "repnz " + self.mnemonic
+
+        elif self.lockRepeatPrefix == PREFIX_REPEAT_ZERO:
+            self.mnemonic = "repz " + self.mnemonic
+
+        #############################
+        #  DETERMINE OPERAND SIZES  #
+        #############################
+
+        srcSize    = srcKwargs.get("size",    None)
+        srcMaxSize = srcKwargs.get("maxSize", REG_SIZE_64)
+
+        dstSize    = dstKwargs.get("size",    None)
+        dstMaxSize = dstKwargs.get("maxSize", REG_SIZE_64)
+
+        srcKwargs["size"] = self.getOperandSize(opcode, self.prefixSize, srcSize, srcMaxSize)
+        dstKwargs["size"] = self.getOperandSize(opcode, self.prefixSize, dstSize, dstMaxSize)
+
+        # Handle conversion opcodes that sign extends the value in EAX
+        if info.isConversion:
+            if opcode == CONVERT_TO_RAX:
+                if dstKwargs["size"] == REG_SIZE_16:
+                    self.mnemonic = "cbw"
+
+                if dstKwargs["size"] == REG_SIZE_32:
+                    self.mnemonic = "cwde"
+
+                if dstKwargs["size"] == REG_SIZE_64:
+                    self.mnemonic = "cdqe"
+
+            elif opcode == CONVERT_TO_RDX:
+                if dstKwargs["size"] == REG_SIZE_16:
+                    self.mnemonic = "cwd"
+
+                if dstKwargs["size"] == REG_SIZE_32:
+                    self.mnemonic = "cdq"
+
+                if dstKwargs["size"] == REG_SIZE_64:
+                    self.mnemonic = "cqo"
+
+            # Do not continue on to create operands because conversions have
+            # implicit operands based on the opcode. They all use some form of
+            # EAX, so leaving them with a value of zero is good enough for it
+            # to be disassembled corretly.
+            return
+
+        logger.debug(f"source size: {srcKwargs['size']}, dest size: {dstKwargs['size']}")
+
+        #####################
+        #  CREATE OPERANDS  #
+        #####################
+
+        register = 0
+
+        # Handle sign extension if the bit it meaningful
+        if opcode & OP_SIGN_MASK:
+            info.signExtension = True
+
+        # Handle setup if there is a register code in the opcode
+        if info.registerCode:
+            register = opcode & REG_MASK
+
+            if self.extendBase:
+                register |= REG_EXTEND
+
+        # Create a destination operand as long as the size isn't 0 and the
+        # instruction is not a jump, which would not have a destination.
+        if self.dest is None and not info.relativeJump and dstKwargs["size"] != REG_SIZE_0:
+            if "value" not in dstKwargs:
+                dstKwargs["value"] = register
+
+            self.dest = X64Operand(**dstKwargs)
+
+            # Set the register to 0 now because the destination is always the
+            # one to get the register value unless there is no destination.
+            # This keeps the source from also getting the value if there is a
+            # destination.
+            register = 0
+
+        # Create a source operand as long as the size isn't 0 and it has not
+        # already been created
+        if self.source is None and srcKwargs["size"] != REG_SIZE_0:
+            if "value" not in srcKwargs:
+                srcKwargs["value"] = register
+
+            self.source = X64Operand(**srcKwargs)
+
+        ################################
+        #  SET MOD R/M OPERAND STATUS  #
+        ################################
+
+        if info.modRm == MODRM_SOURCE:
+            logger.debug("Source gets the mod r/m byte")
+            self.source.modRm = True
+
+        elif info.modRm == MODRM_DEST:
+            logger.debug("Dest gets the mod r/m byte")
+            self.dest.modRm = True
+
+
+    @classmethod
+    def getOperandSize( cls, opcode, prefixSize, infoSize, maxSize ):
+        """
+        Description:    Figures out what the operand size should be based on the
+                        opcode, the size of the instruction if one was set by a
+                        prefix byte, and the info from the opcode dictionary.
+
+                        The size of the operands because of a prefix is used if one
+                        was found and neither the info nor the size bit indicate
+                        that the size should be 8 bits.
+
+                        Next, the value in the info dictionary should be used if given
+                        because it is an override of the normal behavior.
+
+                        Otherwise, the size bit is used to choose between an 8 bits
+                        if it is not set or 32 bit if the bit is set.
+
+                        The reason this works is because based on looking for
+                        patterns in the opcodes, it seems like the size bit is
+                        almost always present. If it is and it is 0, then the
+                        operand is 8 bits and cannot be changed. For any cases that
+                        this does not hold true, the info for the opcode should
+                        provide an override size for the operand so that it can
+                        either be that value or be affected by prefix bytes.
+
+        Arguments:      opcode     - The instruction opcode
+                        prefixSize - The size based on a prefix byte
+                        infoSize   - The size from the table of opcodes
+                        maxSize    - The maximum allowed size for the operand
+
+        Return:         The size that should be used for the operand.
+        """
+
+        sizeBit = opcode & OP_SIZE_MASK
+
+        logger.debug(f"prefixSize: {prefixSize}, infoSize: {infoSize}, maxSize: {maxSize}, sizeBit: {sizeBit}")
+
+        # If a register size is 0, that means it should not exist and the size
+        # should remain 0 no matter what.
+        if infoSize == REG_SIZE_0:
+            return infoSize
+
+        # If the REX 8-bit prefix is not there, then the size remains the normal
+        # 8-bit register. Also, if there is no infoSize and the size bit is 0, the
+        # operand is 8 bits. The REX 8-bit prefix only applies in these cases.
+        if infoSize == REG_SIZE_8 or (infoSize is None and sizeBit == 0):
+            if prefixSize == REG_SIZE_8_REX:
+                return REG_SIZE_8_REX
+
+            return REG_SIZE_8
+
+        # The REX 8-bit prefix has no effect if the operand isn't originally 8 bits
+        if prefixSize == REG_SIZE_8_REX:
+            prefixSize = None
+
+        # If there is a prefix size within the allowed range and there is no info
+        # size override, trust the size bit to determine the default size of the
+        # operand. If the bit is 0, then the operand is 8 bits and cannot be changed
+        # Or if an info size is specified because then the size bit doesn't matter.
+        if prefixSize is not None and prefixSize <= maxSize:
+            logger.debug("Using prefix size")
+            size = prefixSize
+
+        elif infoSize is not None and infoSize <= maxSize:
+            logger.debug("Using info size")
+            size = infoSize
+
+        elif infoSize is not None and infoSize > maxSize:
+            logger.debug("Using max size")
+            size = maxSize
+
+        elif infoSize is None and sizeBit == 0:
+            logger.debug("Using bit size 8")
+            return REG_SIZE_8
+
+        elif infoSize is None and sizeBit == 1:
+            logger.debug("Using bit size 32")
+            size = REG_SIZE_32
+
+        # If the info size somehow exceeds the maximum, use the maximum instead
+        # because the size bit shold not be used if an info size was specified.
+        if size > maxSize:
+            logger.debug("Capping to max size")
+            size = maxSize
+
+        return size
+
+
+class X64Operand( Operand ):
+
+    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, segmentReg=0, isImmediate=False, indirect=False ):
+
+        super().__init__(size, value)
+        self.maxSize = maxSize          # The maximum size allowed for the operand
+        self.isImmediate = isImmediate  # Whether the operand is an immediate
+        self.segmentReg = segmentReg    # The segment register to use as a base value
+        self.indirect = indirect        # Whether the addressing is indirect
+        self.displacement = 0           # Value of the displacement from the register value
+        self.modRm = False              # Whether the Mod R/M byte applies
+        self.scale = 0                  # Factor to multiply the index by if SIB byte is present
+        self.index = None               # Index register if SIB byte is present
+
+    def __repr__( self ):
+
+        value    = self.value
+        scale    = self.scale
+        index    = self.index
+        displace = self.displacement
+
+        if self.isImmediate and value is not None:
+            return f"{hex(value)}"
+
+        if not self.indirect:
+            regName = REG_NAMES[value][self.size]
+            return regName
+
+        # If this is an indirect value, use the name of the 64 bit register
+        regName      = ""
+        indexName    = ""
+        scaleStr     = ""
+        segmentStr   = ""
+        displaceStr  = ""
+        baseIndexStr = ""
+
+        # Use a different syntax for segment registers because they are just a
+        # segment name with a displacement separated by a colon.
+        if self.segmentReg in SEGMENT_REG_NAMES:
+            segmentStr = f"{SEGMENT_REG_NAMES[self.segmentReg]}:"
+
+        # If the value was not changed to None because of SIB displacement,
+        # set it to the name according to the register name dictionary.
+        if value is not None:
+            regName    = REG_NAMES[value][REG_SIZE_64]
+
+        # There is only an index if the scale was set to be nonzero, and RSP is
+        # not a valid index register.
+        if scale > 0 and index is not None and index != REG_RSP:
+            indexName  = REG_NAMES[index][REG_SIZE_64]
+
+        # Handle the scale and index values. They should only be there if
+        # scale is greater than 0 and the index has a valid name. It will not
+        # have a valid name if it is RSP because that is not a valid index.
+        if scale > 0 and indexName != "":
+
+            # Only print the scale value if it is not 1 to make it more clean
+            if scale > 1:
+                scaleStr = f"{scale} * "
+
+        # Handle combining the base and index values. If at least one value is
+        # not an empty string, then the values need to go in brackets. If both
+        # are set, then they need to be separated by a plus sign. If only one is
+        # set, then just putting them all next to each other in brackets is okay
+        # because one will be nothing and the other will be the only value.
+        if regName != "" or indexName != "":
+            if regName != "" and indexName != "":
+                baseIndexStr = f"[{regName} + {scaleStr}{indexName}]"
+
+            else:
+                baseIndexStr = f"[{regName}{scaleStr}{indexName}]"
+
+        # Handle the displacement value
+        if displace != 0:
+            signStr = ""
+            if baseIndexStr != "" and displace > 0:
+                signStr = " + "
+            elif baseIndexStr != "" and displace < 0:
+                signStr = " - "
+            displaceStr = f"{signStr}{hex(abs(displace))}"
+
+        return f"{segmentStr}{baseIndexStr}{displaceStr}"
+
 
 class X64InstructionInfo():
 
@@ -132,9 +448,9 @@ oneByteOpcodes = {
 #   0x66: 16-bit Operand Size Prefix
 #   0x67: TODO: 32-bit Address Size Prefix
     0x68: X64InstructionInfo("push",  signExtension=True, src_isImmediate=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_0),
-#   0x69: TODO: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, src_isImmediate=True, signExtension=True, src_size=REG_SIZE_32),    # Figure out a way to handle an instruction with multiple sources
+    0x69: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, src_size=REG_SIZE_32, signExtension=True, inst_extraOperands=[X64Operand(isImmediate=True, size=REG_SIZE_32, maxSize=REG_SIZE_32)]),
     0x6a: X64InstructionInfo("push",  signExtension=True, src_isImmediate=True, src_size=REG_SIZE_8, dst_size=REG_SIZE_0),
-#   0x6b: TODO: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, signExtension=True, src_isImmediate=True, src_size=REG_SIZE_8),
+    0x6b: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, src_size=REG_SIZE_32, signExtension=True, inst_extraOperands=[X64Operand(isImmediate=True, size=REG_SIZE_8)]),
 #   0x6c: Debug input port to string
 #   0x6d: Debug input port to string
 #   0x6e: Debug output string to port
@@ -187,22 +503,22 @@ oneByteOpcodes = {
     0x9d: X64InstructionInfo("popf",  dst_size=REG_SIZE_64, dst_value=REG_RFLAGS,  src_size=REG_SIZE_0),
     0x9e: X64InstructionInfo("sahf",  op_size=REG_SIZE_8,   op_maxSize=REG_SIZE_8, dst_value=REG_RFLAGS, src_value=REG_RSP),  # REG_RSP is the value for %ah at 8 bits
     0x9f: X64InstructionInfo("lahf",  op_size=REG_SIZE_8,   op_maxSize=REG_SIZE_8, src_value=REG_RFLAGS, dst_value=REG_RSP),  # REG_RSP is the value for %ah at 8 bits
-#   0xa0: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
-#   0xa1: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
-#   0xa2: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
-#   0xa3: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
-#   0xa4: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
-#   0xa5: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
-#   0xa6: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
-#   0xa7: X64InstructionInfo("mov",   ), TODO: Requires a segment register prefix
+#   0xa0: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
+#   0xa1: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
+#   0xa2: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
+#   0xa3: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
+    0xa4: X64InstructionInfo("movs",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xa5: X64InstructionInfo("movs",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xa6: X64InstructionInfo("cmps",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xa7: X64InstructionInfo("cmps",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
     0xa8: X64InstructionInfo("test",  src_isImmediate=True),
     0xa9: X64InstructionInfo("test",  signExtension=True, src_isImmediate=True, src_maxSize=REG_SIZE_32),
-    0xaa: X64InstructionInfo("stors", dst_segmentReg=PREFIX_REG_ES, dst_indirect=True, dst_value=REG_RDI),
-    0xab: X64InstructionInfo("stors", dst_segmentReg=PREFIX_REG_ES, dst_indirect=True, dst_value=REG_RDI),
-    0xac: X64InstructionInfo("loads", src_segmentReg=PREFIX_REG_DS, src_indirect=True, src_value=REG_RSI),
-    0xad: X64InstructionInfo("loads", src_segmentReg=PREFIX_REG_DS, src_indirect=True, src_value=REG_RSI),
-    0xae: X64InstructionInfo("scans", src_segmentReg=PREFIX_REG_ES, src_indirect=True, src_value=REG_RDI),
-    0xaf: X64InstructionInfo("scans", src_segmentReg=PREFIX_REG_ES, src_indirect=True, src_value=REG_RDI),
+    0xaa: X64InstructionInfo("stors", dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xab: X64InstructionInfo("stors", dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xac: X64InstructionInfo("loads", src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI),
+    0xad: X64InstructionInfo("loads", src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI),
+    0xae: X64InstructionInfo("scans", src_segmentReg=SEGMENT_REG_ES, src_indirect=True, src_value=REG_RDI),
+    0xaf: X64InstructionInfo("scans", src_segmentReg=SEGMENT_REG_ES, src_indirect=True, src_value=REG_RDI),
     0xb0: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
     0xb1: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
     0xb2: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
@@ -244,6 +560,8 @@ oneByteOpcodes = {
 #   0xea: Invalid
     0xeb: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_8),
 
+#   0xf2: Repeat while not zero prefix
+#   0xf3: Repeat while zero prefix
     0xf4: X64InstructionInfo("hlt",   src_size=REG_SIZE_0, dst_size=REG_SIZE_0),
 #   0xf5: TODO
     0xf6: X64InstructionInfo("",      modRm=MODRM_SOURCE, extOpcode=True),
@@ -310,5 +628,4 @@ twoByteOpcodes = {
     0xb7: X64InstructionInfo("movzx", modRm=MODRM_SOURCE, src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
     0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,   src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
     0xbf: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,   src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
-
 }
