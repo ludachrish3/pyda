@@ -936,7 +936,7 @@ class TestX64():
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
         assembly = bytes([SEGMENT_REG_ES, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
-        function, match = self.helper("mov", "%ES:0x28", "%rcx", assembly)
+        function, match = self.helper("mov", "%es:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
@@ -950,7 +950,7 @@ class TestX64():
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
         assembly = bytes([SEGMENT_REG_CS, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
-        function, match = self.helper("mov", "%CS:0x28", "%ecx", assembly)
+        function, match = self.helper("mov", "%cs:0x28", "%ecx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
@@ -964,7 +964,7 @@ class TestX64():
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
         assembly = bytes([SEGMENT_REG_SS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
-        function, match = self.helper("mov", "%SS:0x28", "%rcx", assembly)
+        function, match = self.helper("mov", "%ss:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
@@ -978,7 +978,7 @@ class TestX64():
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
         assembly = bytes([SEGMENT_REG_DS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
-        function, match = self.helper("mov", "%DS:0x28", "%rcx", assembly)
+        function, match = self.helper("mov", "%ds:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
@@ -992,7 +992,7 @@ class TestX64():
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
         assembly = bytes([SEGMENT_REG_FS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
-        function, match = self.helper("mov", "%FS:0x28", "%rcx", assembly)
+        function, match = self.helper("mov", "%fs:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 
@@ -1006,7 +1006,7 @@ class TestX64():
         #           Scale        | Invalid Reg    | Use Displacement
         sibByte   = (0 << 6)     | (REG_RSP << 3) | REG_RBP
         assembly = bytes([SEGMENT_REG_GS, PREFIX_64_BIT_OPERAND, 0x8b, modRmByte, sibByte, 0x28, 0x00, 0x00, 0x00])
-        function, match = self.helper("mov", "%GS:0x28", "%rcx", assembly)
+        function, match = self.helper("mov", "%gs:0x28", "%rcx", assembly)
         assert len(function.instructions) == 1
         assert match is not None
 

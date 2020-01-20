@@ -199,6 +199,11 @@ class X64Instruction( Instruction ):
         if prefixSize == REG_SIZE_8_REX:
             prefixSize = None
 
+        # Specially handle the 128-bit prefix because it is the same prefix as
+        # the 16-bit prefix, but it behaves differently for the MM registers.
+        if infoSize == REG_SIZE_64_MM and prefixSize == REG_SIZE_16:
+            return REG_SIZE_128
+
         # If there is a prefix size within the allowed range and there is no info
         # size override, trust the size bit to determine the default size of the
         # operand. If the bit is 0, then the operand is 8 bits and cannot be changed
@@ -445,7 +450,7 @@ oneByteOpcodes = {
     0x63: X64InstructionInfo("movsxd", modRm=MODRM_SOURCE, signExtension=True, src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
 #   0x64: FS Segment Register Prefix
 #   0x65: GS Segment Register Prefix
-#   0x66: 16-bit Operand Size Prefix
+#   0x66: 16-bit Operand Size Prefix or access to Double Quadword Registers
 #   0x67: TODO: 32-bit Address Size Prefix
     0x68: X64InstructionInfo("push",  signExtension=True, src_isImmediate=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_0),
     0x69: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, src_size=REG_SIZE_32, signExtension=True, inst_extraOperands=[X64Operand(isImmediate=True, size=REG_SIZE_32, maxSize=REG_SIZE_32)]),
@@ -590,6 +595,8 @@ twoByteOpcodes = {
     0x4d: X64InstructionInfo("cmovge", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Greater than or equal (signed)
     0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Less than or equal (signed)
     0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Greater than (signed)
+
+    0x6f: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, op_size=REG_SIZE_64_MM),
 
     0x80: X64InstructionInfo("jo",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Overflow
     0x81: X64InstructionInfo("jno",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Not overflow
