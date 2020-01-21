@@ -199,11 +199,6 @@ class X64Instruction( Instruction ):
         if prefixSize == REG_SIZE_8_REX:
             prefixSize = None
 
-        # Specially handle the 128-bit prefix because it is the same prefix as
-        # the 16-bit prefix, but it behaves differently for the MM registers.
-        if infoSize == REG_SIZE_64_MM and prefixSize == REG_SIZE_16:
-            return REG_SIZE_128
-
         # If there is a prefix size within the allowed range and there is no info
         # size override, trust the size bit to determine the default size of the
         # operand. If the bit is 0, then the operand is 8 bits and cannot be changed
@@ -334,7 +329,6 @@ class X64InstructionInfo():
         self.signExtension = signExtension  # Whether the sign should be extended
         self.isConversion  = isConversion   # Whether the instruction is size conversion
         self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
-
 
         self.srcKwargs  = { key.split("_")[1]: value for (key, value) in kwargs.items() if key.startswith(("src_", "op_")) }
         self.dstKwargs  = { key.split("_")[1]: value for (key, value) in kwargs.items() if key.startswith(("dst_", "op_")) }
@@ -550,28 +544,58 @@ oneByteOpcodes = {
     0xc7: X64InstructionInfo("mov",   modRm=MODRM_DEST, signExtension=True, src_isImmediate=True, src_maxSize=REG_SIZE_32),
 #   0xc8: TODO: Enter, which has 2 sources and 1 destination
     0xc9: X64InstructionInfo("leave", op_size=REG_SIZE_0),
-
+#   0xca: TODO
+#   0xcb: TODO
+#   0xcc: TODO
+#   0xcd: TODO
+#   0xce: TODO
+#   0xcf: TODO
     0xd0: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_isImmediate=True, src_value=1),
     0xd1: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_isImmediate=True, src_value=1),
     0xd2: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_size=REG_SIZE_8,  src_value=REG_RCX),
     0xd3: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_size=REG_SIZE_8,  src_value=REG_RCX),
-
 #   0xd4: Invalid
 #   0xd5: Invalid
 #   0xd6: Invalid
-
+#   0xd7: TODO: Table translation
+#   0xd8: TODO:
+#   0xd9: TODO:
+#   0xda: TODO:
+#   0xdb: TODO:
+#   0xdc: TODO:
+#   0xdd: TODO:
+#   0xde: TODO:
+#   0xdf: TODO:
+#   0xe0: TODO:
+#   0xe1: TODO:
+#   0xe2: TODO:
+#   0xe3: TODO:
+#   0xe4: TODO:
+#   0xe5: TODO:
+#   0xe6: TODO:
+#   0xe7: TODO:
     0xe8: X64InstructionInfo("call",  relativeJump=True, signExtension=True, src_size=REG_SIZE_32, src_maxSize=REG_SIZE_32),
     0xe9: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32, src_maxSize=REG_SIZE_32),
 #   0xea: Invalid
     0xeb: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_8),
-
+#   0xec: TODO:
+#   0xed: TODO:
+#   0xee: TODO:
+#   0xef: TODO:
+#   0xf0: Lock Prefix
+#   0xf1: TODO:
 #   0xf2: Repeat while not zero prefix
 #   0xf3: Repeat while zero prefix
     0xf4: X64InstructionInfo("hlt",   src_size=REG_SIZE_0, dst_size=REG_SIZE_0),
-#   0xf5: TODO
+    0xf5: X64InstructionInfo("cmc",   op_size=REG_SIZE_0),
     0xf6: X64InstructionInfo("",      modRm=MODRM_SOURCE, extOpcode=True),
     0xf7: X64InstructionInfo("",      modRm=MODRM_SOURCE, extOpcode=True),
-
+    0xf8: X64InstructionInfo("clc",   op_size=REG_SIZE_0),
+    0xf9: X64InstructionInfo("stc",   op_size=REG_SIZE_0),
+    0xfa: X64InstructionInfo("cli",   op_size=REG_SIZE_0),
+    0xfb: X64InstructionInfo("sti",   op_size=REG_SIZE_0),
+    0xfc: X64InstructionInfo("cld",   op_size=REG_SIZE_0),
+    0xfd: X64InstructionInfo("std",   op_size=REG_SIZE_0),
     0xfe: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_size=REG_SIZE_0),
     0xff: X64InstructionInfo("",      modRm=MODRM_DEST, extOpcode=True, src_size=REG_SIZE_0),
 }
@@ -596,7 +620,7 @@ twoByteOpcodes = {
     0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Less than or equal (signed)
     0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Greater than (signed)
 
-    0x6f: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, op_size=REG_SIZE_64_MM),
+#   0x6f: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
 
     0x80: X64InstructionInfo("jo",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Overflow
     0x81: X64InstructionInfo("jno",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Not overflow

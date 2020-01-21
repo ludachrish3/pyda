@@ -705,7 +705,7 @@ class ElfBinary(binary.Binary):
             # is no symbol table. This will be parsed out later into separate
             # functions.
             newSymbol = ElfSymbol()
-            newSymbol.setName(f"func_{codeSection.virtualAddr:x}")
+            newSymbol.setName(f"func_{codeSection.virtualAddr:08x}")
             newSymbol.value      = codeSection.virtualAddr
             newSymbol.size       = codeSection.size
             newSymbol.bind       = SYMBOL_BIND_GLOBAL

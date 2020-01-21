@@ -97,7 +97,6 @@ REG_RFLAGS           = 0b10000001
 REG_RDX_RAX_COMBINED = 0b10000010
 
 REG_SIZE_128   = 16
-REG_SIZE_64_MM = 8.5
 REG_SIZE_64    = 8
 REG_SIZE_32    = 4
 REG_SIZE_16    = 2
@@ -113,8 +112,6 @@ REG_NAME_UNDEF = "UNDEF REG"
 # A, C, D, and B registers. They do not have 8 bit registers of their own.
 REG_NAMES = {
     REG_RAX: {
-        REG_SIZE_128:   "%xmm0",
-        REG_SIZE_64_MM: "%mm0",
         REG_SIZE_64:    "%rax",
         REG_SIZE_32:    "%eax",
         REG_SIZE_16:    "%ax",
@@ -122,8 +119,6 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%al",
     },
     REG_RCX: {
-        REG_SIZE_128:   "%xmm1",
-        REG_SIZE_64_MM: "%mm1",
         REG_SIZE_64:    "%rcx",
         REG_SIZE_32:    "%ecx",
         REG_SIZE_16:    "%cx",
@@ -131,8 +126,6 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%cl",
     },
     REG_RDX: {
-        REG_SIZE_128:   "%xmm2",
-        REG_SIZE_64_MM: "%mm2",
         REG_SIZE_64:    "%rdx",
         REG_SIZE_32:    "%edx",
         REG_SIZE_16:    "%dx",
@@ -140,8 +133,6 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%dl",
     },
     REG_RBX: {
-        REG_SIZE_128:   "%xmm3",
-        REG_SIZE_64_MM: "%mm3",
         REG_SIZE_64:    "%rbx",
         REG_SIZE_32:    "%ebx",
         REG_SIZE_16:    "%bx",
@@ -149,8 +140,6 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%bl",
     },
     REG_RSP:{
-        REG_SIZE_128:   "%xmm4",
-        REG_SIZE_64_MM: "%mm4",
         REG_SIZE_64:    "%rsp",
         REG_SIZE_32:    "%esp",
         REG_SIZE_16:    "%sp",
@@ -158,8 +147,6 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%spl",
     },
     REG_RBP: {
-        REG_SIZE_128:   "%xmm5",
-        REG_SIZE_64_MM: "%mm5",
         REG_SIZE_64:    "%rbp",
         REG_SIZE_32:    "%ebp",
         REG_SIZE_16:    "%bp",
@@ -167,8 +154,6 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%bpl",
     },
     REG_RSI: {
-        REG_SIZE_128:   "%xmm6",
-        REG_SIZE_64_MM: "%mm6",
         REG_SIZE_64:    "%rsi",
         REG_SIZE_32:    "%esi",
         REG_SIZE_16:    "%si",
@@ -176,8 +161,6 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%sil",
     },
     REG_RDI: {
-        REG_SIZE_128:   "%xmm7",
-        REG_SIZE_64_MM: "%mm7",
         REG_SIZE_64:    "%rdi",
         REG_SIZE_32:    "%edi",
         REG_SIZE_16:    "%di",
