@@ -5,10 +5,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def handlePrefix( instruction, binary ):
+def handlePrefixes( instruction, binary ):
     """
     Description:    Consumes all prefix bytes and sets the options for the
-                    instruction.
+                    instruction. They are consumed in this order:
+
+                    1. Legacy prefixes. All groups can be in any order.
+                        a. Group 1: lock and repeat. The repeat prefixes, 0xf2
+                           and 0xf3 can also alter the primary opcode's meaning.
+
+                        b. Group 2: segment override
+
+                        c. Group 3: operand size override. This prefix can also
+                          alter the primary opcode's meaning.
+
+                        d. Group 4: address size override
+
+                    2. REX Prefixes
 
     Arguments:      instruction - An x64Instruction object
                     binary      - An array of bytes
@@ -18,22 +31,42 @@ def handlePrefix( instruction, binary ):
 
     numPrefixBytes = 0
 
+    # Handle legacy prefixes
     for byte in binary:
 
         # Group 1 prefixes
         if byte in [ PREFIX_LOCK, PREFIX_REPEAT_NZERO, PREFIX_REPEAT_ZERO ]:
             logger.debug(f"Found a lock/repeat prefix: {byte:02x}")
-            instruction.lockRepeatPrefix = byte
-            instruction.bytes.append(byte)
+            instruction.legacyPrefix = byte
 
         # Group 2 prefixes
         elif byte in PREFIX_SEGMENTS:
             logger.debug(f"Found a segment register prefix: {byte:02x}")
             instruction.segmentPrefix = byte
-            instruction.bytes.append(byte)
 
-        # REX prefixes
-        elif byte & 0xf0 == PREFIX_REX_MASK:
+        # Group 3 prefixes
+        elif byte == PREFIX_16_BIT_OPERAND:
+            logger.debug("Found the 16-bit prefix")
+            instruction.legacyPrefix = byte
+
+        # Group 4 prefixes
+        elif byte == PREFIX_32_BIT_ADDRESS:
+            logger.debug("Found the 32-bit address prefix")
+            instruction.addressSize = 4
+
+        # If a prefix is not found, proceed to the next step
+        else:
+            logger.debug("No more legacy prefixes")
+            break
+
+        # If the else branch is not hit, a prefix byte was found
+        instruction.bytes.append(byte)
+        numPrefixBytes += 1
+
+    # Handle REX prefixes starting from wherever the legacy prefixes left off
+    for byte in binary[numPrefixBytes:]:
+
+        if byte & 0xf0 == PREFIX_REX_MASK:
 
             # If the prefix is just the REX prefix with no other bits set, then
             # access to the extended 8-bit registers is available.
@@ -57,26 +90,15 @@ def handlePrefix( instruction, binary ):
             if byte & PREFIX_REX_B_MASK == PREFIX_REX_B_MASK:
                 instruction.extendBase = True
 
-            instruction.bytes.append(byte)
-
-        elif byte == PREFIX_16_BIT_OPERAND:
-            logger.debug("Found the 16-bit prefix")
-            instruction.prefixSize = REG_SIZE_16
-            instruction.bytes.append(byte)
-
-        # Group 4 prefixes
-        elif byte == PREFIX_32_BIT_ADDRESS:
-            logger.debug("Found the 32-bit address prefix")
-            instruction.addressSize = 4
-            instruction.bytes.append(byte)
-
-        # If a prefix is not found, proceed to the next step
         else:
-            logger.debug("No more instruction prefixes")
-            return numPrefixBytes
+            logger.debug("No more REX prefixes")
+            break
 
         # If the else branch is not hit, a prefix byte was found
+        instruction.bytes.append(byte)
         numPrefixBytes += 1
+
+    return numPrefixBytes
 
 
 def handleOpcode( instruction, binary ):
@@ -96,15 +118,38 @@ def handleOpcode( instruction, binary ):
     # Check for the opcode being a 2 byte opcode
     if binary[0] == PREFIX_2_BYTE_OPCODE and len(binary) > 1 and binary[1] in twoByteOpcodes:
         logger.debug("A 2 byte opcode was found")
-
-        instruction.setAttributes(binary[1], twoByteOpcodes[binary[1]])
         numOpcodeBytes = 2
+
+        # If the info object is actually a dictionary, then there is a secondary
+        # opcode and the next byte also needs to be consumed.
+        info = twoByteOpcodes[binary[1]]
+        if type(info) == dict:
+            if None in info:
+                info = info[None]
+
+            else:
+                info = info[binary[2]]
+                numOpcodeBytes += 1
+
+        instruction.setAttributes(binary[1], info)
 
     # Check for the opcode being a 1 byte opcode
     elif binary[0] in oneByteOpcodes:
         logger.debug(f"A 1 byte opcode was found: {binary[0]:02x}")
-        instruction.setAttributes(binary[0], oneByteOpcodes[binary[0]])
         numOpcodeBytes = 1
+
+        # If the info object is actually a dictionary, then there is a secondary
+        # opcode and the next byte also needs to be consumed.
+        info = oneByteOpcodes[binary[0]]
+        if type(info) == dict:
+            if None in info:
+                info = info[None]
+
+            else:
+                info = info[binary[1]]
+                numOpcodeBytes += 1
+
+        instruction.setAttributes(binary[0], info)
 
     # The opcode is not a valid 1 or 2 byte opcode, so keep the new instruction
     # the same as the one that was passed in.
@@ -582,7 +627,7 @@ def disassemble( function ):
 
         # Find all prefix bytes and set the appropriate settings in the
         # instruction. Consume all prefix bytes from the binary.
-        numPrefixBytes = handlePrefix(curInstruction, binary)
+        numPrefixBytes = handlePrefixes(curInstruction, binary)
         logger.debug(f"There were {numPrefixBytes} prefix bytes")
         binary = binary[numPrefixBytes:]
 

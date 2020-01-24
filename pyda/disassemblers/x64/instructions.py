@@ -11,15 +11,37 @@ class X64Instruction( Instruction ):
     def __init__( self, mnemonic="byte", addr=0, source=None, dest=None, extraOperands=[] ):
         super().__init__(mnemonic, addr, source, dest, extraOperands)
 
-        self.prefixSize = None      # The size operands should be based on the prefix
+        self.prefixSize    = None   # The size operands should be based on the prefix
         self.segmentPrefix = 0      # Opcode of the segment
-        self.lockRepeatPrefix = 0   # Lock or repeat prefix
+        self.legacyPrefix  = None   # Lock, repeat, or operand size prefix
         self.addressSize   = REG_SIZE_64
         self.extendBase    = False
         self.extendIndex   = False
         self.extendReg     = False
 
     def setAttributes( self, opcode, info ):
+
+        applyLegacyPrefix = True
+
+        # The info entry can be a dictionary if the instruction changes meaning
+        # based on the legacy prefix. The dictionary is of the form
+        # {
+        #   None: X64InstructionInfo(...),
+        #   0x66: X64InstructionInfo(...),
+        #   0xf0: X64InstructionInfo(...),
+        #   0xf2: X64InstructionInfo(...),
+        #   0xf3: X64InstructionInfo(...),
+        # }
+        # where each key is a possible prefix. None is the value to use when
+        # the legacy prefix does not change the opcodes's meaning.
+        if type(info) == dict:
+            if self.legacyPrefix in info:
+                info = info[self.legacyPrefix]
+                applyLegacyPrefix = False
+
+            else:
+                info = info[None]
+
 
         # Create deep copies so that the dictionary of infos remains unchanged
         # and this specific instruction's info can be updated as needed.
@@ -37,17 +59,23 @@ class X64Instruction( Instruction ):
         # Update instruction attributes based on the instruction kwargs
         self.__dict__.update(info.instKwargs)
 
-        # Handle renaming the mnemonic for Group 1 prefixes
-        # TODO: There are special cases for some of these, so that will need to
-        # be handled in the future.
-        if self.lockRepeatPrefix == PREFIX_LOCK:
-            self.mnemonic = "lock " + self.mnemonic
+        # If the legacy prefix has no bearing on the opcode's meaning now is
+        # the appropriate time to apply its effects.
+        if applyLegacyPrefix:
+            if self.legacyPrefix == PREFIX_16_BIT_OPERAND:
+                self.prefixSize = REG_SIZE_16
 
-        elif self.lockRepeatPrefix == PREFIX_REPEAT_NZERO:
-            self.mnemonic = "repnz " + self.mnemonic
+            # Handle renaming the mnemonic for Group 1 prefixes
+            # TODO: There are special cases for some of these, so that will need to
+            # be handled in the future.
+            elif self.legacyPrefix == PREFIX_LOCK:
+                self.mnemonic = "lock " + self.mnemonic
 
-        elif self.lockRepeatPrefix == PREFIX_REPEAT_ZERO:
-            self.mnemonic = "repz " + self.mnemonic
+            elif self.legacyPrefix == PREFIX_REPEAT_NZERO:
+                self.mnemonic = "repnz " + self.mnemonic
+
+            elif self.legacyPrefix == PREFIX_REPEAT_ZERO:
+                self.mnemonic = "repz " + self.mnemonic
 
         #############################
         #  DETERMINE OPERAND SIZES  #
@@ -340,6 +368,37 @@ class X64InstructionInfo():
             self.srcKwargs["isImmediate"] = True
 
 
+# The structure for opcodes and their info is a dictionary keyed on the primary
+# opcode. If there are any prefixes that change the opcode's meaning or
+# secondary opcodes, there are nested dictionaries to handle these cases. The
+# structure is the following if there are secondary opcodes:
+#   primaryOpcode: {
+#       secondaryOpcode1: {
+#           None:    X64InstructionInfo(...),
+#           prefix1: X64InstructionInfo(...),
+#           prefix2: X64InstructionInfo(...),
+#           prefix3: X64InstructionInfo(...),
+#       },
+#       secondaryOpcode2: {
+#           None:    X64InstructionInfo(...),
+#           prefix1: X64InstructionInfo(...),
+#           prefix2: X64InstructionInfo(...),
+#       },
+#   }
+#
+#   NOTE: Secondary opcode dictionaries should have a value for the key None
+#   if the opcode does not have a required prefix.
+#
+# If there is not a secondary opcode, then the structure is the following:
+#   primaryOpcode: {
+#       None: {
+#           None:    X64InstructionInfo(...),
+#           prefix1: X64InstructionInfo(...),
+#           prefix2: X64InstructionInfo(...),
+#           prefix3: X64InstructionInfo(...),
+#       }
+#   }
+
 oneByteOpcodes = {
 
     0x00: X64InstructionInfo("add",   modRm=MODRM_DEST),
@@ -486,7 +545,12 @@ oneByteOpcodes = {
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SOURCE),
 #   0x8e: TODO: X64InstructionInfo("mov",   modRm=MODRM_SOURCE), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
     0x8f: X64InstructionInfo("pop",   modRm=MODRM_DEST, extOpcode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x90: X64InstructionInfo("nop"), # This is a special case of exchange instructions that would swap EAX with EAX
+    0x90: {
+        None: {
+            None: X64InstructionInfo("nop"), # This is a special case of exchange instructions that would swap EAX with EAX
+            0xf3: X64InstructionInfo("pause"),
+        },
+    },
     0x91: X64InstructionInfo("xchg",  registerCode=True, op_size=REG_SIZE_32),
     0x92: X64InstructionInfo("xchg",  registerCode=True, op_size=REG_SIZE_32),
     0x93: X64InstructionInfo("xchg",  registerCode=True, op_size=REG_SIZE_32),
@@ -620,7 +684,13 @@ twoByteOpcodes = {
     0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Less than or equal (signed)
     0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Greater than (signed)
 
-#   0x6f: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
+    0x6f: {
+        None: {
+            None: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
+            0x66: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
+            0xf3: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
+        },
+    },
 
     0x80: X64InstructionInfo("jo",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Overflow
     0x81: X64InstructionInfo("jno",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Not overflow
