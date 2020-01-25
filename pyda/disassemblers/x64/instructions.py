@@ -18,7 +18,6 @@ class X64Instruction( Instruction ):
         self.extendBase    = False
         self.extendIndex   = False
         self.extendReg     = False
-        self.mmRegister    = False
 
     def setAttributes( self, opcode, info ):
 
@@ -226,9 +225,15 @@ class X64Instruction( Instruction ):
 
             return REG_SIZE_8
 
+        # A register with an info size of 128 bits will always be that size
+        # unless the maximum size is limiting it.
+        if infoSize == REG_SIZE_128:
+            return maxSize
+
         # The REX 8-bit prefix has no effect if the operand isn't originally 8 bits
         if prefixSize == REG_SIZE_8_REX:
             prefixSize = None
+
 
         # If there is a prefix size within the allowed range and there is no info
         # size override, trust the size bit to determine the default size of the
@@ -265,12 +270,13 @@ class X64Instruction( Instruction ):
 
 class X64Operand( Operand ):
 
-    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, segmentReg=0, isImmediate=False, indirect=False ):
+    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, segmentReg=0, isImmediate=False, indirect=False, mmRegister=False ):
 
         super().__init__(size, value)
         self.maxSize = maxSize          # The maximum size allowed for the operand
         self.isImmediate = isImmediate  # Whether the operand is an immediate
         self.segmentReg = segmentReg    # The segment register to use as a base value
+        self.mmRegister = mmRegister    # Whether the operand is an MM register
         self.indirect = indirect        # Whether the addressing is indirect
         self.displacement = 0           # Value of the displacement from the register value
         self.modRm = False              # Whether the Mod R/M byte applies
@@ -667,7 +673,61 @@ oneByteOpcodes = {
 }
 
 twoByteOpcodes = {
+    0x10: {
+        None: {
+            None: X64InstructionInfo("movups", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movupd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movss",  modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x11: {
+        None: {
+            None: X64InstructionInfo("movups", modRm=MODRM_DEST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movupd", modRm=MODRM_DEST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_DEST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movss",  modRm=MODRM_DEST, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+
     0x1f: X64InstructionInfo("nop",   modRm=MODRM_SOURCE),
+
+    0x28: {
+        None: {
+            None: X64InstructionInfo("movaps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movapd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x29: {
+        None: {
+            None: X64InstructionInfo("movaps", modRm=MODRM_DEST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movapd", modRm=MODRM_DEST, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x2a: {
+        None: {
+            None: X64InstructionInfo("cvtpi2ps", modRm=MODRM_SOURCE, op_mmRegister=True,  src_size=REG_SIZE_64, dst_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("cvtpi2pd", modRm=MODRM_SOURCE, op_mmRegister=True,  src_size=REG_SIZE_64, dst_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("cvtsi2sd", modRm=MODRM_SOURCE, dst_mmRegister=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("cvtsi2ss", modRm=MODRM_SOURCE, dst_mmRegister=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_128),
+        },
+    },
+
+    0x2c: {
+        None: {
+            None: X64InstructionInfo("cvttps2pi", modRm=MODRM_SOURCE, op_mmRegister=True,  op_size=REG_SIZE_64),
+            0x66: X64InstructionInfo("cvttpd2pi", modRm=MODRM_SOURCE, op_mmRegister=True,  src_size=REG_SIZE_128, dst_size=REG_SIZE_64),
+            0xf2: X64InstructionInfo("cvttsd2si", modRm=MODRM_SOURCE, src_mmRegister=True, src_size=REG_SIZE_128, dst_size=REG_SIZE_32),
+            0xf3: X64InstructionInfo("cvttss2si", modRm=MODRM_SOURCE, src_mmRegister=True, src_size=REG_SIZE_128, dst_size=REG_SIZE_32),
+        },
+    },
+
+    0x2e: {
+        None: {
+            None: X64InstructionInfo("ucomiss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("ucomisd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
 
     0x40: X64InstructionInfo("cmovo",  modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Overflow
     0x41: X64InstructionInfo("cmovno", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Not overflow
@@ -686,11 +746,105 @@ twoByteOpcodes = {
     0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Less than or equal (signed)
     0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SOURCE, op_size=REG_SIZE_32), # Greater than (signed)
 
+    0x51: {
+        None: {
+            None: X64InstructionInfo("sqrtps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("sqrtpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("sqrtsd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("sqrtss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x52: {
+        None: {
+            None: X64InstructionInfo("rsqrtps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("rsqrtss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x53: {
+        None: {
+            None: X64InstructionInfo("rcpps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("rcpss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x54: {
+        None: {
+            None: X64InstructionInfo("andps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("andpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x55: {
+        None: {
+            None: X64InstructionInfo("addps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("addpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x56: {
+        None: {
+            None: X64InstructionInfo("orps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("orpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x57: {
+        None: {
+            None: X64InstructionInfo("xorps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("xorpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x58: {
+        None: {
+            None: X64InstructionInfo("addps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("addpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("addsd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("addss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x59: {
+        None: {
+            None: X64InstructionInfo("mulps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("mulpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("mulsd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("mulss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+
+    0x5c: {
+        None: {
+            None: X64InstructionInfo("subps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("subpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("subsd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("subss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x5d: {
+        None: {
+            None: X64InstructionInfo("minps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("minpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("minsd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("minss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x5e: {
+        None: {
+            None: X64InstructionInfo("divps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("divpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("divsd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("divss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+    0x5f: {
+        None: {
+            None: X64InstructionInfo("maxps", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("maxpd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("maxsd", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("maxss", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
+
     0x6f: {
         None: {
-            None: X64InstructionInfo("mov", modRm=MODRM_SOURCE, inst_mmRegister=True, op_size=REG_SIZE_64),
-            0x66: X64InstructionInfo("mov", modRm=MODRM_SOURCE, inst_mmRegister=True, op_size=REG_SIZE_128),
-            0xf3: X64InstructionInfo("mov", modRm=MODRM_SOURCE, inst_mmRegister=True, op_size=REG_SIZE_128),
+            None: X64InstructionInfo("movq",   modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_64),
+            0x66: X64InstructionInfo("movdqa", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movdqu", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
         },
     },
 
@@ -727,8 +881,17 @@ twoByteOpcodes = {
     0x9e: X64InstructionInfo("setle", modRm=MODRM_DEST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Less than or equal (signed)
     0x9f: X64InstructionInfo("setg",  modRm=MODRM_DEST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Greater than (signed)
 
+    0xaf: X64InstructionInfo("imul",  modRm=MODRM_SOURCE, op_size=REG_SIZE_32),
+
     0xb6: X64InstructionInfo("movzx", modRm=MODRM_SOURCE, src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
     0xb7: X64InstructionInfo("movzx", modRm=MODRM_SOURCE, src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
     0xbe: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,   src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
     0xbf: X64InstructionInfo("movsx", modRm=MODRM_SOURCE, signExtension=True,   src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
+
+    0xef: {
+        None: {
+            None: X64InstructionInfo("pxor", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_64),
+            0x66: X64InstructionInfo("pxor", modRm=MODRM_SOURCE, op_mmRegister=True, op_size=REG_SIZE_128),
+        },
+    },
 }

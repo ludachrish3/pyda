@@ -290,11 +290,11 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
         instruction.dest   = None
 
         if modRmOpValue == 0:
-            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST)
+            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST, src_isImmediate=True)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 1:
-            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST)
+            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST, src_isImmediate=True)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 2:
@@ -427,7 +427,7 @@ def handleOperandAddressing( instruction, operand, binary ):
             # be converted to use MM names because using an indirect address
             # based on an MM (or XMM) register does not make sense. The values
             # in these registers are usually packed values.
-            if instruction.mmRegister:
+            if operand.mmRegister:
                 operand.value |= REG_MM
 
             return addrBytes
@@ -487,7 +487,7 @@ def handleOperandAddressing( instruction, operand, binary ):
         logger.debug("Mod R/M byte is not for this operand")
         operand.value = regOrOp
 
-        if instruction.mmRegister:
+        if operand.mmRegister:
             logger.debug("Extending register to use MM registers")
             operand.value |= REG_MM
 
@@ -560,7 +560,10 @@ def handleImmediate( instruction, operand, binary ):
         logger.error(f"There are only {len(binary)} bytes remaining, but {operand.size} are expected")
         return -1
 
-    numBytes = operand.size
+    # Round the operand size down because there are some register sizes that use
+    # decimal values to differentiate them. The actual size is always the
+    # truncated value of the register size.
+    numBytes = int(operand.size)
     instruction.bytes += list(binary[:numBytes])
     immediate = int.from_bytes(binary[:numBytes], "little", signed=instruction.info.signExtension)
 
@@ -615,7 +618,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:13150]
+    binary       = function.assembly[:45000]
     instructions = function.instructions
     offTheRails  = False
 

@@ -25,6 +25,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=None, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_8
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_8)
@@ -37,6 +40,9 @@ class TestX64():
         assert size == REG_SIZE_0
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_0
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_0
 
         ########################
@@ -53,6 +59,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_8
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_8
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_8)
@@ -65,6 +74,9 @@ class TestX64():
         assert size == REG_SIZE_16
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_16
 
         ########################
@@ -81,6 +93,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_32
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_32
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_8)
@@ -95,6 +110,26 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_64
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_128
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_8)
@@ -107,6 +142,9 @@ class TestX64():
         assert size == REG_SIZE_8_REX
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8_REX
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=None, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8_REX
 
         ########################
@@ -123,6 +161,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_0, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_0
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
@@ -135,6 +176,9 @@ class TestX64():
         assert size == REG_SIZE_8_REX
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8_REX
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_8, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8_REX
 
         ########################
@@ -151,6 +195,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_16, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_16
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
@@ -163,6 +210,9 @@ class TestX64():
         assert size == REG_SIZE_32
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_32, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_32
 
         ########################
@@ -179,6 +229,26 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_64, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_64
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_128, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_128, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_128, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_128, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_8_REX, infoSize=REG_SIZE_128, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_128
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_8)
@@ -191,6 +261,9 @@ class TestX64():
         assert size == REG_SIZE_8
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8
 
         ########################
@@ -207,6 +280,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_0
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
@@ -219,6 +295,9 @@ class TestX64():
         assert size == REG_SIZE_8
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8
 
         ########################
@@ -235,6 +314,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_16
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
@@ -247,6 +329,9 @@ class TestX64():
         assert size == REG_SIZE_16
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_16
 
         ########################
@@ -263,6 +348,26 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_16
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_128
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_8)
@@ -275,6 +380,9 @@ class TestX64():
         assert size == REG_SIZE_8
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8
 
         ########################
@@ -291,6 +399,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_0
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
@@ -303,6 +414,9 @@ class TestX64():
         assert size == REG_SIZE_8
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8
 
         ########################
@@ -319,6 +433,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_64
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
@@ -331,6 +448,9 @@ class TestX64():
         assert size == REG_SIZE_32
 
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_64
 
         ########################
@@ -347,6 +467,26 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_64
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=0, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_128
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_8)
@@ -359,6 +499,9 @@ class TestX64():
         assert size == REG_SIZE_32
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=None, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_32
 
         ########################
@@ -375,6 +518,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_0, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_0
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
@@ -387,6 +533,9 @@ class TestX64():
         assert size == REG_SIZE_8
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_8, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8
 
         ########################
@@ -403,6 +552,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_16, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_16
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
@@ -415,6 +567,9 @@ class TestX64():
         assert size == REG_SIZE_32
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_32, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_32
 
         ########################
@@ -431,6 +586,26 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_64, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_64
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=None, infoSize=REG_SIZE_128, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_128
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_8)
@@ -443,6 +618,9 @@ class TestX64():
         assert size == REG_SIZE_16
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=None, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_16
 
         ########################
@@ -459,6 +637,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_0, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_0
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
@@ -471,6 +652,9 @@ class TestX64():
         assert size == REG_SIZE_8
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_8, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8
 
         ########################
@@ -487,6 +671,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_16, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_16
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
@@ -499,6 +686,9 @@ class TestX64():
         assert size == REG_SIZE_16
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_32, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_16
 
         ########################
@@ -515,6 +705,26 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_16
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_64, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_16
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_16, infoSize=REG_SIZE_128, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_128
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_8)
@@ -527,6 +737,9 @@ class TestX64():
         assert size == REG_SIZE_32
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=None, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_64
 
         ########################
@@ -543,6 +756,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_0
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_0, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_0
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_8)
@@ -555,6 +771,9 @@ class TestX64():
         assert size == REG_SIZE_8
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_8, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_8
 
         ########################
@@ -571,6 +790,9 @@ class TestX64():
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
 
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_16, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_64
+
         ########################
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_8)
@@ -583,6 +805,9 @@ class TestX64():
         assert size == REG_SIZE_32
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_32, maxSize=REG_SIZE_128)
         assert size == REG_SIZE_64
 
         ########################
@@ -598,6 +823,26 @@ class TestX64():
 
         size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_64)
         assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_64, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_64
+
+        ########################
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_8)
+        assert size == REG_SIZE_8
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_16)
+        assert size == REG_SIZE_16
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_32)
+        assert size == REG_SIZE_32
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_64)
+        assert size == REG_SIZE_64
+
+        size = X64Instruction.getOperandSize(opcode=1, prefixSize=REG_SIZE_64, infoSize=REG_SIZE_128, maxSize=REG_SIZE_128)
+        assert size == REG_SIZE_128
 
 
     def instruction_helper( self, mnemonic, src, dst, assembly ):
@@ -1168,7 +1413,7 @@ class TestX64():
         modRmByte = MOD_INDIRECT | (REG_RAX << 3) | REG_RBP
 
         assembly = bytes([0x0f, 0x6f, modRmByte, 0x4d, 0xa0, 0x21, 00])
-        self.instruction_helper("mov", "0x21a054", "%mm0", assembly)
+        self.instruction_helper("movq", "0x21a054", "%mm0", assembly)
 
         #########################
         #  XMM RELATIVE TO RIP  #
@@ -1178,7 +1423,7 @@ class TestX64():
         modRmByte = MOD_INDIRECT | (REG_RAX << 3) | REG_RBP
 
         assembly = bytes([0x66, 0x0f, 0x6f, modRmByte, 0x4d, 0xa0, 0x21, 00])
-        self.instruction_helper("mov", "0x21a055", "%xmm0", assembly)
+        self.instruction_helper("movdqa", "0x21a055", "%xmm0", assembly)
 
         ##############################
         #  MM INDIRECT MOD R/M BYTE  #
@@ -1188,7 +1433,7 @@ class TestX64():
         modRmByte = MOD_INDIRECT | (REG_RAX << 3) | REG_RCX
 
         assembly = bytes([0x0f, 0x6f, modRmByte])
-        self.instruction_helper("mov", "[%rcx]", "%mm0", assembly)
+        self.instruction_helper("movq", "[%rcx]", "%mm0", assembly)
 
         ############################
         #  MM DIRECT MOD R/M BYTE  #
@@ -1198,7 +1443,7 @@ class TestX64():
         modRmByte = MOD_DIRECT | (REG_RAX << 3) | REG_RCX
 
         assembly = bytes([0x0f, 0x6f, modRmByte])
-        self.instruction_helper("mov", "%mm1", "%mm0", assembly)
+        self.instruction_helper("movq", "%mm1", "%mm0", assembly)
 
         ######################
         #  MM WITH SIB BYTE  #
@@ -1210,4 +1455,4 @@ class TestX64():
         #           Scale        | Index          | Base
         sibByte   = (2 << 6)     | (REG_RCX << 3) | REG_RBX
         assembly = bytes([0x0f, 0x6f, modRmByte, sibByte])
-        self.instruction_helper("mov", "[%rbx + 4 * %rcx]", "%mm0", assembly)
+        self.instruction_helper("movq", "[%rbx + 4 * %rcx]", "%mm0", assembly)

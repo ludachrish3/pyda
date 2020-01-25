@@ -123,6 +123,7 @@ REG_NAME_UNDEF = "UNDEF REG"
 # A, C, D, and B registers. They do not have 8 bit registers of their own.
 REG_NAMES = {
     REG_RAX: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rax",
         REG_SIZE_32:    "%eax",
         REG_SIZE_16:    "%ax",
@@ -130,6 +131,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%al",
     },
     REG_RCX: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rcx",
         REG_SIZE_32:    "%ecx",
         REG_SIZE_16:    "%cx",
@@ -137,6 +139,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%cl",
     },
     REG_RDX: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rdx",
         REG_SIZE_32:    "%edx",
         REG_SIZE_16:    "%dx",
@@ -144,6 +147,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%dl",
     },
     REG_RBX: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rbx",
         REG_SIZE_32:    "%ebx",
         REG_SIZE_16:    "%bx",
@@ -151,6 +155,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%bl",
     },
     REG_RSP:{
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rsp",
         REG_SIZE_32:    "%esp",
         REG_SIZE_16:    "%sp",
@@ -158,6 +163,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%spl",
     },
     REG_RBP: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rbp",
         REG_SIZE_32:    "%ebp",
         REG_SIZE_16:    "%bp",
@@ -165,6 +171,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%bpl",
     },
     REG_RSI: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rsi",
         REG_SIZE_32:    "%esi",
         REG_SIZE_16:    "%si",
@@ -172,6 +179,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%sil",
     },
     REG_RDI: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rdi",
         REG_SIZE_32:    "%edi",
         REG_SIZE_16:    "%di",
@@ -179,6 +187,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%dil",
     },
     REG_R8: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r8",
         REG_SIZE_32:    "%r8d",
         REG_SIZE_16:    "%r8w",
@@ -186,6 +195,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%r8b",
     },
     REG_R9: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r9",
         REG_SIZE_32:    "%r9d",
         REG_SIZE_16:    "%r9w",
@@ -193,6 +203,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%r9b",
     },
     REG_R10: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r10",
         REG_SIZE_32:    "%r10d",
         REG_SIZE_16:    "%r10w",
@@ -200,6 +211,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%r10b",
     },
     REG_R11: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r11",
         REG_SIZE_32:    "%r11d",
         REG_SIZE_16:    "%r11w",
@@ -207,6 +219,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%r11b",
     },
     REG_R12: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r12",
         REG_SIZE_32:    "%r12d",
         REG_SIZE_16:    "%r12w",
@@ -214,6 +227,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%r12b",
     },
     REG_R13: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r13",
         REG_SIZE_32:    "%r13d",
         REG_SIZE_16:    "%r13w",
@@ -221,6 +235,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%r13b",
     },
     REG_R14: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r14",
         REG_SIZE_32:    "%r14d",
         REG_SIZE_16:    "%r14w",
@@ -228,6 +243,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%r14b",
     },
     REG_R15: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%r15",
         REG_SIZE_32:    "%r15d",
         REG_SIZE_16:    "%r15w",
@@ -299,6 +315,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: REG_NAME_UNDEF,
     },
     REG_RIP: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rip",
         REG_SIZE_32:    "%eip",
         REG_SIZE_16:    "%ip",
@@ -306,6 +323,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: REG_NAME_UNDEF,
     },
     REG_RFLAGS: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rflags",
         REG_SIZE_32:    "%eflags",
         REG_SIZE_16:    "%flags",
@@ -313,6 +331,7 @@ REG_NAMES = {
         REG_SIZE_8_REX: "%flagsb",
     },
     REG_RDX_RAX_COMBINED: {
+        REG_SIZE_128:   REG_NAME_UNDEF,
         REG_SIZE_64:    "%rdx:%rax",
         REG_SIZE_32:    "%edx:%eax",
         REG_SIZE_16:    "%dx:%ax",
