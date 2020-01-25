@@ -686,8 +686,8 @@ class TestX64():
         #  REX EXTEND R/M FIELD  #
         ##########################
 
-        #           Address mode | source         | destination
-        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        #         Address mode | source         | destination
+        modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
 
         assembly = bytes([PREFIX_REX_MASK | PREFIX_REX_B_MASK, 0x01, modRmByte])
         self.instruction_helper("add", "%ecx", "%r8d", assembly)
@@ -981,13 +981,13 @@ class TestX64():
         #  MOVE WITH CONVERSION AND SIGN EXTENSION  #
         #############################################
 
-        #           Address mode | destination    | source
-        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        #         Address mode | destination    | source
+        modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([0x63, modRmByte])
         self.instruction_helper("movsxd", "%ax", "%ecx", assembly)
 
-        #           Address mode | destination    | source
-        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        #         Address mode | destination    | source
+        modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([PREFIX_64_BIT_OPERAND, 0x63, modRmByte])
         self.instruction_helper("movsxd", "%ax", "%rcx", assembly)
 
@@ -995,23 +995,23 @@ class TestX64():
         #  MOVE BETWEEN REGISTER AND MEMORY  #
         ######################################
 
-        #           Address mode | source         | destination
-        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        #         Address mode | source         | destination
+        modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([0x88, modRmByte])
         self.instruction_helper("mov", "%cl", "%al", assembly)
 
-        #           Address mode | source         | destination
-        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        #         Address mode | source         | destination
+        modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([0x89, modRmByte])
         self.instruction_helper("mov", "%ecx", "%eax", assembly)
 
-        #           Address mode | destination    | source
-        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        #         Address mode | destination    | source
+        modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([0x8a, modRmByte])
         self.instruction_helper("mov", "%al", "%cl", assembly)
 
-        #           Address mode | destination    | source
-        modRmByte = MOD_REGISTER | (REG_RCX << 3) | REG_RAX
+        #         Address mode | destination    | source
+        modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([0x8b, modRmByte])
         self.instruction_helper("mov", "%eax", "%ecx", assembly)
 
@@ -1067,13 +1067,13 @@ class TestX64():
         assembly = bytes([0xbf, 0x42, 0x00, 0x00, 0x00])
         self.instruction_helper("mov", "0x42", "%edi", assembly)
 
-        #           Address mode | destination must be 0 | source
-        modRmByte = MOD_REGISTER | 0                     | REG_RCX
+        #         Address mode | destination must be 0 | source
+        modRmByte = MOD_DIRECT | 0                     | REG_RCX
         assembly = bytes([0xc6, modRmByte, 0x42])
         self.instruction_helper("mov", "0x42", "%cl", assembly)
 
-        #           Address mode | destination must be 0 | source
-        modRmByte = MOD_REGISTER | 0                     | REG_RCX
+        #         Address mode | destination must be 0 | source
+        modRmByte = MOD_DIRECT | 0                     | REG_RCX
         assembly = bytes([0xc7, modRmByte, 0x42, 0x00, 0x00, 0x00])
         self.instruction_helper("mov", "0x42", "%ecx", assembly)
 
@@ -1160,9 +1160,9 @@ class TestX64():
 
     def test_xmm_addressing( self ):
 
-        #########################
-        #  XMM RELATIVE TO RIP  #
-        #########################
+        ########################
+        #  MM RELATIVE TO RIP  #
+        ########################
 
         #           Address mode | destination    | Use Displacement
         modRmByte = MOD_INDIRECT | (REG_RAX << 3) | REG_RBP
@@ -1170,19 +1170,39 @@ class TestX64():
         assembly = bytes([0x0f, 0x6f, modRmByte, 0x4d, 0xa0, 0x21, 00])
         self.instruction_helper("mov", "0x21a054", "%mm0", assembly)
 
-        #############################
-        #  XMM NORMAL MOD R/M BYTE  #
-        #############################
+        #########################
+        #  XMM RELATIVE TO RIP  #
+        #########################
+
+        #           Address mode | destination    | Use Displacement
+        modRmByte = MOD_INDIRECT | (REG_RAX << 3) | REG_RBP
+
+        assembly = bytes([0x66, 0x0f, 0x6f, modRmByte, 0x4d, 0xa0, 0x21, 00])
+        self.instruction_helper("mov", "0x21a055", "%xmm0", assembly)
+
+        ##############################
+        #  MM INDIRECT MOD R/M BYTE  #
+        ##############################
 
         #           Address mode | destination    | source
         modRmByte = MOD_INDIRECT | (REG_RAX << 3) | REG_RCX
 
         assembly = bytes([0x0f, 0x6f, modRmByte])
-        self.instruction_helper("mov", "0x21a054", "%mm0", assembly)
+        self.instruction_helper("mov", "[%rcx]", "%mm0", assembly)
 
-        #######################
-        #  XMM WITH SIB BYTE  #
-        #######################
+        ############################
+        #  MM DIRECT MOD R/M BYTE  #
+        ############################
+
+        #         Address mode | destination    | source
+        modRmByte = MOD_DIRECT | (REG_RAX << 3) | REG_RCX
+
+        assembly = bytes([0x0f, 0x6f, modRmByte])
+        self.instruction_helper("mov", "%mm1", "%mm0", assembly)
+
+        ######################
+        #  MM WITH SIB BYTE  #
+        ######################
 
         #           Address mode | destination    | SIB
         modRmByte = MOD_INDIRECT | (REG_RAX << 3) | REG_RSP
@@ -1190,4 +1210,4 @@ class TestX64():
         #           Scale        | Index          | Base
         sibByte   = (2 << 6)     | (REG_RCX << 3) | REG_RBX
         assembly = bytes([0x0f, 0x6f, modRmByte, sibByte])
-        self.instruction_helper("mov", "0x21a054", "%mm0", assembly)
+        self.instruction_helper("mov", "[%rbx + 4 * %rcx]", "%mm0", assembly)

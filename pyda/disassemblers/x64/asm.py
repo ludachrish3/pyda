@@ -419,11 +419,20 @@ def handleOperandAddressing( instruction, operand, binary ):
             logger.debug("Extending value")
             operand.value |= REG_EXTEND
 
-        if mod == MOD_REGISTER:
+        if mod == MOD_DIRECT:
             logger.debug("Operand is the value in a register")
+
+            # Change this register to an MM register if this instruction deals
+            # with MM registers. Only direct references to MM registers should
+            # be converted to use MM names because using an indirect address
+            # based on an MM (or XMM) register does not make sense. The values
+            # in these registers are usually packed values.
+            if instruction.mmRegister:
+                operand.value |= REG_MM
+
             return addrBytes
 
-        # The address is indirect if it is not MOD_REGISTER mode.
+        # The address is indirect if it is not MOD_DIRECT mode.
         operand.indirect = True
 
         # Process a SIB byte if the value is ESP
@@ -477,6 +486,10 @@ def handleOperandAddressing( instruction, operand, binary ):
     elif not operand.isImmediate and operand.value == 0:
         logger.debug("Mod R/M byte is not for this operand")
         operand.value = regOrOp
+
+        if instruction.mmRegister:
+            logger.debug("Extending register to use MM registers")
+            operand.value |= REG_MM
 
     return addrBytes + displaceBytes
 

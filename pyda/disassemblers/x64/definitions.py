@@ -67,7 +67,7 @@ MODRM_DEST      = 3     # Mod R/M byte is applied to the dest operand
 MOD_INDIRECT    = 0b00000000
 MOD_1_BYTE_DISP = 0b01000000
 MOD_4_BYTE_DISP = 0b10000000
-MOD_REGISTER    = 0b11000000
+MOD_DIRECT      = 0b11000000
 
 REG_MASK = 0b00000111
 REG_RAX  = 0b00000000
@@ -78,6 +78,7 @@ REG_RSP  = 0b00000100
 REG_RBP  = 0b00000101
 REG_RSI  = 0b00000110
 REG_RDI  = 0b00000111
+
 REG_R8   = 0b00001000
 REG_R9   = 0b00001001
 REG_R10  = 0b00001010
@@ -87,7 +88,17 @@ REG_R13  = 0b00001101
 REG_R14  = 0b00001110
 REG_R15  = 0b00001111
 
+REG_MM0  = 0b00010000
+REG_MM1  = 0b00010001
+REG_MM2  = 0b00010010
+REG_MM3  = 0b00010011
+REG_MM4  = 0b00010100
+REG_MM5  = 0b00010101
+REG_MM6  = 0b00010110
+REG_MM7  = 0b00010111
+
 REG_EXTEND = 0b00001000   # Extension value when extending a register from its base
+REG_MM     = 0b00010000   # Extension value when extending a register to use MM registers
 
 # Unofficial values for registers that can be used to identify them.
 # They will all start with a 1 at the most significant bit to differentiate
@@ -222,6 +233,70 @@ REG_NAMES = {
         REG_SIZE_16:    "%r15w",
         REG_SIZE_8:     "%r15b",
         REG_SIZE_8_REX: "%r15b",
+    },
+    REG_MM0: {
+        REG_SIZE_128:  "%xmm0",
+        REG_SIZE_64:   "%mm0",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
+    },
+    REG_MM1: {
+        REG_SIZE_128:  "%xmm1",
+        REG_SIZE_64:   "%mm1",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
+    },
+    REG_MM2: {
+        REG_SIZE_128:  "%xmm2",
+        REG_SIZE_64:   "%mm2",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
+    },
+    REG_MM3: {
+        REG_SIZE_128:  "%xmm3",
+        REG_SIZE_64:   "%mm3",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
+    },
+    REG_MM4: {
+        REG_SIZE_128:  "%xmm4",
+        REG_SIZE_64:   "%mm4",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
+    },
+    REG_MM5: {
+        REG_SIZE_128:  "%xmm5",
+        REG_SIZE_64:   "%mm5",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
+    },
+    REG_MM6: {
+        REG_SIZE_128:  "%xmm6",
+        REG_SIZE_64:   "%mm6",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
+    },
+    REG_MM7: {
+        REG_SIZE_128:  "%xmm7",
+        REG_SIZE_64:   "%mm7",
+        REG_SIZE_32:    REG_NAME_UNDEF,
+        REG_SIZE_16:    REG_NAME_UNDEF,
+        REG_SIZE_8:     REG_NAME_UNDEF,
+        REG_SIZE_8_REX: REG_NAME_UNDEF,
     },
     REG_RIP: {
         REG_SIZE_64:    "%rip",

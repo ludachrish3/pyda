@@ -18,7 +18,7 @@ class X64Instruction( Instruction ):
         self.extendBase    = False
         self.extendIndex   = False
         self.extendReg     = False
-        self.mmxRegisters  = False
+        self.mmRegister    = False
 
     def setAttributes( self, opcode, info ):
 
@@ -38,11 +38,13 @@ class X64Instruction( Instruction ):
         if type(info) == dict:
             if self.legacyPrefix in info:
                 info = info[self.legacyPrefix]
+
+                # The legacy prefix is not meant to be applied in the normal way
+                # if it appears as one of the available opcode prefixes.
                 applyLegacyPrefix = False
 
             else:
                 info = info[None]
-
 
         # Create deep copies so that the dictionary of infos remains unchanged
         # and this specific instruction's info can be updated as needed.
@@ -83,10 +85,10 @@ class X64Instruction( Instruction ):
         #############################
 
         srcSize    = srcKwargs.get("size",    None)
-        srcMaxSize = srcKwargs.get("maxSize", REG_SIZE_64)
+        srcMaxSize = srcKwargs.get("maxSize", REG_SIZE_128)
 
         dstSize    = dstKwargs.get("size",    None)
-        dstMaxSize = dstKwargs.get("maxSize", REG_SIZE_64)
+        dstMaxSize = dstKwargs.get("maxSize", REG_SIZE_128)
 
         srcKwargs["size"] = self.getOperandSize(opcode, self.prefixSize, srcSize, srcMaxSize)
         dstKwargs["size"] = self.getOperandSize(opcode, self.prefixSize, dstSize, dstMaxSize)
@@ -686,9 +688,9 @@ twoByteOpcodes = {
 
     0x6f: {
         None: {
-            None: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmxRegisters=True, op_size=REG_SIZE_64),
-            0x66: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmxRegisters=True, op_size=REG_SIZE_64),
-            0xf3: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmxRegisters=True, op_size=REG_SIZE_64),
+            None: X64InstructionInfo("mov", modRm=MODRM_SOURCE, inst_mmRegister=True, op_size=REG_SIZE_64),
+            0x66: X64InstructionInfo("mov", modRm=MODRM_SOURCE, inst_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("mov", modRm=MODRM_SOURCE, inst_mmRegister=True, op_size=REG_SIZE_128),
         },
     },
 
