@@ -18,6 +18,7 @@ class X64Instruction( Instruction ):
         self.extendBase    = False
         self.extendIndex   = False
         self.extendReg     = False
+        self.mmxRegisters  = False
 
     def setAttributes( self, opcode, info ):
 
@@ -306,9 +307,8 @@ class X64Operand( Operand ):
         if value is not None:
             regName    = REG_NAMES[value][REG_SIZE_64]
 
-        # There is only an index if the scale was set to be nonzero, and RSP is
-        # not a valid index register.
-        if scale > 0 and index is not None and index != REG_RSP:
+        # There is only an index if the scale was set to be nonzero
+        if scale > 0 and index is not None:
             indexName  = REG_NAMES[index][REG_SIZE_64]
 
         # Handle the scale and index values. They should only be there if
@@ -686,9 +686,9 @@ twoByteOpcodes = {
 
     0x6f: {
         None: {
-            None: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
-            0x66: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
-            0xf3: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmRegisters=True, op_size=REG_SIZE_64),
+            None: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmxRegisters=True, op_size=REG_SIZE_64),
+            0x66: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmxRegisters=True, op_size=REG_SIZE_64),
+            0xf3: X64InstructionInfo("mov",    modRm=MODRM_SOURCE, mmxRegisters=True, op_size=REG_SIZE_64),
         },
     },
 

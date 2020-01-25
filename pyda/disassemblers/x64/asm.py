@@ -356,6 +356,10 @@ def handleSibByte( operand, addrMode, sibByte ):
     index = (sibByte & SIB_INDEX_MASK) >> 3
     base  = sibByte & SIB_BASE_MASK
 
+    # RSP is not a valid index
+    if index == REG_RSP:
+        index = None
+
     logger.debug(f"scale: {scale}, index: {index}, base: {base}")
     operand.scale = scale
     operand.index = index
@@ -403,6 +407,10 @@ def handleOperandAddressing( instruction, operand, binary ):
     # Process the addressing if the Mod R/M byte applies to this operand
     if operand.modRm:
 
+        # Set the segment register if one is specified
+        if instruction.segmentPrefix in PREFIX_SEGMENTS:
+            operand.segmentReg = instruction.segmentPrefix
+
         # The value is always regmem if the Mod R/M refers to this operand.
         operand.value = regmem
 
@@ -423,20 +431,13 @@ def handleOperandAddressing( instruction, operand, binary ):
             isSibDisplace = handleSibByte(operand, mod, binary[1])
             addrBytes += 1
 
+            # Extend the index if the instruction has an index extension prefix.
             if instruction.extendIndex and operand.index is not None:
                 operand.index |= REG_EXTEND
 
             # Extend the value if the instruction has a base extension prefix.
-            if instruction.extendBase:
+            if instruction.extendBase and operand.value is not None:
                 operand.value |= REG_EXTEND
-
-            # RSP is not a valid index, so there must be a segment register set
-            # to be used as the index.
-            if operand.index == REG_RSP:
-                logger.debug(f"RSP is not a valid index, using {instruction.segmentPrefix}")
-
-                if instruction.segmentPrefix in PREFIX_SEGMENTS:
-                    operand.segmentReg = instruction.segmentPrefix
 
         if mod == MOD_INDIRECT:
 
@@ -601,7 +602,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:14000]
+    binary       = function.assembly[:13150]
     instructions = function.instructions
     offTheRails  = False
 
