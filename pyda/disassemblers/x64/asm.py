@@ -290,38 +290,38 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
         instruction.dest   = None
 
         if modRmOpValue == 0:
-            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST, src_isImmediate=True)
+            newInfo = X64InstructionInfo("test", modRm=MODRM_DST, src_isImmediate=True)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 1:
-            newInfo = X64InstructionInfo("test", modRm=MODRM_DEST, src_isImmediate=True)
+            newInfo = X64InstructionInfo("test", modRm=MODRM_DST, src_isImmediate=True)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 2:
-            newInfo = X64InstructionInfo("not", modRm=MODRM_DEST, src_size=REG_SIZE_0)
+            newInfo = X64InstructionInfo("not", modRm=MODRM_DST, src_size=REG_SIZE_0)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 3:
-            newInfo = X64InstructionInfo("neg", modRm=MODRM_DEST, src_size=REG_SIZE_0)
+            newInfo = X64InstructionInfo("neg", modRm=MODRM_DST, src_size=REG_SIZE_0)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
         elif modRmOpValue == 4:
-            newInfo = X64InstructionInfo("mul", modRm=MODRM_SOURCE)
+            newInfo = X64InstructionInfo("mul", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
 
         elif modRmOpValue == 5:
-            newInfo = X64InstructionInfo("imul", modRm=MODRM_SOURCE)
+            newInfo = X64InstructionInfo("imul", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
 
         elif modRmOpValue == 6:
-            newInfo = X64InstructionInfo("div", modRm=MODRM_SOURCE)
+            newInfo = X64InstructionInfo("div", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
 
         elif modRmOpValue == 7:
-            newInfo = X64InstructionInfo("idiv", modRm=MODRM_SOURCE)
+            newInfo = X64InstructionInfo("idiv", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
 
