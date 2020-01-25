@@ -1456,3 +1456,11 @@ class TestX64():
         sibByte   = (2 << 6)     | (REG_RCX << 3) | REG_RBX
         assembly = bytes([0x0f, 0x6f, modRmByte, sibByte])
         self.instruction_helper("movq", "[%rbx + 4 * %rcx]", "%mm0", assembly)
+
+    def test_floating_point_instructions( self ):
+
+        # TODO: Add a LOT more tests because floating point instructions have
+        # tons of special cases
+        assembly = bytes([0xd9, 0x05, 0xaa, 0xb7, 0x00, 0x00])
+        self.instruction_helper("fld", "0xb7b0", "%st0", assembly)
+

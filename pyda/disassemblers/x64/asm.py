@@ -117,37 +117,42 @@ def handleOpcode( instruction, binary ):
 
     # Check for the opcode being a 2 byte opcode
     if binary[0] == PREFIX_2_BYTE_OPCODE and len(binary) > 1 and binary[1] in twoByteOpcodes:
-        logger.debug("A 2 byte opcode was found")
         numOpcodeBytes = 2
 
         # If the info object is actually a dictionary, then there is a secondary
         # opcode and the next byte also needs to be consumed.
         info = twoByteOpcodes[binary[1]]
         if type(info) == dict:
-            if None in info:
+            if len(binary) > 2 and binary[2] in info:
+                info = info[binary[2]]
+                numOpcodeBytes += 1
+
+            elif None in info:
                 info = info[None]
 
             else:
-                info = info[binary[2]]
-                numOpcodeBytes += 1
+                raise Exception("Could not resolve opcode")
 
         instruction.setAttributes(binary[1], info)
 
     # Check for the opcode being a 1 byte opcode
     elif binary[0] in oneByteOpcodes:
-        logger.debug(f"A 1 byte opcode was found: {binary[0]:02x}")
         numOpcodeBytes = 1
 
         # If the info object is actually a dictionary, then there is a secondary
         # opcode and the next byte also needs to be consumed.
         info = oneByteOpcodes[binary[0]]
         if type(info) == dict:
-            if None in info:
+            if len(binary) > 1 and binary[1] in info:
+                info = info[binary[1]]
+                numOpcodeBytes += 1
+
+            elif None in info:
+                logger.debug("THIS SHOULD PRINT")
                 info = info[None]
 
             else:
-                info = info[binary[1]]
-                numOpcodeBytes += 1
+                raise Exception("Could not resolve opcode")
 
         instruction.setAttributes(binary[0], info)
 
@@ -329,6 +334,50 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
+    elif instruction.bytes[-1] in [ 0xd9 ]:
+
+        # Clear out the source and destination operands because they might be
+        # removed depending on which value is used.
+        instruction.source = None
+        instruction.dest   = None
+
+        if modRmOpValue == 0:
+            newInfo = X64InstructionInfo("fld", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+        # modRmOpValue == 1 case is covered by secondary opcodes. This basically
+        # acts like a Mod R/M byte, but the only supported value is MOD_INDIRECT.
+        # This is handled using secondary opcodes to keep handling the Mod R/M
+        # byte simple.
+
+        elif modRmOpValue == 2:
+            newInfo = X64InstructionInfo("fst", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+        elif modRmOpValue == 3:
+            newInfo = X64InstructionInfo("fstp", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+        elif modRmOpValue == 4:
+            newInfo = X64InstructionInfo("fldenv", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+        elif modRmOpValue == 5:
+            newInfo = X64InstructionInfo("fldcw", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+        elif modRmOpValue == 6:
+            newInfo = X64InstructionInfo("fstenv", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+        elif modRmOpValue == 7:
+            newInfo = X64InstructionInfo("fstcw", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
+            instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+        else:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
     else:
         logger.debug("An unsupported extended opcode was found")
         return False
@@ -418,6 +467,9 @@ def handleOperandAddressing( instruction, operand, binary ):
         if instruction.extendBase:
             logger.debug("Extending value")
             operand.value |= REG_EXTEND
+
+        if operand.floatReg:
+            operand.value |= REG_FLOAT
 
         if mod == MOD_DIRECT:
             logger.debug("Operand is the value in a register")
@@ -523,13 +575,13 @@ def handleModRmByte( instruction, binary ):
         if not opcodeSuccess:
             return 0
 
-    # Set the operand addressing properties as long as they are not None and they
-    # don't their value is 0, which would mean it does not have a certain value.
-    if instruction.source is not None and instruction.source.value == 0:
+    # Set the operand addressing properties as long as they are not None and
+    # their value is 0, which would mean it does not have a predetermined value.
+    if instruction.source is not None and instruction.source.value is 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.source, binary)
         logger.debug(f"After handling source: {numBytesConsumed}")
 
-    if instruction.dest is not None and instruction.dest.value == 0:
+    if instruction.dest is not None and instruction.dest.value is 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.dest, binary)
         logger.debug(f"After handling dest: {numBytesConsumed}")
 
@@ -625,7 +677,6 @@ def disassemble( function ):
     # TODO: Add a good description of what this loop is doing and the stages that are performed
     while len(binary) > 0:
 
-        logger.debug("moving on to the next instruction")
         curInstruction = X64Instruction(addr=addr)
 
         # If things have gone off the rails, consume each byte and add a
@@ -664,7 +715,6 @@ def disassemble( function ):
 
         # If the instruction has a Mod R/M byte, parse it next
         if curInstruction.info.modRm != MODRM_NONE:
-            logger.debug("There is a mod RM byte")
             numModRmBytes = handleModRmByte(curInstruction, binary)
             if numModRmBytes > 0:
                 binary = binary[numModRmBytes:]
@@ -676,9 +726,11 @@ def disassemble( function ):
                 continue
 
         # Handle an immediate value if there is one and the value has not
-        # already been set by the instruction info object.
-        if curInstruction.source is not None and curInstruction.source.isImmediate and curInstruction.source.value == 0:
-            logger.debug("Handling the immeidate")
+        # already been set by the instruction info object. Use "is" instead of
+        # "==" because there is an instruction that loads 0.0 into floating
+        # point registers, and this prevents that instruction or others like it
+        # from trying to consume bytes for an immediate.
+        if curInstruction.source is not None and curInstruction.source.isImmediate and curInstruction.source.value is 0:
             numImmediateBytes = handleImmediate(curInstruction, curInstruction.source, binary)
             if numImmediateBytes < 0:
                 offTheRails = True
@@ -687,7 +739,7 @@ def disassemble( function ):
             binary = binary[numImmediateBytes:]
 
         for extraOperand in curInstruction.extraOperands:
-            if extraOperand.isImmediate and extraOperand.value == 0:
+            if extraOperand.isImmediate and extraOperand.value is 0:
                 logger.debug("Handling the extra immeidate")
                 numImmediateBytes = handleImmediate(curInstruction, extraOperand, binary)
                 if numImmediateBytes < 0:

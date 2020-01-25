@@ -1,6 +1,7 @@
 from pyda.disassemblers.disassembler import Instruction, Operand
 from pyda.disassemblers.x64.definitions import *
 
+import math
 import copy
 import logging
 
@@ -240,23 +241,18 @@ class X64Instruction( Instruction ):
         # operand. If the bit is 0, then the operand is 8 bits and cannot be changed
         # Or if an info size is specified because then the size bit doesn't matter.
         if prefixSize is not None and prefixSize <= maxSize:
-            logger.debug("Using prefix size")
             size = prefixSize
 
         elif infoSize is not None and infoSize <= maxSize:
-            logger.debug("Using info size")
             size = infoSize
 
         elif infoSize is not None and infoSize > maxSize:
-            logger.debug("Using max size")
             size = maxSize
 
         elif infoSize is None and sizeBit == 0:
-            logger.debug("Using bit size 8")
             return REG_SIZE_8
 
         elif infoSize is None and sizeBit == 1:
-            logger.debug("Using bit size 32")
             size = REG_SIZE_32
 
         # If the info size somehow exceeds the maximum, use the maximum instead
@@ -270,13 +266,15 @@ class X64Instruction( Instruction ):
 
 class X64Operand( Operand ):
 
-    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, segmentReg=0, isImmediate=False, indirect=False, mmRegister=False ):
+    def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, segmentReg=0,
+                  isImmediate=False, indirect=False, mmRegister=False, floatReg=False ):
 
         super().__init__(size, value)
         self.maxSize = maxSize          # The maximum size allowed for the operand
         self.isImmediate = isImmediate  # Whether the operand is an immediate
         self.segmentReg = segmentReg    # The segment register to use as a base value
         self.mmRegister = mmRegister    # Whether the operand is an MM register
+        self.floatReg = floatReg        # Whether teh operand is a floating point register
         self.indirect = indirect        # Whether the addressing is indirect
         self.displacement = 0           # Value of the displacement from the register value
         self.modRm = False              # Whether the Mod R/M byte applies
@@ -631,7 +629,45 @@ oneByteOpcodes = {
 #   0xd6: Invalid
 #   0xd7: TODO: Table translation
 #   0xd8: TODO:
-#   0xd9: TODO:
+    0xd9: {
+        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
+        0xc8: X64InstructionInfo("fnop",    op_size=REG_SIZE_0), # Exchanges ST0 with ST0, so this is effectively a NOP
+        0xc9: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST1),
+        0xca: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST2),
+        0xcb: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST3),
+        0xcc: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST4),
+        0xcd: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST5),
+        0xce: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST6),
+        0xcf: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST7),
+        0xd0: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
+        0xe0: X64InstructionInfo("fchs",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
+        0xe1: X64InstructionInfo("fabs",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
+        0xe4: X64InstructionInfo("ftest",   dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
+        0xe5: X64InstructionInfo("fxam",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
+        0xe8: X64InstructionInfo("fld1",    src_isImmediate=True, op_size=REG_SIZE_64,  dst_value=REG_ST0, src_value=1.0),
+        0xe9: X64InstructionInfo("fldl2t",  src_isImmediate=True, op_size=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(10, 2)),
+        0xea: X64InstructionInfo("fldl2e",  src_isImmediate=True, op_size=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(10, math.e)),
+        0xeb: X64InstructionInfo("fldpi",   src_isImmediate=True, op_size=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.pi),
+        0xec: X64InstructionInfo("fldlg2",  src_isImmediate=True, op_size=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(2, 10)),
+        0xed: X64InstructionInfo("fldln2",  src_isImmediate=True, op_size=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(math.e, 2)),
+        0xee: X64InstructionInfo("fldz",    src_isImmediate=True, op_size=REG_SIZE_64,  dst_value=REG_ST0, src_value=0.0),
+        0xf0: X64InstructionInfo("f2xm1",   op_size=REG_SIZE_64,  op_value=REG_ST0),
+        0xf1: X64InstructionInfo("fyl2x",   op_size=REG_SIZE_64,  src_value=REG_ST0, dst_value=REG_ST1),
+        0xf2: X64InstructionInfo("fptan",   op_size=REG_SIZE_64,  op_value=REG_ST0),
+        0xf3: X64InstructionInfo("fpatan",  op_size=REG_SIZE_64,  src_value=REG_ST0, dst_value=REG_ST1),
+        0xf4: X64InstructionInfo("fxtract", op_size=REG_SIZE_64,  op_value=REG_ST0),
+        0xf5: X64InstructionInfo("fprem1",  op_size=REG_SIZE_64,  src_value=REG_ST1, dst_value=REG_ST0),
+        0xf6: X64InstructionInfo("fdecstp", op_size=REG_SIZE_0),
+        0xf7: X64InstructionInfo("fincstp", op_size=REG_SIZE_0),
+        0xf8: X64InstructionInfo("fprem",   op_size=REG_SIZE_64,  src_value=REG_ST1, dst_value=REG_ST0),
+        0xf9: X64InstructionInfo("fyl2xp1", op_size=REG_SIZE_64,  src_value=REG_ST0, dst_value=REG_ST1),
+        0xfa: X64InstructionInfo("fsqrt",   op_size=REG_SIZE_64,  op_value=REG_ST0),
+        0xfb: X64InstructionInfo("fsincos", op_size=REG_SIZE_64,  op_value=REG_ST0),
+        0xfc: X64InstructionInfo("frndint", op_size=REG_SIZE_64,  op_value=REG_ST0),
+        0xfd: X64InstructionInfo("fscale",  op_size=REG_SIZE_64,  src_value=REG_ST1, dst_value=REG_ST0),
+        0xfe: X64InstructionInfo("fsin",    op_size=REG_SIZE_64,  op_value=REG_ST0),
+        0xff: X64InstructionInfo("fcos",    op_size=REG_SIZE_64,  op_value=REG_ST0),
+    },
 #   0xda: TODO:
 #   0xdb: TODO:
 #   0xdc: TODO:
