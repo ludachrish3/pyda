@@ -633,7 +633,9 @@ oneByteOpcodes = {
 #   0xd5: Invalid
 #   0xd6: Invalid
 #   0xd7: TODO: Table translation
-#   0xd8: TODO:
+    0xd8: {
+        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
+    },
     0xd9: {
         None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
         0xd0: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
@@ -674,11 +676,15 @@ oneByteOpcodes = {
         0xe3: X64InstructionInfo("finit",   op_size=REG_SIZE_0),
         0xe4: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
     },
-#   0xdc: TODO:
+    0xdc: {
+        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
+    },
     0xdd: {
         None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
     },
-#   0xde: TODO:
+    0xde: {
+        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
+    },
     0xdf: {
         None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
         0xe0: X64InstructionInfo("fstsw",   op_size=REG_SIZE_16, op_maxSize=REG_SIZE_16, src_value=REG_FPENV, dst_value=REG_RAX),

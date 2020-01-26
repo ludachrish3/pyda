@@ -1464,8 +1464,8 @@ class TestX64():
         assembly = bytes([0xd9, 0x05, 0xaa, 0xb7, 0x00, 0x00])
         self.instruction_helper("fld", "0xb7b0", "%st0", assembly)
 
-        #           Address mode | fxch     | source
-        modRmByte = MOD_INDIRECT | (1 << 3) | 3
+        #         Address mode | fxch     | source
+        modRmByte = MOD_DIRECT | (1 << 3) | 3
         assembly = bytes([0xd9, modRmByte])
         self.instruction_helper("fxch", "%st3", "%st0", assembly)
 
