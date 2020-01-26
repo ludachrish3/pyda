@@ -417,7 +417,7 @@ REG_NAMES = {
         REG_SIZE_128:   "%fpenv",
         REG_SIZE_64:    "%fpenv",
         REG_SIZE_32:    "%fpenv",
-        REG_SIZE_16:    "%fpenv",
+        REG_SIZE_16:    "%fpcw",
         REG_SIZE_8:     "%fpenv",
         REG_SIZE_8_REX: "%fpenv",
     }

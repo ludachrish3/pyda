@@ -675,7 +675,9 @@ oneByteOpcodes = {
         0xe4: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
     },
 #   0xdc: TODO:
-#   0xdd: TODO:
+    0xdd: {
+        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
+    },
 #   0xde: TODO:
 #   0xdf: TODO:
 #   0xe0: TODO:

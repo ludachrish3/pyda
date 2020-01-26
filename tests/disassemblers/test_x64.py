@@ -1469,6 +1469,11 @@ class TestX64():
         assembly = bytes([0xd9, modRmByte])
         self.instruction_helper("fxch", "%st3", "%st0", assembly)
 
+        #           Address mode | fst      | destination
+        modRmByte = MOD_INDIRECT | (2 << 3) | REG_RBX
+        assembly = bytes([0xdd, modRmByte])
+        self.instruction_helper("fst", "%st0", "[%rbx]", assembly)
+
 
 
 

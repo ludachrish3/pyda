@@ -345,28 +345,28 @@ def handleExtendedOpcode( instruction, modRmByte ):
         instruction.dest   = None
 
         if op == 0:
-            newInfo = X64InstructionInfo("fld", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fld",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 1 and mod == MOD_INDIRECT:
-            newInfo = X64InstructionInfo("fxch", op_floatReg=True,modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fxch",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
-        elif op == 2:
-            newInfo = X64InstructionInfo("fst", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+        elif op == 2 and mod != MOD_DIRECT:
+            newInfo = X64InstructionInfo("fst",    modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
-        elif op == 3:
-            newInfo = X64InstructionInfo("fstp", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+        elif op == 3 and mod != MOD_DIRECT:
+            newInfo = X64InstructionInfo("fstp",   modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
         elif op == 4:
-            newInfo = X64InstructionInfo("fldenv", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
+            newInfo = X64InstructionInfo("fldenv", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
 
         elif op == 5:
-            newInfo = X64InstructionInfo("fldcw", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
+            newInfo = X64InstructionInfo("fldcw",  modRm=MODRM_SRC, op_size=REG_SIZE_16, dst_value=REG_FPENV)
 
         elif op == 6:
-            newInfo = X64InstructionInfo("fstenv", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
+            newInfo = X64InstructionInfo("fstenv", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
 
         elif op == 7:
-            newInfo = X64InstructionInfo("fstcw", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
+            newInfo = X64InstructionInfo("fstcw",  modRm=MODRM_DST, op_size=REG_SIZE_16, src_value=REG_FPENV)
 
         else:
             logger.debug("An invalid Mod R/M value was received")
@@ -385,25 +385,25 @@ def handleExtendedOpcode( instruction, modRmByte ):
             newInfo = X64InstructionInfo("fcmovnb",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 0:
-            newInfo = X64InstructionInfo("fild",     op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fild",     modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 1 and mod == MOD_DIRECT:
             newInfo = X64InstructionInfo("fcmovne",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 1:
-            newInfo = X64InstructionInfo("fisttp",   op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+            newInfo = X64InstructionInfo("fisttp",   modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
         elif op == 2 and mod == MOD_DIRECT:
             newInfo = X64InstructionInfo("fcmovnbe", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 2:
-            newInfo = X64InstructionInfo("fist",     op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+            newInfo = X64InstructionInfo("fist",     modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
         elif op == 3 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fistp",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovnu",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 3:
-            newInfo = X64InstructionInfo("fcmovnu",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fistp",    modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         # op == 4 case is covered by secondary opcodes.
 
@@ -411,13 +411,65 @@ def handleExtendedOpcode( instruction, modRmByte ):
             newInfo = X64InstructionInfo("fucomi",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 5:
-            newInfo = X64InstructionInfo("fld",     op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fld",     modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 6:
             newInfo = X64InstructionInfo("fcomi",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 7:
             newInfo = X64InstructionInfo("fstp",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, src_value=REG_STO)
+
+        else:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
+        instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+    elif instruction.bytes[-1] in [ 0xdd ]:
+
+        # Clear out the source and destination operands because they might be
+        # removed depending on which value is used.
+        instruction.source = None
+        instruction.dest   = None
+
+        if op == 0 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("ffree",  op_floatReg=True, modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_64)
+
+        elif op == 0:
+            newInfo = X64InstructionInfo("fld",    modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 1 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fxch4",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 1:
+            newInfo = X64InstructionInfo("fisttp", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 2 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fst",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 2:
+            newInfo = X64InstructionInfo("fst",    modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 3 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fstp",   op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 3:
+            newInfo = X64InstructionInfo("fstp",   modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 4 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fucom",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 4:
+            newInfo = X64InstructionInfo("frstor", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
+
+        elif op == 5 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fucomp", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 6 and mod != MOD_DIRECT:
+            newInfo = X64InstructionInfo("fsave",  modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
+
+        elif op == 7 and mod != MOD_DIRECT:
+            newInfo = X64InstructionInfo("fstsw",  modRm=MODRM_DST, op_size=REG_SIZE_16, src_value=REG_FPENV)
 
         else:
             logger.debug("An invalid Mod R/M value was received")
