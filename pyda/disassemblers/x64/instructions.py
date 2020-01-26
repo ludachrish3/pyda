@@ -679,7 +679,10 @@ oneByteOpcodes = {
         None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
     },
 #   0xde: TODO:
-#   0xdf: TODO:
+    0xdf: {
+        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
+        0xe0: X64InstructionInfo("fstsw",   op_size=REG_SIZE_16, op_maxSize=REG_SIZE_16, src_value=REG_FPENV, dst_value=REG_RAX),
+    },
 #   0xe0: TODO:
 #   0xe1: TODO:
 #   0xe2: TODO:
