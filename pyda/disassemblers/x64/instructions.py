@@ -291,6 +291,11 @@ class X64Operand( Operand ):
         if self.isImmediate and value is not None:
             return f"{hex(value)}"
 
+        # If the register is a floating point one, it cannot actually be
+        # indirect even if a Mod R/M byte had an indirect addressing mode.
+        if self.value is not None and (self.value & REG_FLOAT) == REG_FLOAT:
+            self.indirect = False
+
         if not self.indirect:
             regName = REG_NAMES[value][self.size]
             return regName
@@ -631,14 +636,6 @@ oneByteOpcodes = {
 #   0xd8: TODO:
     0xd9: {
         None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
-        0xc8: X64InstructionInfo("fnop",    op_size=REG_SIZE_0), # Exchanges ST0 with ST0, so this is effectively a NOP
-        0xc9: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST1),
-        0xca: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST2),
-        0xcb: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST3),
-        0xcc: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST4),
-        0xcd: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST5),
-        0xce: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST6),
-        0xcf: X64InstructionInfo("fxch",    op_size=REG_SIZE_64, src_value=REG_ST0, dst_value=REG_ST7),
         0xd0: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
         0xe0: X64InstructionInfo("fchs",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
         0xe1: X64InstructionInfo("fabs",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
@@ -669,7 +666,14 @@ oneByteOpcodes = {
         0xff: X64InstructionInfo("fcos",    op_size=REG_SIZE_64,  op_value=REG_ST0),
     },
 #   0xda: TODO:
-#   0xdb: TODO:
+    0xdb: {
+        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
+        0xe0: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
+        0xe1: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
+        0xe2: X64InstructionInfo("fclex",   op_size=REG_SIZE_0),
+        0xe3: X64InstructionInfo("finit",   op_size=REG_SIZE_0),
+        0xe4: X64InstructionInfo("nop",     op_size=REG_SIZE_0),
+    },
 #   0xdc: TODO:
 #   0xdd: TODO:
 #   0xde: TODO:

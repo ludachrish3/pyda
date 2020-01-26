@@ -167,42 +167,45 @@ def handleOpcode( instruction, binary ):
     return numOpcodeBytes
 
 
-def handleExtendedOpcode( instruction, modRmOpValue ):
+def handleExtendedOpcode( instruction, modRmByte ):
     """
     Description:    Handles the extended opcode based on the REG value of the
-                    Mod R/M byte
+                    Mod R/M byte.
 
-    Arguments:      instruction  - X64Instruction object
-                    modRmOpValue - Value of the REG value of the Mod R/M byte
+    Arguments:      instruction - X64Instruction object
+                    modRmByte   - Full Mod R/M byte
 
     Return:         True on success
                     False on failure
     """
 
+    mod = modRmByte & ADDR_MOD_MASK
+    op  = (modRmByte & ADDR_REG_MASK) >> 3
+
     if instruction.bytes[-1] in [ 0x80, 0x81, 0x83 ]:
 
-        if modRmOpValue == 0:
+        if op == 0:
             instruction.mnemonic = "add"
 
-        elif modRmOpValue == 1:
+        elif op == 1:
             instruction.mnemonic = "or"
 
-        elif modRmOpValue == 2:
+        elif op == 2:
             instruction.mnemonic = "adc"
 
-        elif modRmOpValue == 3:
+        elif op == 3:
             instruction.mnemonic = "sbb"
 
-        elif modRmOpValue == 4:
+        elif op == 4:
             instruction.mnemonic = "and"
 
-        elif modRmOpValue == 5:
+        elif op == 5:
             instruction.mnemonic = "sub"
 
-        elif modRmOpValue == 6:
+        elif op == 6:
             instruction.mnemonic = "xor"
 
-        elif modRmOpValue == 7:
+        elif op == 7:
             instruction.mnemonic = "cmp"
 
         else:
@@ -211,34 +214,34 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
 
     elif instruction.bytes[-1] in [ 0x8f ]:
 
-        if modRmOpValue != 0:
+        if op != 0:
             logger.debug("An invalid Mod R/M value was received")
             return False
 
     elif instruction.bytes[-1] in [ 0xc0, 0xc1, 0xd0, 0xd1, 0xd2, 0xd3 ]:
 
-        if modRmOpValue == 0:
+        if op == 0:
             instruction.mnemonic = "rol"
 
-        elif modRmOpValue == 1:
+        elif op == 1:
             instruction.mnemonic = "ror"
 
-        elif modRmOpValue == 2:
+        elif op == 2:
             instruction.mnemonic = "rcl"
 
-        elif modRmOpValue == 3:
+        elif op == 3:
             instruction.mnemonic = "rcr"
 
-        elif modRmOpValue == 4:
+        elif op == 4:
             instruction.mnemonic = "shl"
 
-        elif modRmOpValue == 5:
+        elif op == 5:
             instruction.mnemonic = "shr"
 
-        elif modRmOpValue == 6:
+        elif op == 6:
             instruction.mnemonic = "sal"
 
-        elif modRmOpValue == 7:
+        elif op == 7:
             instruction.mnemonic = "sar"
 
         else:
@@ -247,10 +250,10 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
 
     elif instruction.bytes[-1] in [ 0xfe ]:
 
-        if modRmOpValue == 0:
+        if op == 0:
             instruction.mnemonic = "inc"
 
-        elif modRmOpValue == 1:
+        elif op == 1:
             instruction.mnemonic = "dec"
 
         else:
@@ -260,27 +263,27 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
     elif instruction.bytes[-1] in [ 0xff ]:
         # TODO: Update info about operands in each case
 
-        if modRmOpValue == 0:
+        if op == 0:
             instruction.mnemonic = "inc"
 
-        elif modRmOpValue == 1:
+        elif op == 1:
             instruction.mnemonic = "dec"
 
-        elif modRmOpValue == 2:
+        elif op == 2:
             instruction.mnemonic = "call"
             instruction.info.relativeJump = True
 
-        elif modRmOpValue == 3:
+        elif op == 3:
             instruction.mnemonic = "callf"
 
-        elif modRmOpValue == 4:
+        elif op == 4:
             instruction.mnemonic = "jmp"
             instruction.info.relativeJump = True
 
-        elif modRmOpValue == 5:
+        elif op == 5:
             instruction.mnemonic = "jmpf"
 
-        elif modRmOpValue == 6:
+        elif op == 6:
             instruction.mnemonic = "push"
 
         else:
@@ -294,38 +297,38 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
         instruction.source = None
         instruction.dest   = None
 
-        if modRmOpValue == 0:
+        if op == 0:
             newInfo = X64InstructionInfo("test", modRm=MODRM_DST, src_isImmediate=True)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
-        elif modRmOpValue == 1:
+        elif op == 1:
             newInfo = X64InstructionInfo("test", modRm=MODRM_DST, src_isImmediate=True)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
-        elif modRmOpValue == 2:
+        elif op == 2:
             newInfo = X64InstructionInfo("not", modRm=MODRM_DST, src_size=REG_SIZE_0)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
-        elif modRmOpValue == 3:
+        elif op == 3:
             newInfo = X64InstructionInfo("neg", modRm=MODRM_DST, src_size=REG_SIZE_0)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
 
-        elif modRmOpValue == 4:
+        elif op == 4:
             newInfo = X64InstructionInfo("mul", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
 
-        elif modRmOpValue == 5:
+        elif op == 5:
             newInfo = X64InstructionInfo("imul", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
 
-        elif modRmOpValue == 6:
+        elif op == 6:
             newInfo = X64InstructionInfo("div", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
 
-        elif modRmOpValue == 7:
+        elif op == 7:
             newInfo = X64InstructionInfo("idiv", modRm=MODRM_SRC)
             instruction.setAttributes(instruction.bytes[-1], newInfo)
             instruction.dest.value = REG_RDX_RAX_COMBINED
@@ -341,42 +344,86 @@ def handleExtendedOpcode( instruction, modRmOpValue ):
         instruction.source = None
         instruction.dest   = None
 
-        if modRmOpValue == 0:
-            newInfo = X64InstructionInfo("fld", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-            instruction.setAttributes(instruction.bytes[-1], newInfo)
+        if op == 0:
+            newInfo = X64InstructionInfo("fld", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
-        # modRmOpValue == 1 case is covered by secondary opcodes. This basically
-        # acts like a Mod R/M byte, but the only supported value is MOD_INDIRECT.
-        # This is handled using secondary opcodes to keep handling the Mod R/M
-        # byte simple.
+        elif op == 1 and mod == MOD_INDIRECT:
+            newInfo = X64InstructionInfo("fxch", op_floatReg=True,modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
-        elif modRmOpValue == 2:
-            newInfo = X64InstructionInfo("fst", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
-            instruction.setAttributes(instruction.bytes[-1], newInfo)
+        elif op == 2:
+            newInfo = X64InstructionInfo("fst", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
-        elif modRmOpValue == 3:
-            newInfo = X64InstructionInfo("fstp", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
-            instruction.setAttributes(instruction.bytes[-1], newInfo)
+        elif op == 3:
+            newInfo = X64InstructionInfo("fstp", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
-        elif modRmOpValue == 4:
-            newInfo = X64InstructionInfo("fldenv", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
-            instruction.setAttributes(instruction.bytes[-1], newInfo)
+        elif op == 4:
+            newInfo = X64InstructionInfo("fldenv", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
 
-        elif modRmOpValue == 5:
-            newInfo = X64InstructionInfo("fldcw", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
-            instruction.setAttributes(instruction.bytes[-1], newInfo)
+        elif op == 5:
+            newInfo = X64InstructionInfo("fldcw", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
 
-        elif modRmOpValue == 6:
-            newInfo = X64InstructionInfo("fstenv", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
-            instruction.setAttributes(instruction.bytes[-1], newInfo)
+        elif op == 6:
+            newInfo = X64InstructionInfo("fstenv", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
 
-        elif modRmOpValue == 7:
-            newInfo = X64InstructionInfo("fstcw", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
-            instruction.setAttributes(instruction.bytes[-1], newInfo)
+        elif op == 7:
+            newInfo = X64InstructionInfo("fstcw", op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
 
         else:
             logger.debug("An invalid Mod R/M value was received")
             return False
+
+        instruction.setAttributes(instruction.bytes[-1], newInfo)
+
+    elif instruction.bytes[-1] in [ 0xdb ]:
+
+        # Clear out the source and destination operands because they might be
+        # removed depending on which value is used.
+        instruction.source = None
+        instruction.dest   = None
+
+        if op == 0 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fcmovnb",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 0:
+            newInfo = X64InstructionInfo("fild",     op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 1 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fcmovne",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 1:
+            newInfo = X64InstructionInfo("fisttp",   op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 2 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fcmovnbe", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 2:
+            newInfo = X64InstructionInfo("fist",     op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
+
+        elif op == 3 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fistp",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 3:
+            newInfo = X64InstructionInfo("fcmovnu",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        # op == 4 case is covered by secondary opcodes.
+
+        elif op == 5 and mod == MOD_DIRECT:
+            newInfo = X64InstructionInfo("fucomi",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 5:
+            newInfo = X64InstructionInfo("fld",     op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 6:
+            newInfo = X64InstructionInfo("fcomi",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+
+        elif op == 7:
+            newInfo = X64InstructionInfo("fstp",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, src_value=REG_STO)
+
+        else:
+            logger.debug("An invalid Mod R/M value was received")
+            return False
+
+        instruction.setAttributes(instruction.bytes[-1], newInfo)
 
     else:
         logger.debug("An unsupported extended opcode was found")
@@ -571,7 +618,7 @@ def handleModRmByte( instruction, binary ):
     if instruction.info.extOpcode:
 
         logger.debug(f"Found an opcode that needs to be extended: {instruction.bytes[-1]:x}")
-        opcodeSuccess = handleExtendedOpcode(instruction, regOrOp)
+        opcodeSuccess = handleExtendedOpcode(instruction, modRmByte)
         if not opcodeSuccess:
             return 0
 
