@@ -932,6 +932,8 @@ twoByteOpcodes = {
     0x9e: X64InstructionInfo("setle", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Less than or equal (signed)
     0x9f: X64InstructionInfo("setg",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Greater than (signed)
 
+    0xa3: X64InstructionInfo("bt",    modRm=MODRM_DST, op_size=REG_SIZE_32),
+
     0xaf: X64InstructionInfo("imul",  modRm=MODRM_SRC, op_size=REG_SIZE_32),
 
     0xb6: X64InstructionInfo("movzx", modRm=MODRM_SRC, src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),

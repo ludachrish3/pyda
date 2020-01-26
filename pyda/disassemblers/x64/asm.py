@@ -1001,7 +1001,7 @@ def disassemble( function ):
     """
 
     addr         = function.addr
-    binary       = function.assembly[:60000]
+    binary       = function.assembly
     instructions = function.instructions
     offTheRails  = False
 
