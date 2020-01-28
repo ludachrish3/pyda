@@ -258,6 +258,10 @@ SYMBOL_VIS_STR = {
 
 class ElfBinary(binary.Binary):
 
+    # By default, assume the binary is stripped. This is changed to False if a
+    # symbol table section is found later.
+    isStripped = True
+
     def __init__(self):
         #TODO: Fill this with default values
         self._type = None
@@ -679,6 +683,8 @@ class ElfBinary(binary.Binary):
                 logger.debug(f"Function symbol: {symbol}")
 
         elif symbol.type == SYMBOL_TYPE_OBJECT:
+            # TODO: Adjust the address according to the global offset. This can
+            # only be done after resolving external symbols.
             self._globalVariablesByName[symbol.name] = symbol
             self._globalVariablesByAddr[symbol.value] = symbol
             logger.debug(f"Global symbol: {symbol}")
@@ -700,20 +706,9 @@ class ElfBinary(binary.Binary):
         globOffset  = globSection.virtualAddr - globSection.fileOffset
 
         if SECTION_NAME_SYMBOL_TABLE not in self._sections:
-            logger.debug("There is no symbol table. A brute force search must be done.")
-            # Create one big function that is the entire .text section if there
-            # is no symbol table. This will be parsed out later into separate
-            # functions.
-            newSymbol = ElfSymbol()
-            newSymbol.setName(f"func_{codeSection.virtualAddr:08x}")
-            newSymbol.value      = codeSection.virtualAddr
-            newSymbol.size       = codeSection.size
-            newSymbol.bind       = SYMBOL_BIND_GLOBAL
-            newSymbol.type       = SYMBOL_TYPE_FUNCTION
-            newSymbol.visibility = SYMBOL_VIS_DEFAULT
-
-            self.addSymbol(fd, newSymbol, codeOffset, globOffset)
             return
+
+        self.isStripped = False
 
         symbolData  = self._sections[SECTION_NAME_SYMBOL_TABLE].data
 
@@ -786,13 +781,10 @@ class ElfBinary(binary.Binary):
         else:
             return None
 
+
     def getExecutableCode(self):
 
-        if SECTION_NAME_TEXT in self._sections:
-            return self._sections[SECTION_NAME_TEXT].data
-
-        else:
-            return None
+        return self._sections.get(SECTION_NAME_TEXT, None)
 
 
 class ElfSegment():

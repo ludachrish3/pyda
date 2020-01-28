@@ -989,20 +989,18 @@ def resolveRelativeAddr( instruction, operand ):
         operand.value = ripValue + operand.displacement
 
 
-def disassemble( function ):
+def disassemble( binary, addr ):
     """
-    Description:    Disassembles a function and creates its list of instructions.
-                    The function object will have its instructions member updated
-                    with the list of instructions that are generated.
+    Description:    Disassembles a stream of bytes and creates a list of
+                    instructions.
 
-    Arguments:      function - Function object that has assembly to be disassembled
+    Arguments:      binary - bytes object to disassemble
+                    addr   - starting address to use when disassembling
 
     Return:         The list of instructions that are created.
     """
 
-    addr         = function.addr
-    binary       = function.assembly
-    instructions = function.instructions
+    instructions = []
     offTheRails  = False
 
     # TODO: Add a good description of what this loop is doing and the stages that are performed
@@ -1092,3 +1090,10 @@ def disassemble( function ):
         addr += len(curInstruction.bytes)
 
     return instructions
+
+
+def findFunctions( instructions ):
+
+    logger.debug("Finding functions using only instructions")
+
+    return []

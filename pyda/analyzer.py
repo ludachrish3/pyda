@@ -58,19 +58,37 @@ def analyzeFile(filename):
 
         logger.info(exe)
 
+    # If the executable did not have a symbol table, then the .text section
+    # needs to be broken up into functions and disassembled
+    if exe.isStripped:
+
+        codeSection = exe.getExecutableCode()
+        instructions = x64asm.disassemble(codeSection.data, codeSection.virtualAddr)
+        for inst in instructions:
+            logger.info(inst)
+
+        listOfAddrsAndSizes = x64asm.findFunctions(instructions)
+
+    # Otherwise, disassemble all functions in the executable
+    else:
+
+        # Disassemble all functions in the executable
         for funcName in exe.functionsByName:
 
-            functionToAnalyze = exe.getFunctionByName(funcName)
+            function = exe.getFunctionByName(funcName)
 
-            logger.debug(f"Function: {functionToAnalyze.assembly}")
+            logger.debug(f"Function: {function.assembly}")
 
             if exe.getISA() == binary.ISA_X86_64:
 
-                if funcName[0] != '_':
-                    instructions = x64asm.disassemble(functionToAnalyze)
-                    logger.info(f"{funcName} Instructions (src, dst)")
+                instructions = x64asm.disassemble(function.assembly, function.addr)
+                logger.info(f"{funcName} Instructions (src, dst)")
 
-                    for inst in instructions:
-                        logger.info(inst)
+                for inst in instructions:
+                    logger.info(inst)
+
+
+
+
 
     return None

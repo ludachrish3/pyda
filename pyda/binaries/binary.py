@@ -18,6 +18,10 @@ BIN_ENDIAN_BIG    = "big"
 
 class Binary(metaclass=abc.ABCMeta):
 
+    @property
+    def isStripped(self):
+        raise NotImplementedError
+
     @abc.abstractmethod
     def analyze(self, fd):
         """
