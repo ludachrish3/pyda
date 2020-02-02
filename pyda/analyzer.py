@@ -62,27 +62,42 @@ def analyzeFile(filename):
     # needs to be broken up into functions and disassembled
     if exe.isStripped:
 
+        # Execution starts at the executable's start address, not necessarily
+        # at the beginning of the code section. Pass the code section starting
+        # at the start address so that it is guaranteed that the first
+        # instruction is the beginning of a function.
         codeSection = exe.getExecutableCode()
-        instructions = x64asm.disassemble(codeSection.data, codeSection.virtualAddr)
+        startOffset = exe.getStartAddr() - codeSection.virtualAddr
+        code = codeSection.data[startOffset:]
+
+        instructions = x64asm.disassemble(code, exe.getStartAddr())
         for inst in instructions:
             logger.info(inst)
 
         listOfAddrsAndSizes = x64asm.findFunctions(instructions)
+        for addr, size in listOfAddrsAndSizes:
+            logger.info(f"func_{addr:08x}: {size}")
 
     # Otherwise, disassemble all functions in the executable
     else:
+
+        instructions = x64asm.disassemble(exe._sections[".plt"].data, exe._sections[".plt"].virtualAddr)
+
+        logger.info("procedure linkage table:")
+        for inst in instructions:
+            logger.info(f"{inst}")
 
         # Disassemble all functions in the executable
         for funcName in exe.functionsByName:
 
             function = exe.getFunctionByName(funcName)
 
-            logger.debug(f"Function: {function.assembly}")
-
             if exe.getISA() == binary.ISA_X86_64:
 
                 instructions = x64asm.disassemble(function.assembly, function.addr)
                 logger.info(f"{funcName} Instructions (src, dst)")
+
+                function.instructions = instructions
 
                 for inst in instructions:
                     logger.info(inst)

@@ -208,8 +208,9 @@ SECTION_TYPE_STR = {
 
 SECTION_NAME_SECTION_NAMES = ".shstrtab"
 SECTION_NAME_STRING_TABLE = ".strtab"
-SECTION_NAME_DYN_STRING_TABLE = ".dynstr"
 SECTION_NAME_SYMBOL_TABLE = ".symtab"
+SECTION_NAME_DYN_SYMBOL_TABLE = ".dynsym"
+SECTION_NAME_DYN_STRING_TABLE = ".dynstr"
 SECTION_NAME_GLOBAL_OFFSET_TABLE = ".got"
 SECTION_NAME_INIT = ".init"
 SECTION_NAME_DATA = ".data"
@@ -293,8 +294,8 @@ class ElfBinary(binary.Binary):
         # up by type and key on something else if it makes more sense.
         self.functionsByName = {}
         self.functionsByAddr = {}
-        self._globalVariablesByName = {}
-        self._globalVariablesByAddr = {}
+        self.objectsByName = {}
+        self.objectsByAddr = {}
 
 
     def __repr__(self):
@@ -302,7 +303,8 @@ class ElfBinary(binary.Binary):
             f"Architecture: {self.arch}\n"
             f"Endianness:   {self.endianness}\n"
             f"File Type:    {TYPE_STR[self._type]}\n"
-            f"ISA:          {ISA_STR[self.isa]}"
+            f"ISA:          {ISA_STR[self.isa]}\n"
+            f"addr:         {self.startAddr:08x}"
         )
 
 
@@ -433,6 +435,11 @@ class ElfBinary(binary.Binary):
         logger.debug(f"Start addr:            0x{self.startAddr:0>8x}")
 
 
+    def getStartAddr(self):
+
+        return self.startAddr
+
+
     def setProgHdrOffset(self, offset):
 
         self.progHdrOffset = self.bytesToInt(offset)
@@ -529,7 +536,7 @@ class ElfBinary(binary.Binary):
         fd.read(3)
 
         # Get the starting virtual address for the program. The size of the
-        #starting address varies based on the system's architecture.
+        # starting address varies based on the system's architecture.
         self.setStartAddr(fd.read(addrSize))
 
         # Get the start of the program header table in the file
@@ -637,6 +644,8 @@ class ElfBinary(binary.Binary):
             fd.seek(section.fileOffset)
             section.data = fd.read(section.size)
 
+        logger.info("Sections:")
+
         # Now that all data is stored in objects for sections rather than just
         # in the file, get the section names from the string table.
         for section in self._sectionList:
@@ -646,14 +655,14 @@ class ElfBinary(binary.Binary):
             # Now that the section's name is known, it can be correctly assigned
             self._sections[section.name] = section
 
-        logger.debug(f"Sections: {self._sections}")
+            logger.info(f"{section}")
 
         # Remove the list of sections because they have been converted into a
         # dictionary keyed on section name.
         del self._sectionList
 
 
-    def addSymbol( self, fd, symbol, codeOffset, globalOffset ):
+    def addSymbol( self, fd, symbol ):
         """
         Description:    Adds a symbol to dictionaries so it can be looked up by
                         name and by address. The offsets are used to make sure
@@ -662,13 +671,21 @@ class ElfBinary(binary.Binary):
 
         Arguments:      fd           - Flle descriptor to read from for assembly
                         symbol       - ElfSymbol object to update and add
-                        codeOffset   - Offset for functions
-                        globalOffset - Offset for global variables
 
         Return:         None
         """
 
+        codeSection = self._sections[SECTION_NAME_TEXT]
+        globSection = self._sections[SECTION_NAME_GLOBAL_OFFSET_TABLE]
+        codeOffset  = codeSection.virtualAddr - codeSection.fileOffset
+        globOffset  = globSection.virtualAddr - globSection.fileOffset
+
+        logger.debug(f"Code offset: {codeOffset:x}")
+        logger.debug(f"Glob offset: {globOffset:x}")
+
         if symbol.type == SYMBOL_TYPE_FUNCTION:
+
+            logger.debug(f"function symbol: {symbol}")
 
             # Save the assembly bytes of the function with the object so that
             # the file is no longer needed. The address offset of the .text
@@ -680,42 +697,34 @@ class ElfBinary(binary.Binary):
 
                 self.functionsByName[symbol.name] = symbol
                 self.functionsByAddr[symbol.value] = symbol
-                logger.debug(f"Function symbol: {symbol}")
+                logger.info(f"Function symbol: {symbol}")
 
         elif symbol.type == SYMBOL_TYPE_OBJECT:
             # TODO: Adjust the address according to the global offset. This can
             # only be done after resolving external symbols.
-            self._globalVariablesByName[symbol.name] = symbol
-            self._globalVariablesByAddr[symbol.value] = symbol
-            logger.debug(f"Global symbol: {symbol}")
+            self.objectsByName[symbol.name] = symbol
+            self.objectsByAddr[symbol.value] = symbol
+            logger.info(f"Global symbol: {symbol}")
 
 
-    def parseSymbolTable(self, fd):
+    def parseSymbolTable( self, fd, sectionName, stringTable ):
         """
         Description:    Parses the symbol table and creates symbol objects for
                         all entries.
 
-        Arguments:      fd - File descriptor of the open binary file.
+        Arguments:      fd          - File descriptor of the open binary file.
+                        sectionName - Name of the symbol table section.
+                        stringTable - Name of the section that holds the strings.
 
         Return:         None
         """
 
-        codeSection = self._sections[SECTION_NAME_TEXT]
-        globSection = self._sections[SECTION_NAME_GLOBAL_OFFSET_TABLE]
-        codeOffset  = codeSection.virtualAddr - codeSection.fileOffset
-        globOffset  = globSection.virtualAddr - globSection.fileOffset
-
-        if SECTION_NAME_SYMBOL_TABLE not in self._sections:
-            return
-
-        self.isStripped = False
-
-        symbolData  = self._sections[SECTION_NAME_SYMBOL_TABLE].data
+        symbolData  = self._sections[sectionName].data
 
         if self.arch == binary.BIN_ARCH_32BIT:
-            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].size, 16):
+            for pos in range(0, self._sections[sectionName].size, 16):
                 newSymbol = ElfSymbol()
-                newSymbol.setName(self.getStringFromTable(SECTION_NAME_STRING_TABLE, self.bytesToInt(symbolData[pos:pos+4])))
+                newSymbol.setName(self.getStringFromTable(stringTable, self.bytesToInt(symbolData[pos:pos+4])))
                 newSymbol.value        = self.bytesToInt(symbolData[pos+4:pos+8])
                 newSymbol.size         = self.bytesToInt(symbolData[pos+8:pos+12])
                 symbolInfo             = symbolData[pos+12]
@@ -725,12 +734,13 @@ class ElfBinary(binary.Binary):
                 newSymbol.visibility   = symbolOther & 0x3
                 newSymbol.sectionIndex = self.bytesToInt(symbolData[pos+14:pos+16])
 
-                self.addSymbol(fd, newSymbol, codeOffset, globOffset)
+                self.addSymbol(fd, newSymbol)
 
         elif self.arch == binary.BIN_ARCH_64BIT:
-            for pos in range(0, self._sections[SECTION_NAME_SYMBOL_TABLE].size, 24):
+            logger.info(f"Section size: {self._sections[sectionName].size}")
+            for pos in range(0, self._sections[sectionName].size, 24):
                 newSymbol = ElfSymbol()
-                newSymbol.setName(self.getStringFromTable(SECTION_NAME_STRING_TABLE, self.bytesToInt(symbolData[pos:pos+4])))
+                newSymbol.setName(self.getStringFromTable(stringTable, self.bytesToInt(symbolData[pos:pos+4])))
                 symbolInfo             = symbolData[pos+4]
                 newSymbol.bind         = symbolInfo >> 4
                 newSymbol.type         = symbolInfo & 0xf
@@ -740,7 +750,9 @@ class ElfBinary(binary.Binary):
                 newSymbol.value        = self.bytesToInt(symbolData[pos+8:pos+16])
                 newSymbol.size         = self.bytesToInt(symbolData[pos+16:pos+24])
 
-                self.addSymbol(fd, newSymbol, codeOffset, globOffset)
+                self.addSymbol(fd, newSymbol)
+
+        return True
 
 
     def analyze(self, fd):
@@ -756,8 +768,22 @@ class ElfBinary(binary.Binary):
         # Handle sections and save them
         self.parseSectionHdrs(fd)
 
-        # Parse the symbol table
-        self.parseSymbolTable(fd)
+        for section in self._sections:
+
+            if section == SECTION_NAME_SYMBOL_TABLE:
+                self.isStripped = False
+                self.parseSymbolTable(fd, SECTION_NAME_SYMBOL_TABLE, SECTION_NAME_STRING_TABLE)
+
+            elif section == SECTION_NAME_DYN_SYMBOL_TABLE:
+                self.parseSymbolTable(fd, SECTION_NAME_DYN_SYMBOL_TABLE, SECTION_NAME_DYN_STRING_TABLE)
+
+            """
+            elif section.startswith(".rela"):
+                pass
+
+            elif section.startswith(".rel"):
+            """
+
 
 
     def getFunctionByName(self, name):
@@ -845,8 +871,8 @@ class ElfSection():
     def __repr__(self):
 
         return (
-            f"type: {SECTION_TYPE_STR[self._type]},"
-            f" name: {self.name},"
+            f"name: {self.name},"
+            f" type: {SECTION_TYPE_STR[self._type]},"
             f" flags: {self.flags},"
             f" virtualAddr: {hex(self.virtualAddr)},"
             f" fileOffset: {hex(self.fileOffset)},"

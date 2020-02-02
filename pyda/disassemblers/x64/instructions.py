@@ -511,7 +511,7 @@ oneByteOpcodes = {
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
-    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SRC, signExtension=True, src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
+    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SRC, signExtension=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_32),
 #   0x64: FS Segment Register Prefix
 #   0x65: GS Segment Register Prefix
 #   0x66: 16-bit Operand Size Prefix or access to Double Quadword Registers
@@ -720,7 +720,7 @@ oneByteOpcodes = {
     0xfc: X64InstructionInfo("cld",   op_size=REG_SIZE_0),
     0xfd: X64InstructionInfo("std",   op_size=REG_SIZE_0),
     0xfe: X64InstructionInfo("",      modRm=MODRM_DST, extOpcode=True, src_size=REG_SIZE_0),
-    0xff: X64InstructionInfo("",      modRm=MODRM_DST, extOpcode=True, src_size=REG_SIZE_0),
+    0xff: X64InstructionInfo("",      modRm=MODRM_DST, extOpcode=True),
 }
 
 twoByteOpcodes = {

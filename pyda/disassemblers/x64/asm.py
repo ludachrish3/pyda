@@ -56,7 +56,6 @@ def handlePrefixes( instruction, binary ):
 
         # If a prefix is not found, proceed to the next step
         else:
-            logger.debug("No more legacy prefixes")
             break
 
         # If the else branch is not hit, a prefix byte was found
@@ -91,7 +90,6 @@ def handlePrefixes( instruction, binary ):
                 instruction.extendBase = True
 
         else:
-            logger.debug("No more REX prefixes")
             break
 
         # If the else branch is not hit, a prefix byte was found
@@ -261,34 +259,40 @@ def handleExtendedOpcode( instruction, modRmByte ):
             return False
 
     elif instruction.bytes[-1] in [ 0xff ]:
-        # TODO: Update info about operands in each case
+
+        # Clear out the source and destination operands because they might be
+        # removed depending on which value is used.
+        instruction.source = None
+        instruction.dest   = None
 
         if op == 0:
-            instruction.mnemonic = "inc"
+            newInfo = X64InstructionInfo("inc", modRm=MODRM_DST, src_size=REG_SIZE_0)
 
         elif op == 1:
-            instruction.mnemonic = "dec"
+            newInfo = X64InstructionInfo("dec", modRm=MODRM_DST, src_size=REG_SIZE_0)
 
         elif op == 2:
-            instruction.mnemonic = "call"
-            instruction.info.relativeJump = True
+            newInfo = X64InstructionInfo("call", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
 
-        elif op == 3:
-            instruction.mnemonic = "callf"
+        elif op == 3 and mod != MOD_DIRECT:
+            newInfo = X64InstructionInfo("callf", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
+            # TODO: This needs to be done correctly. See Intel documentation
 
         elif op == 4:
-            instruction.mnemonic = "jmp"
-            instruction.info.relativeJump = True
+            newInfo = X64InstructionInfo("jmp", modRm=MODRM_SRC, src_size=REG_SIZE_32, dst_size=REG_SIZE_0)
 
-        elif op == 5:
-            instruction.mnemonic = "jmpf"
+        elif op == 5 and mod != MOD_DIRECT:
+            newInfo = X64InstructionInfo("jmpf", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
+            # TODO: This needs to be done correctly. See Intel documentation
 
         elif op == 6:
-            instruction.mnemonic = "push"
+            newInfo = X64InstructionInfo("push", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
 
         else:
             logger.debug("An invalid Mod R/M value was received")
             return False
+
+        instruction.setAttributes(instruction.bytes[-1], newInfo)
 
     elif instruction.bytes[-1] in [ 0xf6, 0xf7 ]:
 
@@ -782,8 +786,6 @@ def handleOperandAddressing( instruction, operand, binary ):
 
     logger.debug(f"mod: {mod >> 6}, reg: {regOrOp}, r/m: {regmem}")
 
-    logger.debug(f"Before doing anything, operand value is {operand.value:02x}")
-
     # Process the addressing if the Mod R/M byte applies to this operand
     if operand.modRm:
 
@@ -910,11 +912,9 @@ def handleModRmByte( instruction, binary ):
     # their value is 0, which would mean it does not have a predetermined value.
     if instruction.source is not None and instruction.source.value is 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.source, binary)
-        logger.debug(f"After handling source: {numBytesConsumed}")
 
     if instruction.dest is not None and instruction.dest.value is 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.dest, binary)
-        logger.debug(f"After handling dest: {numBytesConsumed}")
 
     if numBytesConsumed <= len(binary):
         instruction.bytes += list(binary[:numBytesConsumed])
@@ -1025,7 +1025,6 @@ def disassemble( binary, addr ):
         # Find all prefix bytes and set the appropriate settings in the
         # instruction. Consume all prefix bytes from the binary.
         numPrefixBytes = handlePrefixes(curInstruction, binary)
-        logger.debug(f"There were {numPrefixBytes} prefix bytes")
         binary = binary[numPrefixBytes:]
 
         # Replace the instruction with the one that corresponds to the opcode.
@@ -1094,6 +1093,33 @@ def disassemble( binary, addr ):
 
 def findFunctions( instructions ):
 
-    logger.debug("Finding functions using only instructions")
+    funcAddrsAndSizes = []
 
-    return []
+    if len(instructions) == 0:
+        return []
+
+    currentlyInFunction = True
+    highestReachableAddr = instructions[0].addr
+    funcStart = instructions[0].addr
+
+    for instruction in instructions:
+
+        if instruction.mnemonic in [ "ret", "repz ret", "hlt" ] and instruction.addr >= highestReachableAddr:
+            funcAddrsAndSizes.append((funcStart, instruction.addr + len(instruction.bytes) - funcStart))
+            currentlyInFunction = False
+            logger.debug(f"Found end of function: {instruction}, {funcAddrsAndSizes[-1]}")
+
+        elif instruction.info.relativeJump and instruction.mnemonic not in [ "call", "ret" ] and instruction.source.value > highestReachableAddr:
+            highestReachableAddr = instruction.source.value
+            logger.debug(f"relative jump: {instruction}")
+
+        elif not currentlyInFunction and instruction.mnemonic != "nop":
+            funcStart = instruction.addr
+            highestReachableAddr = instruction.addr
+            currentlyInFunction = True
+            logger.debug(f"found the beginning of another function: {funcStart:x}")
+
+        elif instruction.addr > highestReachableAddr:
+            highestReachableAddr = instruction.addr
+
+    return funcAddrsAndSizes

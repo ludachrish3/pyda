@@ -57,6 +57,14 @@ class Binary(metaclass=abc.ABCMeta):
     def getExecutableCode(self):
         pass
 
+    @abc.abstractmethod
+    def setStartAddr(self, startAddr):
+        pass
+
+    @abc.abstractmethod
+    def getStartAddr(self):
+        pass
+
 
 class Function():
 
