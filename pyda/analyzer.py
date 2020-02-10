@@ -6,6 +6,7 @@ Description:    This file is responsible for determining the type of executable
 """
 
 import os
+import mmap
 
 from pyda.binaries import binary, elf
 
@@ -17,22 +18,20 @@ logger = logging.getLogger(__name__)
 # Magic numbers used to determine file types
 MAGIC_NUM_ELF = b'\x7fELF'
 
-def getBinary(fd):
+def getBinary( fileMap ):
     """
     Description:    Analyzes just enough to figure out the type of file
 
-    Arguments:      fd - File descriptor of an open file
+    Arguments:      fileMap - Memory map object that contains the executable
 
     Return:         Object that is derived from the Binary class
     """
 
     # TODO: Do a more thorough check for different file types. This is only good
     # enough for ELF files.
-    fileHeader = fd.read(4)
+    fileHeader = fileMap[:4]
 
     if fileHeader == MAGIC_NUM_ELF:
-        # Set the file position back to zero so that the full file can be parsed
-        fd.seek(0)
         return elf.ElfBinary()
 
     else:
@@ -53,8 +52,10 @@ def analyzeFile(filename):
 
     with open(filename, "rb") as binaryFile:
 
-        exe = getBinary(binaryFile)
-        exe.analyze(binaryFile)
+        exeMap = mmap.mmap(binaryFile.fileno(), 0, access=mmap.ACCESS_READ)
+
+        exe = getBinary(exeMap)
+        exe.analyze(exeMap)
 
         logger.info(exe)
 

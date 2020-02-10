@@ -5,14 +5,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 # ELF architecture type
-ARCH_NONE  = b'\x00'
-ARCH_32BIT = b'\x01'
-ARCH_64BIT = b'\x02'
+ARCH_NONE  = 0
+ARCH_32BIT = 1
+ARCH_64BIT = 2
 
 # ELF endianness
-ENDIAN_NONE   = b'\x00'
-ENDIAN_LITTLE = b'\x01'
-ENDIAN_BIG    = b'\x02'
+ENDIAN_NONE   = 0
+ENDIAN_LITTLE = 1
+ENDIAN_BIG    = 2
 
 # ELF version number
 VERSION_NONE    = 0
@@ -313,10 +313,10 @@ class ElfBinary(binary.Binary):
         return int.from_bytes(byteArray, byteorder=self.endianness, signed=signed)
 
 
-    # Reads an integer value from a file
-    def readInt(self, fd, size):
+    # Reads an integer value from a memory mapped file
+    def readInt( self, exeMap, size ):
 
-        return self.bytesToInt(fd.read(size))
+        return self.bytesToInt(exeMap.read(size))
 
 
     def getStringFromTable(self, sectionName, index):
@@ -429,6 +429,17 @@ class ElfBinary(binary.Binary):
 
         self.isa = isaVal
 
+
+    def setVersion( self, version ):
+
+        self.version = self.bytesToInt(version)
+
+
+    def getVersion( self ):
+
+        return self.version
+
+
     def setStartAddr(self, startAddr):
 
         self.startAddr = self.bytesToInt(startAddr)
@@ -494,86 +505,81 @@ class ElfBinary(binary.Binary):
         logger.debug(f"Index of the section that contains the section names: {self._sectionNameIndex}")
 
 
-    def parseElfHeader(self, fd):
-
-        # Skip over the magic number because it was already used
-        fd.read(4)
+    def parseElfHeader(self, exeMap):
 
         # Get the architecture
-        self.setArch(fd.read(1))
+        self.setArch(exeMap[4])
 
         # Now that the architecture is known, save a local copy of the number of
         # bytes in an address
         addrSize = self.addrSize
 
         # Get endianness
-        self.setEndianness(fd.read(1))
+        self.setEndianness(exeMap[5])
 
         # Get the ELF version number. The only allowed value is the most current
         # value. Anything else is considered an error.
-        elfVersion = self.readInt(fd, 1)
+        elfVersion = exeMap[6]
         if elfVersion != VERSION_CURRENT:
             raise binary.AnalysisError(f"An invalid ELF version number was found: {elfVersion}")
 
         # Get the OS (not usually set, so not used by this module)
-        fileOs = self.readInt(fd, 1)
-        if fileOs != 0:
-            raise NotImplementedError(f"The OS is not supported: {OS_STR[fileOs]}")
-
-        # Skip over the padding bytes
-        fd.read(8)
+        fileOs = exeMap[7]
+        if fileOs not in OS_STR:
+            raise NotImplementedError(f"The OS is not supported: {fileOs}")
 
         # Get the type of file, like executable or shared object
-        self.setFileType(fd.read(2))
+        self.setFileType(exeMap[16:18])
 
         # Get the ISA
-        self.setISA(fd.read(2))
+        self.setISA(exeMap[18:20])
 
         # Get the ELF version (currently not used by this module)
-        fd.read(1)
+        self.setVersion(exeMap[20:24])
 
-        # Skip over some more padding bytes
-        fd.read(3)
+        # Seek to the location where 32-bit and 64-bit binaries start to
+        # diverge in format due to different field sizes.
+        exeMap.seek(24)
 
         # Get the starting virtual address for the program. The size of the
         # starting address varies based on the system's architecture.
-        self.setStartAddr(fd.read(addrSize))
+        self.setStartAddr(exeMap.read(addrSize))
 
         # Get the start of the program header table in the file
-        self.setProgHdrOffset(fd.read(addrSize))
+        self.setProgHdrOffset(exeMap.read(addrSize))
 
         # Get the start of the section header table in the file
-        self.setSectionHdrOffset(fd.read(addrSize))
+        self.setSectionHdrOffset(exeMap.read(addrSize))
 
         # Get the flags for the architecture
-        self.setFlags(fd.read(4))
+        self.setFlags(exeMap.read(4))
 
         # Get the size of the ELF header
-        self.setElfHdrSize(fd.read(2))
+        self.setElfHdrSize(exeMap.read(2))
 
         # Get info about the program header
-        self.setProgHdrEntrySize(fd.read(2))
-        self.setNumProgHdrEntries(fd.read(2))
+        self.setProgHdrEntrySize(exeMap.read(2))
+        self.setNumProgHdrEntries(exeMap.read(2))
 
         # Get info about the section header
-        self.setSectionHdrEntrySize(fd.read(2))
-        self.setNumSectionHdrEntries(fd.read(2))
+        self.setSectionHdrEntrySize(exeMap.read(2))
+        self.setNumSectionHdrEntries(exeMap.read(2))
 
         # Get the index of the section header that contains the section names
-        self.setNameIndex(fd.read(2))
+        self.setNameIndex(exeMap.read(2))
 
 
-    def parseProgHdrs(self, fd):
+    def parseProgHdrs( self, exeMap ):
 
         # Save a local copy of the number of bytes in an address
         addrSize = self.addrSize
 
         # Set the position in the file to the beginning of the program header
-        fd.seek(self.progHdrOffset)
+        exeMap.seek(self.progHdrOffset)
 
         for entry in range(self.numProgHdrEntries):
 
-            segmentType = self.readInt(fd, 4)
+            segmentType = self.readInt(exeMap, 4)
 
             newSegment = ElfSegment(segmentType)
 
@@ -582,46 +588,47 @@ class ElfBinary(binary.Binary):
             # field, so a deviation can be made for just this field based on
             # the architecture when it is appropriate.
             if self.arch == binary.BIN_ARCH_64BIT:
-                newSegment.flags = self.readInt(fd, 4)
+                newSegment.flags = self.readInt(exeMap, 4)
 
-            newSegment.offset       = self.readInt(fd, addrSize)
-            newSegment.virtualAddr  = self.readInt(fd, addrSize)
-            newSegment.physicalAddr = self.readInt(fd, addrSize)
-            newSegment.size         = self.readInt(fd, addrSize)
-            newSegment.memorySize   = self.readInt(fd, addrSize)
+            newSegment.offset       = self.readInt(exeMap, addrSize)
+            newSegment.virtualAddr  = self.readInt(exeMap, addrSize)
+            newSegment.physicalAddr = self.readInt(exeMap, addrSize)
+            newSegment.size         = self.readInt(exeMap, addrSize)
+            newSegment.memorySize   = self.readInt(exeMap, addrSize)
 
             # Now is the appropriate time to check for the flags field if the
             # architecture is 32-bit.
             if self.arch == binary.BIN_ARCH_32BIT:
-                newSegment.flags = self.readInt(fd, 4)
+                newSegment.flags = self.readInt(exeMap, 4)
 
-            newSegment.alignment = self.readInt(fd, addrSize)
+            newSegment.alignment = self.readInt(exeMap, addrSize)
 
             self.segments.append(newSegment)
 
-    def parseSectionHdrs(self, fd):
+
+    def parseSectionHdrs( self, exeMap ):
 
         # Save a local copy of the number of bytes in an address
         addrSize = self.addrSize
 
         # Set the position in the file to the beginning of the program header
-        fd.seek(self.sectionHdrOffset)
+        exeMap.seek(self.sectionHdrOffset)
 
         for entry in range(self.numSectionHdrEntries):
 
-            sectionNameIndex = self.readInt(fd, 4)
-            sectionType = self.readInt(fd, 4)
+            sectionNameIndex = self.readInt(exeMap, 4)
+            sectionType = self.readInt(exeMap, 4)
 
             newSection = ElfSection(sectionType, nameIndex=sectionNameIndex)
 
-            newSection.flags = self.readInt(fd, addrSize)
-            newSection.virtualAddr = self.readInt(fd, addrSize)
-            newSection.fileOffset = self.readInt(fd, addrSize)
-            newSection.size = self.readInt(fd, addrSize)
-            newSection.link = self.readInt(fd, 4)
-            newSection.info = self.readInt(fd, 4)
-            newSection.alignment = self.readInt(fd, addrSize)
-            newSection.entrySize = self.readInt(fd, addrSize)
+            newSection.flags = self.readInt(exeMap, addrSize)
+            newSection.virtualAddr = self.readInt(exeMap, addrSize)
+            newSection.fileOffset = self.readInt(exeMap, addrSize)
+            newSection.size = self.readInt(exeMap, addrSize)
+            newSection.link = self.readInt(exeMap, 4)
+            newSection.info = self.readInt(exeMap, 4)
+            newSection.alignment = self.readInt(exeMap, addrSize)
+            newSection.entrySize = self.readInt(exeMap, addrSize)
 
             self._sectionList.append(newSection)
 
@@ -634,15 +641,15 @@ class ElfBinary(binary.Binary):
         # Set the data for the section that contains all section names so that
         # it can be used to look up the names of other sections.
         sectionNameSection = self._sections[SECTION_NAME_SECTION_NAMES]
-        fd.seek(sectionNameSection.fileOffset)
-        self._sections[SECTION_NAME_SECTION_NAMES].data = fd.read(sectionNameSection.size)
+        exeMap.seek(sectionNameSection.fileOffset)
+        self._sections[SECTION_NAME_SECTION_NAMES].data = exeMap.read(sectionNameSection.size)
 
         # Save each section as a byte string so that the file does not need to
         # be read from anymore.
         for section in self._sectionList:
 
-            fd.seek(section.fileOffset)
-            section.data = fd.read(section.size)
+            exeMap.seek(section.fileOffset)
+            section.data = exeMap.read(section.size)
 
         logger.info("Sections:")
 
@@ -662,14 +669,14 @@ class ElfBinary(binary.Binary):
         del self._sectionList
 
 
-    def addSymbol( self, fd, symbol ):
+    def addSymbol( self, exeMap, symbol ):
         """
         Description:    Adds a symbol to dictionaries so it can be looked up by
                         name and by address. The offsets are used to make sure
                         the address is calculated to match up with how the
                         binary calls it.
 
-        Arguments:      fd           - Flle descriptor to read from for assembly
+        Arguments:      exeMap       - Flle descriptor to read from for assembly
                         symbol       - ElfSymbol object to update and add
 
         Return:         None
@@ -692,8 +699,8 @@ class ElfBinary(binary.Binary):
             # section must be subtracted to get the file location of the
             # function. The value for the symbol is the virtual address.
             if symbol.value > 0 and symbol.size > 0:
-                fd.seek(symbol.value - codeOffset)
-                symbol.assembly = fd.read(symbol.size)
+                exeMap.seek(symbol.value - codeOffset)
+                symbol.assembly = exeMap.read(symbol.size)
 
                 self.functionsByName[symbol.name] = symbol
                 self.functionsByAddr[symbol.value] = symbol
@@ -707,12 +714,12 @@ class ElfBinary(binary.Binary):
             logger.info(f"Global symbol: {symbol}")
 
 
-    def parseSymbolTable( self, fd, sectionName, stringTable ):
+    def parseSymbolTable( self, exeMap, sectionName, stringTable ):
         """
         Description:    Parses the symbol table and creates symbol objects for
                         all entries.
 
-        Arguments:      fd          - File descriptor of the open binary file.
+        Arguments:      exeMap      - File descriptor of the open binary file.
                         sectionName - Name of the symbol table section.
                         stringTable - Name of the section that holds the strings.
 
@@ -734,7 +741,7 @@ class ElfBinary(binary.Binary):
                 newSymbol.visibility   = symbolOther & 0x3
                 newSymbol.sectionIndex = self.bytesToInt(symbolData[pos+14:pos+16])
 
-                self.addSymbol(fd, newSymbol)
+                self.addSymbol(exeMap, newSymbol)
 
         elif self.arch == binary.BIN_ARCH_64BIT:
             logger.info(f"Section size: {self._sections[sectionName].size}")
@@ -750,32 +757,32 @@ class ElfBinary(binary.Binary):
                 newSymbol.value        = self.bytesToInt(symbolData[pos+8:pos+16])
                 newSymbol.size         = self.bytesToInt(symbolData[pos+16:pos+24])
 
-                self.addSymbol(fd, newSymbol)
+                self.addSymbol(exeMap, newSymbol)
 
         return True
 
 
-    def analyze(self, fd):
+    def analyze( self, exeMap ):
 
         # Parse the ELF header to get basic information about the file
-        self.parseElfHeader(fd)
+        self.parseElfHeader(exeMap)
 
         # TODO: Maybe don't do this because the info is in the section headers
         # Handle the program headers if there are any
         if self.progHdrOffset > 0:
-            self.parseProgHdrs(fd)
+            self.parseProgHdrs(exeMap)
 
         # Handle sections and save them
-        self.parseSectionHdrs(fd)
+        self.parseSectionHdrs(exeMap)
 
         for section in self._sections:
 
             if section == SECTION_NAME_SYMBOL_TABLE:
                 self.isStripped = False
-                self.parseSymbolTable(fd, SECTION_NAME_SYMBOL_TABLE, SECTION_NAME_STRING_TABLE)
+                self.parseSymbolTable(exeMap, SECTION_NAME_SYMBOL_TABLE, SECTION_NAME_STRING_TABLE)
 
             elif section == SECTION_NAME_DYN_SYMBOL_TABLE:
-                self.parseSymbolTable(fd, SECTION_NAME_DYN_SYMBOL_TABLE, SECTION_NAME_DYN_STRING_TABLE)
+                self.parseSymbolTable(exeMap, SECTION_NAME_DYN_SYMBOL_TABLE, SECTION_NAME_DYN_STRING_TABLE)
 
             """
             elif section.startswith(".rela"):
