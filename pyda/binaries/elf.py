@@ -257,6 +257,18 @@ SYMBOL_VIS_STR = {
     SYMBOL_VIS_PROTECTED: "protected"
 }
 
+RELOC_TYPE_NONE      = 0
+RELOC_TYPE_GLOB_DATA = 6
+RELOC_TYPE_JUMP_SLOT = 7
+RELOC_TYPE_RELATIVE  = 8
+
+RELOC_TYPE_STR = {
+    RELOC_TYPE_NONE:      "no type",
+    RELOC_TYPE_GLOB_DATA: "global data",
+    RELOC_TYPE_JUMP_SLOT: "jump slot",
+    RELOC_TYPE_RELATIVE:  "relative",
+}
+
 class ElfBinary(binary.Binary):
 
     # By default, assume the binary is stripped. This is changed to False if a
@@ -266,10 +278,10 @@ class ElfBinary(binary.Binary):
     def __init__(self):
         #TODO: Fill this with default values
         self._type = None
-        self.segments = []
+        self._segments = []
 
-        self._sectionList = [] # Temporary and will be removed once _sections is populated
-        self._sections = {}
+        self._sectionList = [] # Needed to associate sections by index number
+        self._sectionDict = {}
 
         # Dictionary keyed on section name that contains the string at a given index
         # Example:
@@ -319,10 +331,17 @@ class ElfBinary(binary.Binary):
         return self.bytesToInt(exeMap.read(size))
 
 
-    def getStringFromTable(self, sectionName, index):
+    def getStringFromTable( self, section, index ):
+        """
+        Description:    Looks up a string starting at an offset into a section.
 
-        if sectionName not in self._sections or self._sections[sectionName].data is None:
-            raise AttributeError("The binary does not have the required section to look up a string.")
+        Arguments:      section - ElfSection object that is a string table.
+                        index   - Starting location of the string in the section.
+
+        Return:         The string found in the string table.
+        """
+
+        sectionName = section.name
 
         # If this section has never been queried before, add it to the dictionary
         if sectionName not in self._strings:
@@ -331,9 +350,6 @@ class ElfBinary(binary.Binary):
         # If this string has been asked for before, return the saved value
         elif index in self._strings and index in self._strings[sectionName]:
             return self._strings[sectionName][index]
-
-        # Save a reference to the section for convenience
-        section = self._sections[sectionName]
 
         # Make sure that the index is sane
         if index < 0 or index >= section.size:
@@ -603,7 +619,7 @@ class ElfBinary(binary.Binary):
 
             newSegment.alignment = self.readInt(exeMap, addrSize)
 
-            self.segments.append(newSegment)
+            self._segments.append(newSegment)
 
 
     def parseSectionHdrs( self, exeMap ):
@@ -636,13 +652,13 @@ class ElfBinary(binary.Binary):
             # it can be used to identify the others in the next step
             if entry == self._sectionNameIndex:
                 newSection.name = SECTION_NAME_SECTION_NAMES
-                self._sections[SECTION_NAME_SECTION_NAMES] = newSection
+                self._sectionDict[SECTION_NAME_SECTION_NAMES] = newSection
 
         # Set the data for the section that contains all section names so that
         # it can be used to look up the names of other sections.
-        sectionNameSection = self._sections[SECTION_NAME_SECTION_NAMES]
+        sectionNameSection = self._sectionDict[SECTION_NAME_SECTION_NAMES]
         exeMap.seek(sectionNameSection.fileOffset)
-        self._sections[SECTION_NAME_SECTION_NAMES].data = exeMap.read(sectionNameSection.size)
+        self._sectionList[self._sectionNameIndex].data = exeMap.read(sectionNameSection.size)
 
         # Save each section as a byte string so that the file does not need to
         # be read from anymore.
@@ -657,16 +673,12 @@ class ElfBinary(binary.Binary):
         # in the file, get the section names from the string table.
         for section in self._sectionList:
 
-            section.name = self.getStringFromTable(SECTION_NAME_SECTION_NAMES, section._nameIndex)
+            section.name = self.getStringFromTable(self._sectionList[self._sectionNameIndex], section.nameIndex)
 
             # Now that the section's name is known, it can be correctly assigned
-            self._sections[section.name] = section
+            self._sectionDict[section.name] = section
 
             logger.info(f"{section}")
-
-        # Remove the list of sections because they have been converted into a
-        # dictionary keyed on section name.
-        del self._sectionList
 
 
     def addSymbol( self, exeMap, symbol ):
@@ -682,13 +694,15 @@ class ElfBinary(binary.Binary):
         Return:         None
         """
 
-        codeSection = self._sections[SECTION_NAME_TEXT]
-        globSection = self._sections[SECTION_NAME_GLOBAL_OFFSET_TABLE]
+        codeSection = self._sectionDict[SECTION_NAME_TEXT]
+        globSection = self._sectionDict[SECTION_NAME_GLOBAL_OFFSET_TABLE]
         codeOffset  = codeSection.virtualAddr - codeSection.fileOffset
         globOffset  = globSection.virtualAddr - globSection.fileOffset
 
         logger.debug(f"Code offset: {codeOffset:x}")
         logger.debug(f"Glob offset: {globOffset:x}")
+
+        logger.debug(f"Symbol: {symbol}")
 
         if symbol.type == SYMBOL_TYPE_FUNCTION:
 
@@ -698,40 +712,51 @@ class ElfBinary(binary.Binary):
             # the file is no longer needed. The address offset of the .text
             # section must be subtracted to get the file location of the
             # function. The value for the symbol is the virtual address.
-            if symbol.value > 0 and symbol.size > 0:
-                exeMap.seek(symbol.value - codeOffset)
-                symbol.assembly = exeMap.read(symbol.size)
+            exeMap.seek(symbol.value - codeOffset)
+            symbol.assembly = exeMap.read(symbol.size)
 
-                self.functionsByName[symbol.name] = symbol
+            self.functionsByName[symbol.name] = symbol
+
+            # If the symbol's value is 0, then the address must be figured out
+            # later when resolving external symbols.
+            if symbol.value > 0 and symbol.size > 0:
                 self.functionsByAddr[symbol.value] = symbol
-                logger.info(f"Function symbol: {symbol}")
 
         elif symbol.type == SYMBOL_TYPE_OBJECT:
             # TODO: Adjust the address according to the global offset. This can
             # only be done after resolving external symbols.
             self.objectsByName[symbol.name] = symbol
             self.objectsByAddr[symbol.value] = symbol
-            logger.info(f"Global symbol: {symbol}")
+
+        else:
+
+            logger.debug(f"{symbol.name}: Unknown symbol type found: {symbol.type}")
 
 
-    def parseSymbolTable( self, exeMap, sectionName, stringTable ):
+    def parseSymbolTable( self, exeMap, section ):
         """
         Description:    Parses the symbol table and creates symbol objects for
-                        all entries.
+                        all entries. The string table is the section found by
+                        looking at the link member of the symbol table section.
 
-        Arguments:      exeMap      - File descriptor of the open binary file.
-                        sectionName - Name of the symbol table section.
-                        stringTable - Name of the section that holds the strings.
+        Arguments:      exeMap  - Memory map object of the binary file.
+                        section - ElfSection object that is a symbol table.
 
         Return:         None
         """
 
-        symbolData  = self._sections[sectionName].data
+        symbolData  = section.data
+
+        # Determine the size of each entry. This is saved in the section's
+        # information in the ELF header.
+        entrySize = section.entrySize
 
         if self.arch == binary.BIN_ARCH_32BIT:
-            for pos in range(0, self._sections[sectionName].size, 16):
+            for pos in range(0, section.size, entrySize):
                 newSymbol = ElfSymbol()
-                newSymbol.setName(self.getStringFromTable(stringTable, self.bytesToInt(symbolData[pos:pos+4])))
+                symbolIndex            = self.bytesToInt(symbolData[pos:pos+4])
+                stringTable            = self._sectionList[section.link]
+                newSymbol.setName(self.getStringFromTable(stringTable, symbolIndex))
                 newSymbol.value        = self.bytesToInt(symbolData[pos+4:pos+8])
                 newSymbol.size         = self.bytesToInt(symbolData[pos+8:pos+12])
                 symbolInfo             = symbolData[pos+12]
@@ -744,10 +769,12 @@ class ElfBinary(binary.Binary):
                 self.addSymbol(exeMap, newSymbol)
 
         elif self.arch == binary.BIN_ARCH_64BIT:
-            logger.info(f"Section size: {self._sections[sectionName].size}")
-            for pos in range(0, self._sections[sectionName].size, 24):
+            logger.info(f"Section size: {section.size}")
+            for pos in range(0, section.size, entrySize):
                 newSymbol = ElfSymbol()
-                newSymbol.setName(self.getStringFromTable(stringTable, self.bytesToInt(symbolData[pos:pos+4])))
+                symbolIndex            = self.bytesToInt(symbolData[pos:pos+4])
+                stringTable            = self._sectionList[section.link]
+                newSymbol.setName(self.getStringFromTable(stringTable, symbolIndex))
                 symbolInfo             = symbolData[pos+4]
                 newSymbol.bind         = symbolInfo >> 4
                 newSymbol.type         = symbolInfo & 0xf
@@ -762,6 +789,87 @@ class ElfBinary(binary.Binary):
         return True
 
 
+    def parseRelocation( self, exeMap, section, hasAddend ):
+        """
+        Description:    Parses relocation sections.
+
+        Arguments:      exeMap      - Memory map of executable file.
+                        section     - ElfSection object that is a relocation.
+                        hasAddent   - Whether this relocation has an addend.
+
+        Return:         None
+        """
+
+        relocData = section.data
+        addrSize  = self.addrSize
+
+        logger.debug(f"Parsing relocations for {section.name}")
+
+        # Determine the size of each entry. This is saved in the section's
+        # information in the ELF header.
+        entrySize = section.entrySize
+
+        addend = 0
+
+        # Iterate through each entry. The size of each member is the size of an
+        # address. The layout of each entry is as follows:
+        #   - address
+        #   - info, which is a combination of symbol table index and relocation
+        #     type
+        #   - addend (only if hasAddend is True)
+
+        for pos in range(0, section.size, entrySize):
+            offset = self.bytesToInt(relocData[pos:pos+addrSize])
+            info   = self.bytesToInt(relocData[pos+addrSize:pos+2*addrSize])
+
+            if hasAddend:
+                addend = self.bytesToInt(relocData[pos+2*addrSize:pos+3*addrSize], True)
+
+            if self.arch == binary.BIN_ARCH_32BIT:
+                symTableIndex = info >> 8
+                relocType     = info & 0xff
+
+            elif self.arch == binary.BIN_ARCH_64BIT:
+                symTableIndex = info >> 32
+                relocType     = info & 0xffffffff
+
+            logger.debug(f"offset: {offset+addend:x}, info: {info:x}")
+            logger.debug(f"symbol table index: {symTableIndex}")
+            logger.debug(f"type: {RELOC_TYPE_STR[relocType]}")
+            logger.debug(f"symbol table: {section.info}")
+
+            # TODO: Use the value in the GOT to fill out the original address
+            # of the symbol name. The value at the location pointed to by the
+            # offset into the GOT is the location in the PLT.
+
+            # Get the symbol's name and set its value because it is known now.
+            if relocType == RELOC_TYPE_JUMP_SLOT and section.link > 0:
+                # Get the symbol's string table index
+                stringTableIndex = self._sectionList[section.link].link
+                stringTableName  = self._sectionList[stringTableIndex].name
+                stringTableList  = list(self._strings[stringTableName].values())
+                symbolName       = stringTableList[symTableIndex]
+                symbol = self.functionsByName[symbolName]
+
+                gotSection = self._sectionList[section.info]
+                gotOffset  = offset - gotSection.virtualAddr
+
+                logger.info(f"GOT offset: {gotOffset:x}")
+                pltSymbolAddr = self.bytesToInt(gotSection.data[gotOffset:gotOffset+self.addrSize])
+
+                # TODO: Read the explanation about how the GOT updates the PLT
+                # on the first call. The PLT address in the GOT is off by 6 bytes,
+                # but there must be a reason for that. If it's just because it
+                # is one instruction past where the actual start of the PLT entry
+                # is, then PLT will need to be disassembled before attempting
+                # to resolve external symbols. https://0x00sec.org/t/linux-internals-the-art-of-symbol-resolution/1488
+                logger.info(f"PLT address: {pltSymbolAddr:x}")
+
+                # Update the symbol's address and add the symbol to the symbols
+                # keyed by address.
+                symbol.value = offset
+                self.functionsByAddr[offset] = symbol
+
     def analyze( self, exeMap ):
 
         # Parse the ELF header to get basic information about the file
@@ -775,22 +883,22 @@ class ElfBinary(binary.Binary):
         # Handle sections and save them
         self.parseSectionHdrs(exeMap)
 
-        for section in self._sections:
+        for section in self._sectionList:
 
-            if section == SECTION_NAME_SYMBOL_TABLE:
+            if section.type == SECTION_TYPE_SYMBOL_TABLE:
+                logger.debug(f"symbol table: {section}")
+                logger.debug(f"strings: {self._sectionList[section.link]}")
                 self.isStripped = False
-                self.parseSymbolTable(exeMap, SECTION_NAME_SYMBOL_TABLE, SECTION_NAME_STRING_TABLE)
+                self.parseSymbolTable(exeMap, section)
 
-            elif section == SECTION_NAME_DYN_SYMBOL_TABLE:
-                self.parseSymbolTable(exeMap, SECTION_NAME_DYN_SYMBOL_TABLE, SECTION_NAME_DYN_STRING_TABLE)
+            elif section.type == SECTION_TYPE_DYN_SYM_TABLE:
+                self.parseSymbolTable(exeMap, section)
 
-            """
-            elif section.startswith(".rela"):
-                pass
+            elif section.type == SECTION_TYPE_RELOC_ADDEND:
+                self.parseRelocation(exeMap, section, True)
 
-            elif section.startswith(".rel"):
-            """
-
+            elif section.type == SECTION_TYPE_RELOC_NO_ADD:
+                self.parseRelocation(exeMap, section, False)
 
 
     def getFunctionByName(self, name):
@@ -817,7 +925,7 @@ class ElfBinary(binary.Binary):
 
     def getExecutableCode(self):
 
-        return self._sections.get(SECTION_NAME_TEXT, None)
+        return self._sectionDict.get(SECTION_NAME_TEXT, None)
 
 
 class ElfSegment():
@@ -857,12 +965,12 @@ class ElfSection():
     def __init__(self, sectionType, name=".null", nameIndex=0):
 
         if sectionType in ALLOWED_SECTION_TYPES:
-            self._type = sectionType
+            self.type = sectionType
 
         else:
             raise binary.AnalysisError(f"An invalid section type was found: {sectionType}")
 
-        self._nameIndex  = nameIndex
+        self.nameIndex   = nameIndex
         self.name        = name
         self.flags       = 0
         self.virtualAddr = 0
@@ -879,15 +987,16 @@ class ElfSection():
 
         return (
             f"name: {self.name},"
-            f" type: {SECTION_TYPE_STR[self._type]},"
+            f" type: {SECTION_TYPE_STR[self.type]},"
             f" flags: {self.flags},"
             f" virtualAddr: {hex(self.virtualAddr)},"
             f" fileOffset: {hex(self.fileOffset)},"
             f" size: {self.size},"
             f" link: {self.link},"
             f" info: {self.info},"
-            f" alignment: {self.alignment}"
-            f" entrySize: {self.entrySize}"
+            f" alignment: {self.alignment},"
+            f" entrySize: {self.entrySize},"
+            f" nameIndex: {self.nameIndex}"
         )
 
 

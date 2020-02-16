@@ -82,7 +82,7 @@ def analyzeFile(filename):
     # Otherwise, disassemble all functions in the executable
     else:
 
-        instructions = x64asm.disassemble(exe._sections[".plt"].data, exe._sections[".plt"].virtualAddr)
+        instructions = x64asm.disassemble(exe._sectionDict[".plt"].data, exe._sectionDict[".plt"].virtualAddr)
 
         logger.info("procedure linkage table:")
         for inst in instructions:
@@ -92,6 +92,7 @@ def analyzeFile(filename):
         for funcName in exe.functionsByName:
 
             function = exe.getFunctionByName(funcName)
+            logger.info(f"function: {function}")
 
             if exe.getISA() == binary.ISA_X86_64:
 

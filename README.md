@@ -17,8 +17,8 @@ optional arguments:
 
 ## TODO
 
-* Memory map the file so that it can be opened once, read, closed, and only work with the buffer after that to avoid I/O costs
 * Handle relocations so that all symbols can be resolved.
+* Take alignment into account when looking for functions in a stripped binary. Functions need to start at an offset where address % alignment == 0
 * Convert sources or maybe all operands to a list to be acted on together. This can simplify handling immediates and maybe other things if destination is included.
 * Change error handling to be try blocks and raising exceptions instead of checking return values. Checking handleOperandAddressing() needs to be done in the case that an invalid segment register is used.
 * In order to find functions in a stripped binary, start at beginning of .text section. Start disassembling and consider all jumps that can be taken. If there are no jumps left and a ret instruction is reached, then that is the end of the function. All instructions after it (not including NOPs) are another function.
