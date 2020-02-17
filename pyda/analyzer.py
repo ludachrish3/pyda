@@ -59,6 +59,9 @@ def analyzeFile(filename):
 
         logger.info(exe)
 
+    # Resolve external symbols
+    exe.resolveExternalSymbols()
+
     # If the executable did not have a symbol table, then the .text section
     # needs to be broken up into functions and disassembled
     if exe.isStripped:
@@ -82,27 +85,21 @@ def analyzeFile(filename):
     # Otherwise, disassemble all functions in the executable
     else:
 
-        instructions = x64asm.disassemble(exe._sectionDict[".plt"].data, exe._sectionDict[".plt"].virtualAddr)
-
-        logger.info("procedure linkage table:")
-        for inst in instructions:
-            logger.info(f"{inst}")
-
         # Disassemble all functions in the executable
-        for funcName in exe.functionsByName:
+        for funcName, function in exe.functionsByName.items():
 
-            function = exe.getFunctionByName(funcName)
             logger.info(f"function: {function}")
 
             if exe.getISA() == binary.ISA_X86_64:
 
-                instructions = x64asm.disassemble(function.assembly, function.addr)
-                logger.info(f"{funcName} Instructions (src, dst)")
-
+                instructions = x64asm.disassemble(function.assembly, function.address)
                 function.instructions = instructions
 
-                for inst in instructions:
-                    logger.info(inst)
+            for inst in instructions:
+                logger.info(f"{inst}")
+
+    # TODO: Update instructions to use symbols instead of numbers for all known
+    # symbols because they should all be known by this point.
 
 
 

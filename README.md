@@ -17,14 +17,12 @@ optional arguments:
 
 ## TODO
 
-* Handle relocations so that all symbols can be resolved.
+* Figure out what to do with other global symbols that aren't related to PLT, like __init, __libc_start_main, etc.
 * Take alignment into account when looking for functions in a stripped binary. Functions need to start at an offset where address % alignment == 0
 * Convert sources or maybe all operands to a list to be acted on together. This can simplify handling immediates and maybe other things if destination is included.
 * Change error handling to be try blocks and raising exceptions instead of checking return values. Checking handleOperandAddressing() needs to be done in the case that an invalid segment register is used.
 * In order to find functions in a stripped binary, start at beginning of .text section. Start disassembling and consider all jumps that can be taken. If there are no jumps left and a ret instruction is reached, then that is the end of the function. All instructions after it (not including NOPs) are another function.
 * Come up with a way to find functions in stripped binaries
-* Figure out how global variables and functions are linked to values (like how does calling printf() get figured out)
-* Resolve addresses of external symbols
 * Get 100% code coverage in tests (or close to it)
 * Cross compile for the Raspberry Pi
 * Create a disassembler for ARM (whatever version is on the Raspberry Pi v4)

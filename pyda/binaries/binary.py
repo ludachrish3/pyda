@@ -16,69 +16,92 @@ ISA_IA_64       = "Intel IA-64"
 BIN_ENDIAN_LITTLE = "little"
 BIN_ENDIAN_BIG    = "big"
 
-class Binary(metaclass=abc.ABCMeta):
+class Binary(abc.ABC):
 
-    @property
-    def isStripped(self):
+    @abc.abstractmethod
+    def analyze(self, exeMap):
+        """
+        Parse a binary file to get its basic arch info, sections, and symbols.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def analyze(self, fd):
+    def resolveExternalSymbols(self, exeMap):
         """
-        Parse a binary file to get its basic arch info and sections
+        Resolve all external symbols if there are any.
         """
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def setArch(self, arch):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def setEndianness(self, endianness):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def setISA(self, isa):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def getISA(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def getFunctionByName(self, name):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def getFunctionByAddr(self, addr):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def getExecutableCode(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def setStartAddr(self, startAddr):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def getStartAddr(self):
-        pass
+        raise NotImplementedError
 
 
-class Function():
+class Symbol(abc.ABC):
 
-    def __init__(self, name, addr, size, assembly):
+    @abc.abstractmethod
+    def setName(self, name):
+        raise NotImplementedError
 
-        self.name         = name
-        self.addr         = addr
-        self.size         = size
-        self.assembly     = assembly
-        self.instructions = []
+    @abc.abstractmethod
+    def getName(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def setAddress(self, address):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def getAddress(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def setSize(self, size):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def getSize(self):
+        raise NotImplementedError
 
     def __repr__(self):
 
-        return f"name: {self.name}, addr: 0x{self.addr:0>8x}, size: {self.size}"
+        return (
+            f"name: {self.getName()}, "
+            f"addr: 0x{self.getAddr():0>8x}, "
+            f"size: {self.size}"
+        )
 
 class AnalysisError(Exception):
     pass
