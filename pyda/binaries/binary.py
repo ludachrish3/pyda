@@ -49,11 +49,7 @@ class Binary(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def getFunctionByName(self, name):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def getFunctionByAddr(self, addr):
+    def getSymbol(self, symbolIdentifier):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -71,37 +67,53 @@ class Binary(abc.ABC):
 
 class Symbol(abc.ABC):
 
-    @abc.abstractmethod
     def setName(self, name):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+        if len(name) == 0:
+            self.name = None
+
+        else:
+            self.name = name
+
+
     def getName(self):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+        return self.name
+
+
     def setAddress(self, address):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+        self.address = address
+
+
     def getAddress(self):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+        return self.address
+
+
     def setSize(self, size):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+        self.size = size
+
+
     def getSize(self):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+        return self.size
+
+
     def setIsExternal(self, isExternal):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+        self.isExternal = isExternal
+
+
+    def setIsExternal(self, isExternal):
+
+        self.isExternal = isExternal
+
+
     def getIsExternal(self):
-        raise NotImplementedError
+
+        return self.isExternal
 
     def __repr__(self):
 
@@ -110,6 +122,25 @@ class Symbol(abc.ABC):
             f"addr: 0x{self.getAddr():0>8x}, "
             f"size: {self.size}"
         )
+
+class Function(Symbol):
+
+    def setInstructions(self, instructions):
+
+        self.instructions = instructions
+
+    def getInstructions(self):
+
+        return self.instructions
+
+    def setAssembly(self, assembly):
+
+        self.assembly = assembly
+
+    def getAssembly(self):
+
+        return self.assembly
+
 
 class AnalysisError(Exception):
     pass

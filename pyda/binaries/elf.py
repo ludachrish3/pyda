@@ -301,13 +301,9 @@ class ElfBinary(binary.Binary):
         # }
         self._strings = {}
 
-        # TODO: Update the key for the symbol table to be whatever is useful
-        # Right now it is one big dictionary keyed on value, but maybe split it
-        # up by type and key on something else if it makes more sense.
-        self.functionsByName = {}
-        self.functionsByAddr = {}
-        self.objectsByName = {}
-        self.objectsByAddr = {}
+        # Dictionary to hold symbols. Each symbol has an entry for its address
+        # and its name, if a name can be found.
+        self.symbols = {}
 
         # These values are determined by looking at the differences between the
         # virtual addresses and the file offsets of the code and Global Offset
@@ -716,19 +712,19 @@ class ElfBinary(binary.Binary):
             # none until they are resolved.
             if exeMap is not None:
                 exeMap.seek(symbol.getAddress() - self.codeOffset)
-                symbol.assembly = exeMap.read(symbol.getSize())
+                symbol.setAssembly(exeMap.read(symbol.getSize()))
 
-            self.functionsByName[symbol.getName()] = symbol
+            self.symbols[symbol.getName()] = symbol
 
             # If the symbol's value is 0, then the address must be figured out
             # later when resolving external symbols.
             if symbol.getAddress() > 0 and symbol.size > 0:
-                self.functionsByAddr[symbol.getAddress()] = symbol
+                self.symbols[symbol.getAddress()] = symbol
 
         else:
 
-            self.objectsByName[symbol.getName()]    = symbol
-            self.objectsByAddr[symbol.getAddress()] = symbol
+            self.symbols[symbol.getName()]    = symbol
+            self.symbols[symbol.getAddress()] = symbol
 
 
     def parseSymbolTable( self, section, exeMap=None ):
@@ -865,7 +861,7 @@ class ElfBinary(binary.Binary):
                 stringTableName  = self._sectionList[stringTableIndex].name
                 stringTableList  = list(self._strings[stringTableName].values())
                 symbolName       = stringTableList[symTableIndex]
-                symbol = self.functionsByName[symbolName]
+                symbol = self.symbols[symbolName]
 
                 # Get the address to which the GOT points, which is the address
                 # that should be called by other functions. This points to the
@@ -887,10 +883,10 @@ class ElfBinary(binary.Binary):
                 # Set the assembly for the function so that it can be disassembled
                 assemblyStart = symbol.getAddress() - relocSection.virtualAddr
                 assemblyEnd = assemblyStart + relocSection.entrySize
-                symbol.assembly = relocSection.data[assemblyStart:assemblyEnd]
+                symbol.setAssembly(relocSection.data[assemblyStart:assemblyEnd])
                 symbol.setIsExternal(True)
 
-                self.functionsByAddr[relocSymbolAddr] = symbol
+                self.symbols[relocSymbolAddr] = symbol
 
 
     def analyze( self, exeMap ):
@@ -969,14 +965,9 @@ class ElfBinary(binary.Binary):
                 self.parseRelocation(section, False)
 
 
-    def getFunctionByName(self, name):
+    def getSymbol(self, symbolIdentifier):
 
-        return self.functionsByName.get(name, None)
-
-
-    def getFunctionByAddr(self, address):
-
-        return self.functionsByAddr.get(address, None)
+        return self.symbols.get(symbolIdentifier, None)
 
 
     def getExecutableCode(self):
@@ -1070,50 +1061,6 @@ class ElfSymbol( binary.Symbol ):
         self.isExternal = False
 
 
-    def setName(self, name):
-
-        if len(name) == 0:
-            self.name = None
-
-        else:
-            self.name = name
-
-
-    def getName(self):
-
-        return self.name
-
-
-    def setAddress(self, address):
-
-        self.address = address
-
-
-    def getAddress(self):
-
-        return self.address
-
-
-    def setSize(self, size):
-
-        self.size = size
-
-
-    def getSize(self):
-
-        return self.size
-
-
-    def setIsExternal(self, isExternal):
-
-        self.isExternal = isExternal
-
-
-    def getExternal(self):
-
-        return self.isExternal
-
-
     def __repr__(self):
 
         return (
@@ -1127,7 +1074,7 @@ class ElfSymbol( binary.Symbol ):
         )
 
 
-class ElfFunction( ElfSymbol ):
+class ElfFunction( binary.Function, ElfSymbol ):
 
     def __init__( self, name, address, size, bind, visibility, sectionIndex ):
 
@@ -1137,10 +1084,6 @@ class ElfFunction( ElfSymbol ):
         self.instructions = []  # Only used if the symbol is a function
 
     def __repr__( self ):
-
-        # Backslashes are not allowed in braces in an f-string, so define the
-        # newline character for use in the f-string.
-        nl = "\n"
 
         return (
             f"{super().__repr__()}, "

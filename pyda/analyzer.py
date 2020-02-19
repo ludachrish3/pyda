@@ -86,17 +86,20 @@ def analyzeFile(filename):
     else:
 
         # Disassemble all functions in the executable
-        for funcName, function in exe.functionsByName.items():
+        for symbolKey, symbol in exe.symbols.items():
 
-            logger.info(f"function: {function}")
+            # Disassemble each function. Every symbol has an entry for its name
+            # and its address, so only handle symbols by name to avoid redundancy.
+            if isinstance(symbol, binary.Function) and type(symbolKey) == str:
+                logger.info(f"function: {symbol}")
 
-            if exe.getISA() == binary.ISA_X86_64:
+                if exe.getISA() == binary.ISA_X86_64:
 
-                instructions = x64asm.disassemble(function.assembly, function.address)
-                function.instructions = instructions
+                    instructions = x64asm.disassemble(symbol.getAssembly(), symbol.getAddress())
+                    symbol.setInstructions(instructions)
 
-            for inst in instructions:
-                logger.info(f"{inst}")
+                for inst in instructions:
+                    logger.info(f"{inst}")
 
     # TODO: Update instructions to use symbols instead of numbers for all known
     # symbols because they should all be known by this point.
