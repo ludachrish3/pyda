@@ -86,7 +86,7 @@ def analyzeFile(filename):
     else:
 
         # Disassemble all functions in the executable
-        for symbolKey, symbol in exe.symbols.items():
+        for symbolKey, symbol in exe.getSymbols().items():
 
             # Disassemble each function. Every symbol has an entry for its name
             # and its address, so only handle symbols by name to avoid redundancy.

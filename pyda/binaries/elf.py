@@ -303,7 +303,7 @@ class ElfBinary(binary.Binary):
 
         # Dictionary to hold symbols. Each symbol has an entry for its address
         # and its name, if a name can be found.
-        self.symbols = {}
+        self._symbols = {}
 
         # These values are determined by looking at the differences between the
         # virtual addresses and the file offsets of the code and Global Offset
@@ -714,17 +714,7 @@ class ElfBinary(binary.Binary):
                 exeMap.seek(symbol.getAddress() - self.codeOffset)
                 symbol.setAssembly(exeMap.read(symbol.getSize()))
 
-            self.symbols[symbol.getName()] = symbol
-
-            # If the symbol's value is 0, then the address must be figured out
-            # later when resolving external symbols.
-            if symbol.getAddress() > 0 and symbol.size > 0:
-                self.symbols[symbol.getAddress()] = symbol
-
-        else:
-
-            self.symbols[symbol.getName()]    = symbol
-            self.symbols[symbol.getAddress()] = symbol
+        self.setSymbol(symbol)
 
 
     def parseSymbolTable( self, section, exeMap=None ):
@@ -861,7 +851,11 @@ class ElfBinary(binary.Binary):
                 stringTableName  = self._sectionList[stringTableIndex].name
                 stringTableList  = list(self._strings[stringTableName].values())
                 symbolName       = stringTableList[symTableIndex]
-                symbol = self.symbols[symbolName]
+
+                logger.info(f"Symbol name: {symbolName}")
+                symbol = self.getSymbol(symbolName)
+
+                logger.info(f"Symbol: {symbol}")
 
                 # Get the address to which the GOT points, which is the address
                 # that should be called by other functions. This points to the
@@ -886,7 +880,7 @@ class ElfBinary(binary.Binary):
                 symbol.setAssembly(relocSection.data[assemblyStart:assemblyEnd])
                 symbol.setIsExternal(True)
 
-                self.symbols[relocSymbolAddr] = symbol
+                self.setSymbol(symbol)
 
 
     def analyze( self, exeMap ):
@@ -963,11 +957,6 @@ class ElfBinary(binary.Binary):
 
             elif section.type == SECTION_TYPE_RELOC_NO_ADD:
                 self.parseRelocation(section, False)
-
-
-    def getSymbol(self, symbolIdentifier):
-
-        return self.symbols.get(symbolIdentifier, None)
 
 
     def getExecutableCode(self):

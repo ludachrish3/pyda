@@ -16,58 +16,77 @@ ISA_IA_64       = "Intel IA-64"
 BIN_ENDIAN_LITTLE = "little"
 BIN_ENDIAN_BIG    = "big"
 
-class Binary(abc.ABC):
+class Binary( abc.ABC ):
 
     @abc.abstractmethod
-    def analyze(self, exeMap):
+    def analyze( self, exeMap ):
         """
         Parse a binary file to get its basic arch info, sections, and symbols.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def resolveExternalSymbols(self, exeMap):
+    def resolveExternalSymbols( self, exeMap ):
         """
         Resolve all external symbols if there are any.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def setArch(self, arch):
+    def setArch( self, arch ):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def setEndianness(self, endianness):
+    def setEndianness( self, endianness ):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def setISA(self, isa):
+    def setISA( self, isa ):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def getISA(self):
+    def getISA( self ):
+        raise NotImplementedError
+
+
+    def getSymbol( self, symbolIdentifier ):
+
+        return self._symbols.get(symbolIdentifier, None)
+
+
+    def getSymbols( self ):
+
+        return self._symbols
+
+
+    def setSymbol( self, symbol ):
+
+        name    = symbol.getName()
+        address = symbol.getAddress()
+
+        if name not in [ None, "" ]:
+            self._symbols[name] = symbol
+
+        if address != 0:
+            self._symbols[address] = symbol
+
+
+    @abc.abstractmethod
+    def getExecutableCode( self ):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def getSymbol(self, symbolIdentifier):
+    def setStartAddr( self, startAddr ):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def getExecutableCode(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def setStartAddr(self, startAddr):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def getStartAddr(self):
+    def getStartAddr( self ):
         raise NotImplementedError
 
 
-class Symbol(abc.ABC):
+class Symbol( abc.ABC ):
 
-    def setName(self, name):
+    def setName( self, name ):
 
         if len(name) == 0:
             self.name = None
@@ -76,46 +95,46 @@ class Symbol(abc.ABC):
             self.name = name
 
 
-    def getName(self):
+    def getName( self ):
 
         return self.name
 
 
-    def setAddress(self, address):
+    def setAddress( self, address ):
 
         self.address = address
 
 
-    def getAddress(self):
+    def getAddress( self ):
 
         return self.address
 
 
-    def setSize(self, size):
+    def setSize( self, size ):
 
         self.size = size
 
 
-    def getSize(self):
+    def getSize( self ):
 
         return self.size
 
 
-    def setIsExternal(self, isExternal):
+    def setIsExternal( self, isExternal ):
 
         self.isExternal = isExternal
 
 
-    def setIsExternal(self, isExternal):
+    def setIsExternal( self, isExternal ):
 
         self.isExternal = isExternal
 
 
-    def getIsExternal(self):
+    def getIsExternal( self ):
 
         return self.isExternal
 
-    def __repr__(self):
+    def __repr__( self ):
 
         return (
             f"name: {self.getName()}, "
@@ -123,26 +142,26 @@ class Symbol(abc.ABC):
             f"size: {self.size}"
         )
 
-class Function(Symbol):
+class Function( Symbol ):
 
-    def setInstructions(self, instructions):
+    def setInstructions( self, instructions ):
 
         self.instructions = instructions
 
-    def getInstructions(self):
+    def getInstructions( self ):
 
         return self.instructions
 
-    def setAssembly(self, assembly):
+    def setAssembly( self, assembly ):
 
         self.assembly = assembly
 
-    def getAssembly(self):
+    def getAssembly( self ):
 
         return self.assembly
 
 
-class AnalysisError(Exception):
+class AnalysisError( Exception ):
     pass
 
 
