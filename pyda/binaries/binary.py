@@ -95,6 +95,14 @@ class Symbol(abc.ABC):
     def getSize(self):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def setIsExternal(self, isExternal):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def getIsExternal(self):
+        raise NotImplementedError
+
     def __repr__(self):
 
         return (

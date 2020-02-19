@@ -888,6 +888,7 @@ class ElfBinary(binary.Binary):
                 assemblyStart = symbol.getAddress() - relocSection.virtualAddr
                 assemblyEnd = assemblyStart + relocSection.entrySize
                 symbol.assembly = relocSection.data[assemblyStart:assemblyEnd]
+                symbol.setIsExternal(True)
 
                 self.functionsByAddr[relocSymbolAddr] = symbol
 
@@ -1066,6 +1067,8 @@ class ElfSymbol( binary.Symbol ):
         self.type = symbolType
         self.visibility = visibility
         self.sectionIndex = sectionIndex
+        self.isExternal = False
+
 
     def setName(self, name):
 
@@ -1075,25 +1078,41 @@ class ElfSymbol( binary.Symbol ):
         else:
             self.name = name
 
+
     def getName(self):
 
         return self.name
+
 
     def setAddress(self, address):
 
         self.address = address
 
+
     def getAddress(self):
 
         return self.address
+
 
     def setSize(self, size):
 
         self.size = size
 
+
     def getSize(self):
 
         return self.size
+
+
+    def setIsExternal(self, isExternal):
+
+        self.isExternal = isExternal
+
+
+    def getExternal(self):
+
+        return self.isExternal
+
 
     def __repr__(self):
 
