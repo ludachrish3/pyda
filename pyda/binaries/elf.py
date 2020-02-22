@@ -723,8 +723,8 @@ class ElfBinary(binary.Binary):
                         all entries. The string table is the section found by
                         looking at the link member of the symbol table section.
 
-        Arguments:      exeMap  - Memory map object of the binary file.
-                        section - ElfSection object that is a symbol table.
+        Arguments:      section - ElfSection object that is a symbol table.
+                        exeMap  - Memory map object of the binary file.
 
         Return:         None
         """
@@ -769,7 +769,9 @@ class ElfBinary(binary.Binary):
 
                 # The names of section symbols are not set by the symbol table,
                 # so looking them up based on the saved section info is needed.
-                name = self._sectionList[newSymbol.sectionIndex].name
+                # The null section is skipped by this indexing, so add 1 to the
+                # section index value to find the correct section.
+                name = self._sectionList[newSymbol.sectionIndex+1].name
                 newSymbol = ElfSymbol(name, address, size, symbolType, bind, visibility, sectionIndex)
 
             else:
@@ -985,14 +987,14 @@ class ElfSegment():
     def __repr__(self):
 
         return (
-            f"type: {SEGMENT_TYPE_STR[self.type]},"
-            f" flags: {self.flags},"
-            f" offset: {self.offset},"
-            f" virtualAddr: {self.virtualAddr},"
-            f" physicalAddr: {self.physicalAddr},"
-            f" size: {self.size},"
-            f" memorySize: {self.memorySize},"
-            f" alignment: {self.alignment}"
+            f"type: {SEGMENT_TYPE_STR[self.type]}, "
+            f"flags: {self.flags}, "
+            f"offset: {self.offset}, "
+            f"virtualAddr: {self.virtualAddr}, "
+            f"physicalAddr: {self.physicalAddr}, "
+            f"size: {self.size}, "
+            f"memorySize: {self.memorySize}, "
+            f"alignment: {self.alignment}"
         )
 
 
@@ -1022,17 +1024,17 @@ class ElfSection():
     def __repr__(self):
 
         return (
-            f"name: {self.name},"
-            f" type: {SECTION_TYPE_STR[self.type]},"
-            f" flags: {self.flags},"
-            f" virtualAddr: {hex(self.virtualAddr)},"
-            f" fileOffset: {hex(self.fileOffset)},"
-            f" size: {self.size},"
-            f" link: {self.link},"
-            f" info: {self.info},"
-            f" alignment: {self.alignment},"
-            f" entrySize: {self.entrySize},"
-            f" nameIndex: {self.nameIndex}"
+            f"name: {self.name}, "
+            f"type: {SECTION_TYPE_STR[self.type]}, "
+            f"flags: {self.flags}, "
+            f"virtualAddr: {hex(self.virtualAddr)}, "
+            f"fileOffset: {hex(self.fileOffset)}, "
+            f"size: {self.size}, "
+            f"link: {self.link}, "
+            f"info: {self.info}, "
+            f"alignment: {self.alignment}, "
+            f"entrySize: {self.entrySize}, "
+            f"nameIndex: {self.nameIndex}"
         )
 
 
@@ -1044,7 +1046,7 @@ class ElfSymbol( binary.Symbol ):
         self.setAddress(address)
         self.setSize(size)
         self.bind = bind
-        self.type = symbolType
+        self.setType(symbolType)
         self.visibility = visibility
         self.sectionIndex = sectionIndex
         self.isExternal = False
@@ -1056,7 +1058,7 @@ class ElfSymbol( binary.Symbol ):
             f"name: {self.getName()}, "
             f"address: {self.getAddress():0>8x}, "
             f"size: {self.getSize()}, "
-            f"type: {SYMBOL_TYPE_STR[self.type]}, "
+            f"type: {SYMBOL_TYPE_STR[self.getType()]}, "
             f"bind: {SYMBOL_BIND_STR[self.bind]}, "
             f"visibility: {SYMBOL_VIS_STR[self.visibility]}, "
             f"section index: {self.sectionIndex}"

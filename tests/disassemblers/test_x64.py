@@ -1,7 +1,6 @@
 import pytest
 import re
 
-from pyda.binaries.binary import Function
 from pyda.disassemblers.x64.asm import disassemble
 from pyda.disassemblers.x64.instructions import X64Instruction
 from pyda.disassemblers.x64.definitions import *
@@ -847,9 +846,6 @@ class TestX64():
 
     def instruction_helper( self, mnemonic, src, dst, assembly ):
 
-        # Create a new function with the assembly and disassemble it
-        function = Function(name='testFunc', addr=0, size=0, assembly=assembly)
-
         if dst == "":
             assemblyRe = re.compile(r'^\s*0:\s+{assembly}\s+{mnemonic}\s+{src}$'.format(
                 assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
@@ -860,13 +856,13 @@ class TestX64():
                 assembly=" ".join(["{:02x}".format(x) for x in list(assembly)]),
                 mnemonic=mnemonic, src=re.escape(src), dst=re.escape(dst)))
 
-        disassemble(function)
+        instructions = disassemble(assembly, 0)
 
         # Look for the expected output for the assembly instruction string
-        assemblyString = "{}".format(function.instructions[0])
+        assemblyString = "{}".format(instructions[0])
         match = assemblyRe.match(assemblyString)
 
-        assert len(function.instructions) == 1
+        assert len(instructions) == 1
         assert match is not None
 
 
@@ -1229,12 +1225,12 @@ class TestX64():
         #         Address mode | destination    | source
         modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([0x63, modRmByte])
-        self.instruction_helper("movsxd", "%ax", "%ecx", assembly)
+        self.instruction_helper("movsxd", "%eax", "%ecx", assembly)
 
         #         Address mode | destination    | source
         modRmByte = MOD_DIRECT | (REG_RCX << 3) | REG_RAX
         assembly = bytes([PREFIX_64_BIT_OPERAND, 0x63, modRmByte])
-        self.instruction_helper("movsxd", "%ax", "%rcx", assembly)
+        self.instruction_helper("movsxd", "%eax", "%rcx", assembly)
 
         ######################################
         #  MOVE BETWEEN REGISTER AND MEMORY  #

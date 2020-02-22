@@ -49,26 +49,73 @@ class Binary( abc.ABC ):
         raise NotImplementedError
 
 
-    def getSymbol( self, symbolIdentifier ):
+    def getSymbol( self, symbolIdentifier, symbolType=None ):
+        """
+        Description:    Gets a symbol by its identifier. Looking up a symbol by
+                        name only needs to be done using the symbolIdentifier.
+                        Looking up a symbol by address will also require a type
+                        to ensure the correct type of symbol is retrieved from
+                        the address.
 
-        return self._symbols.get(symbolIdentifier, None)
+        Arguments:      symbolIdentifier    - Name or address of the symbol
+                        symbolType          - Type of symbol, as defined by the
+                                              executable
 
+        Return:         Symbol object if one is found.
+                        None if no object matches the identifier and/or type.
+        """
 
-    def getSymbols( self ):
+        # There is a 1 to 1 mapping for symbol names and symbols, so just do a
+        # simple dictionary lookup.
+        if type(symbolIdentifier) == str:
 
-        return self._symbols
+            return self._symbols.get(symbolIdentifier, None)
+
+        # Looking up a symbol by address can result in a collision if two
+        # symbols happen to have the same address, like if a function beings at
+        # the start of a code section. This is resolved by also looking up the
+        # symbol by type, which is executable-defined.
+        if type(symbolIdentifier) == int:
+
+            symbolTypeDict = self._symbols.get(symbolIdentifier, None)
+            if symbolTypeDict is not None:
+                return symbolTypeDict.get(symbolType, None)
+
+        return None
 
 
     def setSymbol( self, symbol ):
+        """
+        Description:    Adds or replaces a symbol to the symbol dictionary. An
+                        entry is created by name and by address. When adding a
+                        symbol by address, the type is used to create an entry
+                        in a sub-dictionary so that symbols at the same address
+                        can be differentiated.
 
-        name    = symbol.getName()
-        address = symbol.getAddress()
+        Arguments:      symbol  - Symbol object
+
+        Return:         None
+        """
+
+        name       = symbol.getName()
+        address    = symbol.getAddress()
+        symbolType = symbol.getType()
 
         if name not in [ None, "" ]:
             self._symbols[name] = symbol
 
         if address != 0:
-            self._symbols[address] = symbol
+
+            if address not in self._symbols:
+                self._symbols[address] = {symbolType: symbol}
+
+            else:
+                self._symbols[address][symbolType] = symbol
+
+
+    def getSymbols( self ):
+
+        return self._symbols
 
 
     @abc.abstractmethod
@@ -120,9 +167,14 @@ class Symbol( abc.ABC ):
         return self.size
 
 
-    def setIsExternal( self, isExternal ):
+    def setType ( self, symbolType ):
 
-        self.isExternal = isExternal
+        self.type = symbolType
+
+
+    def getType ( self ):
+
+        return self.type
 
 
     def setIsExternal( self, isExternal ):
