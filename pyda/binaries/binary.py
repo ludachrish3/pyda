@@ -1,4 +1,5 @@
 import abc
+import ctypes
 
 BIN_ARCH_32BIT = "32-bit"
 BIN_ARCH_64BIT = "64-bit"
@@ -122,13 +123,16 @@ class Binary( abc.ABC ):
     def getExecutableCode( self ):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def setStartAddr( self, startAddr ):
-        raise NotImplementedError
 
-    @abc.abstractmethod
+    def setStartAddr( self, startAddr ):
+
+        if startAddr > 0:
+            self._startAddr = startAddr
+
+
     def getStartAddr( self ):
-        raise NotImplementedError
+
+        return self._startAddr
 
 
 class Symbol( abc.ABC ):
@@ -211,6 +215,21 @@ class Function( Symbol ):
     def getAssembly( self ):
 
         return self.assembly
+
+
+class FlexibleCStruct(ctypes.Structure):
+
+    def getDictionary( self ):
+
+        dictionary = {}
+
+        # TODO: Make this more robust. Need to handle lists
+        for field, *_  in self._fields_:
+
+            value = getattr(self, field)
+            dictionary[field] = value
+
+        return dictionary
 
 
 class AnalysisError( Exception ):

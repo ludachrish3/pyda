@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Magic numbers used to determine file types
 MAGIC_NUM_ELF = b'\x7fELF'
 
-def getBinary( fileMap ):
+def getBinary( exeMap ):
     """
     Description:    Analyzes just enough to figure out the type of file
 
@@ -29,10 +29,10 @@ def getBinary( fileMap ):
 
     # TODO: Do a more thorough check for different file types. This is only good
     # enough for ELF files.
-    fileHeader = fileMap[:4]
+    fileHeader = exeMap[:4]
 
     if fileHeader == MAGIC_NUM_ELF:
-        return elf.ElfBinary()
+        return elf.ElfBinary(exeMap)
 
     else:
         raise binary.AnalysisError("The file type could not be determined")
@@ -54,10 +54,10 @@ def analyzeFile(filename):
 
         exeMap = mmap.mmap(binaryFile.fileno(), 0, access=mmap.ACCESS_READ)
 
-        exe = getBinary(exeMap)
-        exe.analyze(exeMap)
+    exe = getBinary(exeMap)
+    exe.analyze()
 
-        logger.info(exe)
+    logger.info(exe)
 
     # Resolve external symbols
     exe.resolveExternalSymbols()
