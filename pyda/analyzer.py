@@ -104,9 +104,4 @@ def analyzeFile(filename):
     # TODO: Update instructions to use symbols instead of numbers for all known
     # symbols because they should all be known by this point.
 
-
-
-
-
-
     return None

@@ -563,9 +563,15 @@ class ElfBinary(binary.Binary):
         # Convert the strings into a list because the indices for the names are
         # an index into the list of strings, not an index into the entire
         # section where the string begins.
-        stringTableIndex = self._sectionList[section.link].link
-        stringTableName  = self._sectionList[stringTableIndex].name
-        stringTableList  = list(self._strings[stringTableName].values())
+        if section.link > 0:
+
+            stringTableIndex = self._sectionList[section.link].link
+            stringTableName  = self._sectionList[stringTableIndex].name
+            stringTableList  = list(self._strings[stringTableName].values())
+
+        else:
+
+            return
 
         # Determine which structure to overlay onto each entry
         if self.arch == binary.BIN_ARCH_32BIT and hasAddend:
@@ -585,6 +591,10 @@ class ElfBinary(binary.Binary):
 
             relocation = relocationClass.from_buffer_copy(self._exeMap[entry:entry+entrySize])
 
+            # There's not much to do if there is no name mapped to the relocation
+            if relocation.symbolIndex == 0:
+               continue
+
             if hasattr(relocation, "addend"):
                 logger.debug(f"addend: {relocation.addend:x}")
 
@@ -603,15 +613,13 @@ class ElfBinary(binary.Binary):
 
             logger.debug(f"relocation value: {relocValue:x}")
 
+            # Get the symbol by looking it up by its name
+            symbolName = stringTableList[relocation.symbolIndex]
+            symbol = self.getSymbol(symbolName)
+            logger.debug(f"Symbol {symbolName}: {symbol}")
+
             # Get the symbol's name and set its value because it is known now.
-            if relocation.type == RELOC_TYPE_JUMP_SLOT and section.link > 0:
-
-                # Get the symbol's string table index
-                symbolName       = stringTableList[relocation.symbolIndex]
-
-                symbol = self.getSymbol(symbolName)
-
-                logger.debug(f"Symbol {symbolName}: {symbol}")
+            if relocation.type == RELOC_TYPE_JUMP_SLOT:
 
                 # Figure out the address of the previous instruction so that
                 # the start of the stub is the address associated with the
@@ -631,9 +639,14 @@ class ElfBinary(binary.Binary):
                 assemblyStart = relocSection.address - relocSection.fileOffset + relocValue
                 assemblyEnd = assemblyStart + relocSection.entrySize
                 symbol.setAssembly(self._exeMap[assemblyStart:assemblyEnd])
-                symbol.setIsExternal(True)
 
-                self.setSymbol(symbol)
+            else:
+
+                symbol.setAddress(relocation.offset)
+
+            # Update the symbol now that its address is known
+            symbol.setIsExternal(True)
+            self.setSymbol(symbol)
 
 
     def analyze( self ):
@@ -940,6 +953,7 @@ class ElfFunction( binary.Function, ElfSymbol ):
 
         return (
             f"{super().__repr__()}, "
+            f"external: {self.getIsExternal()}, "
             f"number of instructions: {len(self.instructions)}"
         )
 
