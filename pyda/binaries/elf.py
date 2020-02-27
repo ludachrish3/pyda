@@ -121,30 +121,6 @@ SECTION_TYPE_GNU_HASH      = 1879048182
 SECTION_TYPE_GNU_VERNEED   = 1879048190
 SECTION_TYPE_GNU_VERSION   = 1879048191
 
-
-ALLOWED_SECTION_TYPES = [
-    SECTION_TYPE_NULL,
-    SECTION_TYPE_PROGRAM_DATA,
-    SECTION_TYPE_SYMBOL_TABLE,
-    SECTION_TYPE_STRING_TABLE,
-    SECTION_TYPE_RELOC_ADDEND,
-    SECTION_TYPE_SYMBOL_HASH,
-    SECTION_TYPE_DYNAMIC_LINK,
-    SECTION_TYPE_NOTES,
-    SECTION_TYPE_NO_DATA,
-    SECTION_TYPE_RELOC_NO_ADD,
-    SECTION_TYPE_SHARED_LIB,
-    SECTION_TYPE_DYN_SYM_TABLE,
-    SECTION_TYPE_INIT_ARRAY,
-    SECTION_TYPE_FINISH_ARRAY,
-    SECTION_TYPE_PREINIT_ARRAY,
-    SECTION_TYPE_GROUP,
-    SECTION_TYPE_MORE_INDICES,
-    SECTION_TYPE_GNU_HASH,
-    SECTION_TYPE_GNU_VERNEED,
-    SECTION_TYPE_GNU_VERSION,
-]
-
 SECTION_TYPE_STR = {
     SECTION_TYPE_NULL:          "null",
     SECTION_TYPE_PROGRAM_DATA:  "program data",
@@ -232,6 +208,89 @@ RELOC_TYPE_STR = {
     RELOC_TYPE_RELATIVE:  "relative",
 }
 
+DYN_TAG_NULL                = 0
+DYN_TAG_NEEDED              = 1
+DYN_TAG_PLT_SIZE            = 2
+DYN_TAG_PLT_GOT_ADDR        = 3
+DYN_TAG_HASH_TABLE_ADDR     = 4
+DYN_TAG_STRING_TABLE_ADDR   = 5
+DYN_TAG_SYMBOL_TABLE_ADDR   = 6
+DYN_TAG_RELA_TABLE_ADDR     = 7
+DYN_TAG_RELA_TABLE_SIZE     = 8
+DYN_TAG_RELA_ENTRY_SIZE     = 9
+DYN_TAG_STRING_TABLE_SIZE   = 10
+DYN_TAG_SYMBOL_ENTRY_SIZE   = 11
+DYN_TAG_INIT_ADDR           = 12
+DYN_TAG_FINI_ADDR           = 13
+DYN_TAG_OBJ_NAME_OFFSET     = 14
+DYN_TAG_SEARCH_PATH_OFFSET  = 15
+DYN_TAG_SYMBOLIC            = 16
+DYN_TAG_REL_TABLE_ADDR      = 17
+DYN_TAG_REL_TABLE_SIZE      = 18
+DYN_TAG_REL_ENTRY_SIZE      = 19
+DYN_TAG_PLT_RELOC_TYPE      = 20
+DYN_TAG_DEBUG               = 21
+DYN_TAG_RELOC_NOWRITE       = 22
+DYN_TAG_JUMP_RELOC_ADDR     = 23
+DYN_TAG_BIND_NOW            = 24
+DYN_TAG_INIT_ARRAY          = 25
+DYN_TAG_FINI_ARRAY          = 26
+DYN_TAG_INIT_ARRAY_SIZE     = 27
+DYN_TAG_FINI_ARRAY_SIZE     = 28
+DYN_TAG_RUN_PATH            = 29
+DYN_TAG_FLAGS               = 30
+DYN_TAG_ENCODING            = 31
+DYN_TAG_PREINIT_ARRAY       = 32
+DYN_TAG_PREINIT_ARRAY_SIZE  = 33
+
+DYN_TAG_RELOCATION_COUNT    = 0x6ffffff9
+DYN_TAG_FLAGS_1             = 0x6ffffffb
+DYN_TAG_VERSION_TABLE_ADDR  = 0x6ffffffe
+DYN_TAG_VERSION_TABLE_NUM   = 0x6fffffff
+
+
+DYNAMIC_STR = {
+    DYN_TAG_NULL:               "null",
+    DYN_TAG_NEEDED:             "needed library",
+    DYN_TAG_PLT_SIZE:           "PLT size",
+    DYN_TAG_PLT_GOT_ADDR:       "PLT/GOT address",
+    DYN_TAG_HASH_TABLE_ADDR:    "symbol hash table address",
+    DYN_TAG_STRING_TABLE_ADDR:  "string table address",
+    DYN_TAG_SYMBOL_TABLE_ADDR:  "symbol table address",
+    DYN_TAG_RELA_TABLE_ADDR:    "rela table address",
+    DYN_TAG_RELA_TABLE_SIZE:    "rela table size",
+    DYN_TAG_RELA_ENTRY_SIZE:    "rela entry size",
+    DYN_TAG_STRING_TABLE_SIZE:  "string table size",
+    DYN_TAG_SYMBOL_ENTRY_SIZE:  "symbol entry size",
+    DYN_TAG_INIT_ADDR:          "init address",
+    DYN_TAG_FINI_ADDR:          "fini address",
+    DYN_TAG_OBJ_NAME_OFFSET:    "shared object name offset",
+    DYN_TAG_SEARCH_PATH_OFFSET: "search path name offset",
+    DYN_TAG_SYMBOLIC:           "resolve before link",
+    DYN_TAG_REL_TABLE_ADDR:     "rel table address",
+    DYN_TAG_REL_TABLE_SIZE:     "rel table size",
+    DYN_TAG_REL_ENTRY_SIZE:     "rel entry size",
+    DYN_TAG_PLT_RELOC_TYPE:     "PLT relocation type",
+    DYN_TAG_DEBUG:              "debug",
+    DYN_TAG_RELOC_NOWRITE:      "relocate non-writable segment",
+    DYN_TAG_JUMP_RELOC_ADDR:    "PLT relocation address",
+    DYN_TAG_BIND_NOW:           "bind now",
+    DYN_TAG_INIT_ARRAY:         "init array address",
+    DYN_TAG_FINI_ARRAY:         "fini array address",
+    DYN_TAG_INIT_ARRAY_SIZE:    "init array size",
+    DYN_TAG_FINI_ARRAY_SIZE:    "fini array size",
+    DYN_TAG_RUN_PATH:           "run path",
+    DYN_TAG_FLAGS:              "flags",
+    DYN_TAG_ENCODING:           "encoding",
+    DYN_TAG_PREINIT_ARRAY:      "pre-init array address",
+    DYN_TAG_PREINIT_ARRAY_SIZE: "pre-init array size",
+
+    DYN_TAG_RELOCATION_COUNT:   "total relocations",
+    DYN_TAG_FLAGS_1:            "more flags",
+    DYN_TAG_VERSION_TABLE_ADDR: "version dependency table address",
+    DYN_TAG_VERSION_TABLE_NUM:  "number of version dependency entries",
+}
+
 
 class ElfBinary(binary.Binary):
 
@@ -242,6 +301,8 @@ class ElfBinary(binary.Binary):
 
         self._sectionList = [] # Needed to associate sections by index number
         self._sectionDict = {}
+
+        self.libraries = []
 
         # By default, assume the binary is stripped. This is changed to False if a
         # symbol table section is found later.
@@ -531,8 +592,8 @@ class ElfBinary(binary.Binary):
             else:
 
                 # Look up the name of the symbol
-                stringTable     = self._sectionList[section.link]
-                name            = self.getStringFromTable(stringTable, symbolStruct.nameIndex)
+                stringTable = self._sectionList[section.link]
+                name        = self.getStringFromTable(stringTable, symbolStruct.nameIndex)
 
                 if symbolStruct.type == SYMBOL_TYPE_FUNCTION:
                     symbol = ElfFunction(name, symbolStruct)
@@ -649,6 +710,39 @@ class ElfBinary(binary.Binary):
             self.setSymbol(symbol)
 
 
+    def parseDynamic( self, section ):
+        """
+        Description:    Parses a dynamic section for useful entries. So far the
+                        only useful entries are the ones that name required
+                        shared objects that are needed for linking.
+
+        Arguments:      section - ElfSection object that is a dynamic section
+
+        Return:         None
+        """
+
+        # Save the entry size for convenience later
+        entrySize = section.entrySize
+
+        if self.arch == binary.BIN_ARCH_32BIT:
+            dynamicClass = Elf32Dynamic
+
+        elif self.arch == binary.BIN_ARCH_64BIT:
+            dynamicClass = Elf64Dynamic
+
+        # Iterate through each relocation entry
+        for entry in range(section.fileOffset, section.fileOffset + section.size, entrySize):
+
+            dynamic = dynamicClass.from_buffer_copy(self._exeMap[entry:entry+entrySize])
+
+            # Get the library name and append it to a list for the executable
+            if dynamic.tag == DYN_TAG_NEEDED:
+                stringTable = self._sectionList[section.link]
+                name        = self.getStringFromTable(stringTable, dynamic.value)
+                logger.info(f"Library: {name}")
+                self.libraries.append(name)
+
+
     def analyze( self ):
 
         # Parse the ELF header to get basic information about the file
@@ -666,10 +760,24 @@ class ElfBinary(binary.Binary):
         for section in self._sectionList:
 
             if section.type == SECTION_TYPE_SYMBOL_TABLE:
+
                 logger.debug(f"symbol table: {section}")
                 logger.debug(f"strings: {self._sectionList[section.link]}")
                 self.isStripped = False
                 self.parseSymbolTable(section)
+
+            # The dynamic symbol table must be parsed so that the symbol objects
+            # exist for modification later when the addresses are resolved.
+            elif section.type == SECTION_TYPE_DYN_SYM_TABLE:
+
+                self.parseSymbolTable(section)
+
+            # Handle dynamic sections, which seem to only have references to
+            # shared objects needed for linking. There are other entries, but
+            # these are the only useful ones.
+            elif section.type == SECTION_TYPE_DYNAMIC_LINK:
+
+                self.parseDynamic(section)
 
 
     def resolveExternalSymbols( self ):
@@ -703,20 +811,15 @@ class ElfBinary(binary.Binary):
         Return:         None
         """
 
-        # First, the dynamic symbol table must be parsed so that the symbol
-        # objects exist for modification later when the addresses are resolved.
-        for section in self._sectionList:
-
-            if section.type == SECTION_TYPE_DYN_SYM_TABLE:
-                self.parseSymbolTable(section)
-
         # Look through all relocation sections and resolve their addresses
         for section in self._sectionList:
 
             if section.type == SECTION_TYPE_RELOC_ADDEND:
+
                 self.parseRelocation(section, True)
 
             elif section.type == SECTION_TYPE_RELOC_NO_ADD:
+
                 self.parseRelocation(section, False)
 
 
@@ -882,6 +985,22 @@ class Elf64RelocationAddend(Elf64Relocation):
 
     _fields_ = [
         ("addend",      ctypes.c_int64),
+    ]
+
+
+class Elf32Dynamic(binary.FlexibleCStruct):
+
+    _fields_ = [
+        ("tag",     ctypes.c_int32),
+        ("value",   ctypes.c_uint32),
+    ]
+
+
+class Elf64Dynamic(binary.FlexibleCStruct):
+
+    _fields_ = [
+        ("tag",     ctypes.c_int64),
+        ("value",   ctypes.c_uint64),
     ]
 
 

@@ -1,12 +1,16 @@
 #include <stdio.h>
+#include <pthread.h>
 
 int globalVariable = 5;
 
 short anotherFunc(char a);
+void *threadFunc(void *param);
 
 int main()
 {
+    pthread_t threadId;
     short sum = 0;
+    long *answer;
 
     printf("Hello world! %d\n", globalVariable);
     sum = anotherFunc(globalVariable);
@@ -19,6 +23,9 @@ int main()
     {
         printf("Sum is too small\n");
     }
+
+    pthread_create(&threadId, NULL, (void *)&sum, threadFunc);
+    pthread_join(threadId, (void **)&answer);
     return 0;
 }
 
@@ -57,4 +64,12 @@ short anotherFunc(char a)
     }
 
     return a + b;
+}
+
+void *threadFunc(void *param)
+{
+    int paramInt = *(int *)param;
+    long a = 4 + paramInt;
+
+    return (void *)a;
 }
