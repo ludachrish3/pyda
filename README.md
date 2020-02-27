@@ -17,8 +17,6 @@ optional arguments:
 
 ## TODO
 
-* Handle relocations more generically. Possibly use the GOT value found at the relocation address to find the section that it is in. This can be done by walking the list of sections and backing up one section when the virtual address surpasses the relocation address.
-* Figure out what to do with other global symbols that aren't related to PLT, like \_libc_start_main
 * Use function sizes as more of a hint instead of a definite size. If it is nonzero, it's okay to trust it. If it's 0, then using the logic for finding functions in a stripped binary can be used to determine when the function ends. In this case, keeping the memory mapped file around is needed. This means that keeping the "assembly" field around for function symbols is unnecessary.
 * Take alignment into account when looking for functions in a stripped binary. Functions need to start at an offset where address % alignment == 0
 * Convert sources or maybe all operands to a list to be acted on together. This can simplify handling immediates and maybe other things if destination is included.

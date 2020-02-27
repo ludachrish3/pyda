@@ -70,8 +70,10 @@ def analyzeFile(filename):
         # at the beginning of the code section. Pass the code section starting
         # at the start address so that it is guaranteed that the first
         # instruction is the beginning of a function.
+        # TODO: Fix this stuff up. A lot has changed since last trying to handle
+        # a stripped binary.
         codeSection = exe.getExecutableCode()
-        startOffset = exe.getStartAddr() - codeSection.virtualAddr
+        startOffset = exe.getStartAddr() - codeSection.address
         code = codeSection.data[startOffset:]
 
         instructions = x64asm.disassemble(code, exe.getStartAddr())

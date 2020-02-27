@@ -197,15 +197,17 @@ SYMBOL_VIS_STR = {
 }
 
 RELOC_TYPE_NONE      = 0
+RELOC_TYPE_COPY      = 5
 RELOC_TYPE_GLOB_DATA = 6
 RELOC_TYPE_JUMP_SLOT = 7
 RELOC_TYPE_RELATIVE  = 8
 
 RELOC_TYPE_STR = {
-    RELOC_TYPE_NONE:      "no type",
-    RELOC_TYPE_GLOB_DATA: "global data",
-    RELOC_TYPE_JUMP_SLOT: "jump slot",
-    RELOC_TYPE_RELATIVE:  "relative",
+    RELOC_TYPE_NONE:        "no type",
+    RELOC_TYPE_COPY:        "copy",
+    RELOC_TYPE_GLOB_DATA:   "global data",
+    RELOC_TYPE_JUMP_SLOT:   "jump slot",
+    RELOC_TYPE_RELATIVE:    "relative",
 }
 
 DYN_TAG_NULL                = 0
@@ -306,7 +308,7 @@ class ElfBinary(binary.Binary):
 
         # By default, assume the binary is stripped. This is changed to False if a
         # symbol table section is found later.
-        isStripped = True
+        self.isStripped = True
 
         # Dictionary keyed on section name that contains the string at a given index
         # Example:
