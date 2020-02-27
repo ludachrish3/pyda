@@ -677,10 +677,23 @@ class ElfBinary(binary.Binary):
             # Get the symbol by looking it up by its name
             symbolName = stringTableList[relocation.symbolIndex]
             symbol = self.getSymbol(symbolName)
-            logger.debug(f"Symbol {symbolName}: {symbol}")
+            logger.debug(f"Symbol before: {symbol}")
 
             # Get the symbol's name and set its value because it is known now.
             if relocation.type == RELOC_TYPE_JUMP_SLOT:
+
+                # Look up the corresponding shared object name in the known
+                # symbols. Anecdotal evidence shows that the corresponding
+                # name is comprised of this symbol's name, at least one '@',
+                # and the name and version number of the shared object.
+                # Looking for the library symbol that starts with the local
+                # symbol's name and then an at symbol should work.
+                for libSymbolName, libSymbol in self._symbols.items():
+                    if type(libSymbolName) == str and libSymbolName.startswith(f"{symbolName}@"):
+                        libSymbol.setAddress(relocation.offset)
+                        self.setSymbol(libSymbol)
+                        logger.debug(f"{symbolName}: {libSymbol}")
+                        break
 
                 # Figure out the address of the previous instruction so that
                 # the start of the stub is the address associated with the
@@ -708,6 +721,7 @@ class ElfBinary(binary.Binary):
             # Update the symbol now that its address is known
             symbol.setIsExternal(True)
             self.setSymbol(symbol)
+            logger.debug(f"Symbol after: {symbol}")
 
 
     def parseDynamic( self, section ):
