@@ -194,8 +194,8 @@ class Symbol( abc.ABC ):
 
         return (
             f"name: {self.getName()}, "
-            f"addr: 0x{self.getAddr():0>8x}, "
-            f"size: {self.size}"
+            f"addr: 0x{self.getAddress():0>8x}, "
+            f"size: {self.getSize()}"
         )
 
 class Function( Symbol ):
@@ -204,17 +204,20 @@ class Function( Symbol ):
 
         self.instructions = instructions
 
+
     def getInstructions( self ):
 
         return self.instructions
 
-    def setAssembly( self, assembly ):
 
-        self.assembly = assembly
+    def setFileOffset( self, offset ):
 
-    def getAssembly( self ):
+        self.fileOffset = offset
 
-        return self.assembly
+
+    def getFileOffset( self ):
+
+        return self.fileOffset
 
 
 class FlexibleCStruct(ctypes.Structure):

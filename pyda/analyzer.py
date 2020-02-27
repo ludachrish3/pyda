@@ -93,10 +93,16 @@ def analyzeFile(filename):
             if isinstance(symbol, binary.Function) and type(symbolKey) == str:
                 logger.info(f"function: {symbol}")
 
+                fileOffset = symbol.getFileOffset()
+                size       = symbol.getSize()
+                assembly   = exeMap[fileOffset:fileOffset+size]
+
                 if exe.getISA() == binary.ISA_X86_64:
 
-                    instructions = x64asm.disassemble(symbol.getAssembly(), symbol.getAddress())
-                    symbol.setInstructions(instructions)
+                    disassembler = x64asm
+
+                instructions = disassembler.disassemble(assembly, symbol.getAddress())
+                symbol.setInstructions(instructions)
 
                 for inst in instructions:
                     logger.info(f"{inst}")

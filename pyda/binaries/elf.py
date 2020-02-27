@@ -525,34 +525,35 @@ class ElfBinary(binary.Binary):
             logger.info(f"{section}")
 
 
-    def addSymbol( self, symbol ):
+    def setSymbol( self, symbol ):
         """
-        Description:    Adds a symbol to dictionaries so it can be looked up by
-                        name and by address. The offsets are used to make sure
-                        the address is calculated to match up with how the
-                        binary calls it.
+        Description:    Updates a symbol so that it can be looked up by address
+                        or name. This is basically a wrapper to the base class
+                        implementation of updating symbols. The only additional
+                        functionality this provides is calculating the file
+                        offset of a function symbol so that its instructions
+                        can be found for disassembly later.
 
         Arguments:      symbol  - ElfSymbol object to update and add
 
         Return:         None
         """
 
-        logger.debug(f"Symbol: {symbol}")
+        logger.info(f"Symbol: {symbol}")
 
         if symbol.type == SYMBOL_TYPE_FUNCTION:
 
-            logger.debug(f"function symbol: {symbol}")
-
-            # Save the assembly bytes of the function with the object so that
-            # the file is no longer needed. The address offset of the .text
-            # section must be subtracted to get the file location of the
-            # function. The value for the symbol is the virtual address.
+            # Save the file offset of the function so that it can be
+            # disassembled later.
+            # Look up the section holding the function so that its virtual
+            # address can be subtracted from the symbol's virtual address to
+            # find the offset from the section's starting position.
             address = symbol.getAddress()
-            size    = symbol.getSize()
+            section = self.getSectionFromAddr(address)
+            offset  = address - section.address + section.fileOffset
+            symbol.setFileOffset(offset)
 
-            symbol.setAssembly(self._exeMap[address:address+size])
-
-        self.setSymbol(symbol)
+        super().setSymbol(symbol)
 
 
     def parseSymbolTable( self, section ):
@@ -601,7 +602,7 @@ class ElfBinary(binary.Binary):
                 else:
                     symbol = ElfSymbol(name, symbolStruct)
 
-            self.addSymbol(symbol)
+            self.setSymbol(symbol)
 
         return True
 
@@ -705,14 +706,6 @@ class ElfBinary(binary.Binary):
                 # keyed by address.
                 symbol.setAddress(relocSymbolAddr)
                 symbol.setSize(relocSection.entrySize)
-
-                # Set the assembly for the function so that it can be disassembled
-                # Account for the virtual address offset by subtracting the file
-                # offset from the virtual address so that the file location of
-                # the assembly can be determined.
-                assemblyStart = relocSection.address - relocSection.fileOffset + relocValue
-                assemblyEnd = assemblyStart + relocSection.entrySize
-                symbol.setAssembly(self._exeMap[assemblyStart:assemblyEnd])
 
             else:
 
@@ -1060,9 +1053,7 @@ class ElfSymbol( binary.Symbol ):
     def __repr__(self):
 
         return (
-            f"name: {self.getName()}, "
-            f"address: {self.getAddress():0>8x}, "
-            f"size: {self.getSize()}, "
+            f"{super().__repr__()}, "
             f"type: {SYMBOL_TYPE_STR[self.getType()]}, "
             f"bind: {SYMBOL_BIND_STR[self.bind]}, "
             f"visibility: {SYMBOL_VIS_STR[self.visibility]}, "
@@ -1079,6 +1070,7 @@ class ElfFunction( binary.Function, ElfSymbol ):
         if self.type != SYMBOL_TYPE_FUNCTION:
             raise Exception("Cannot create an ElfFunction with a symbol type other than function")
 
+        self.fileOffset = 0
         self.assembly = bytes() # Only used if the symbol is a function
         self.instructions = []  # Only used if the symbol is a function
 
@@ -1086,6 +1078,7 @@ class ElfFunction( binary.Function, ElfSymbol ):
 
         return (
             f"{super().__repr__()}, "
+            f"offset: {self.getFileOffset():x}, "
             f"external: {self.getIsExternal()}, "
             f"number of instructions: {len(self.instructions)}"
         )
