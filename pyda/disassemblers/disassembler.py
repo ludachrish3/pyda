@@ -5,38 +5,56 @@ OPERAND_TYPE_MEM = 2
 
 class Instruction():
 
-    def __init__(self, mnemonic, addr=0, source=None, dest=None, extraOperands=[]):
+    def __init__(self, mnemonic, addr=0, sources=[], dest=None, exchange=False):
 
         self.addr = addr
         self.bytes = []
         self.mnemonic = mnemonic
-        self.source = source
+        self.sources = copy.deepcopy(sources)
         self.dest = dest
-        self.extraOperands = extraOperands
+        self.exchange = exchange
+
 
     def __repr__(self):
-
-        reprStr = self.mnemonic
-        operands = copy.deepcopy(self.extraOperands)
-
-        # Display the source first, then the destination
-        if self.source is not None and str(self.source) != "":
-            operands.append(self.source)
-
-        if self.dest is not None and str(self.dest) != "":
-            operands.append(self.dest)
 
         bytesStr = " ".join([f"{x:02x}" for x in self.bytes])
 
         # Do not show operands if the instruction is a NOP because sometimes
         # NOP instructions create operands, but they don't mean anything.
-        if self.mnemonic != "nop":
-            operandStr = ", ".join([str(x) for x in operands])
+        if self.mnemonic == "nop":
+
+            operandString = ""
 
         else:
-            operandStr = ""
 
-        return f"{self.addr: >6x}:  {bytesStr: <20}  {self.mnemonic: <7} {operandStr}"
+            # If the instruction is an exchange of values, make the arrow point
+            # in both directions. Otherwise, the sources should point to the
+            # destination operand.
+            if len(self.sources) > 0 and self.dest is not None:
+
+                if self.exchange:
+                    arrow = "<"
+
+                else:
+                    arrow = ""
+
+                sourceString  = ",".join([str(source) for source in self.sources])
+                operandString = f"{sourceString} {arrow}-> {str(self.dest)}"
+
+            elif len(self.sources) > 0:
+
+                sourceString  = ",".join([str(source) for source in self.sources])
+                operandString = f"{sourceString}"
+
+            elif self.dest is not None:
+
+                operandString = f"{str(self.dest)}"
+
+            else:
+
+                operandString = ""
+
+        return f"{self.addr: >6x}:  {bytesStr: <20}  {self.mnemonic: <7} {operandString}"
 
 
 class Operand():

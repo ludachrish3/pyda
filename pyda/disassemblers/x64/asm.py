@@ -262,8 +262,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0:
             newInfo = X64InstructionInfo("inc", modRm=MODRM_DST, src_size=REG_SIZE_0)
@@ -298,8 +298,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0:
             newInfo = X64InstructionInfo("test", modRm=MODRM_DST, src_isImmediate=True)
@@ -345,8 +345,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0 and mod == MOD_DIRECT:
             newInfo = X64InstructionInfo("fadd",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
@@ -400,8 +400,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0:
             newInfo = X64InstructionInfo("fld",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
@@ -437,29 +437,29 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovnb",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovnb",  modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 0:
             newInfo = X64InstructionInfo("fild",     modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 1 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovne",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovne",  modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 1:
             newInfo = X64InstructionInfo("fisttp",   modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
         elif op == 2 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovnbe", op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovnbe", modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 2:
             newInfo = X64InstructionInfo("fist",     modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
         elif op == 3 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovnu",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovnu",  modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 3:
             newInfo = X64InstructionInfo("fistp",    modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
@@ -488,8 +488,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0 and mod == MOD_DIRECT:
             newInfo = X64InstructionInfo("fadd",   op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
@@ -549,8 +549,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0 and mod == MOD_DIRECT:
             newInfo = X64InstructionInfo("ffree",  op_floatReg=True, modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_64)
@@ -601,8 +601,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0 and mod == MOD_DIRECT:
             newInfo = X64InstructionInfo("faddp",  op_floatReg=True, modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
@@ -662,8 +662,8 @@ def handleExtendedOpcode( instruction, modRmByte ):
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
-        instruction.source = None
-        instruction.dest   = None
+        instruction.sources = []
+        instruction.dest    = None
 
         if op == 0 and mod == MOD_DIRECT:
             newInfo = X64InstructionInfo("ffreep", op_floatReg=True, modRm=MODRM_SRC, dst_size=REG_SIZE_0, src_size=REG_SIZE_64)
@@ -910,8 +910,8 @@ def handleModRmByte( instruction, binary ):
 
     # Set the operand addressing properties as long as they are not None and
     # their value is 0, which would mean it does not have a predetermined value.
-    if instruction.source is not None and instruction.source.value is 0:
-        numBytesConsumed += handleOperandAddressing(instruction, instruction.source, binary)
+    if len(instruction.sources) > 0 and instruction.sources[0].value is 0:
+        numBytesConsumed += handleOperandAddressing(instruction, instruction.sources[0], binary)
 
     if instruction.dest is not None and instruction.dest.value is 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.dest, binary)
@@ -958,7 +958,7 @@ def handleImmediate( instruction, operand, binary ):
         operand.value = REG_RIP
         operand.displacement = immediate
 
-    # Otherwise, the source value is just the immediate
+    # Otherwise, the operand value is just the immediate
     else:
         operand.value = immediate
 
@@ -1058,28 +1058,23 @@ def disassemble( binary, addr ):
         # "==" because there is an instruction that loads 0.0 into floating
         # point registers, and this prevents that instruction or others like it
         # from trying to consume bytes for an immediate.
-        if curInstruction.source is not None and curInstruction.source.isImmediate and curInstruction.source.value is 0:
-            numImmediateBytes = handleImmediate(curInstruction, curInstruction.source, binary)
-            if numImmediateBytes < 0:
-                offTheRails = True
-                continue
+        for sourceOperand in curInstruction.sources:
 
-            binary = binary[numImmediateBytes:]
+            if sourceOperand.isImmediate and sourceOperand.value is 0:
 
-        for extraOperand in curInstruction.extraOperands:
-            if extraOperand.isImmediate and extraOperand.value is 0:
                 logger.debug("Handling the extra immeidate")
-                numImmediateBytes = handleImmediate(curInstruction, extraOperand, binary)
+                numImmediateBytes = handleImmediate(curInstruction, sourceOperand, binary)
                 if numImmediateBytes < 0:
+
                     offTheRails = True
                     continue
 
                 binary = binary[numImmediateBytes:]
 
+            resolveRelativeAddr(curInstruction, sourceOperand)
 
         # Resolve any addresses that are relative now that the value of RIP can
         # be calculated because all bytes of the current isntruction are consumed.
-        resolveRelativeAddr(curInstruction, curInstruction.source)
         resolveRelativeAddr(curInstruction, curInstruction.dest)
 
         logger.debug(curInstruction)
@@ -1120,7 +1115,7 @@ def findFunctions( instructions ):
         # current function to be the end of a function because there is no way
         # to resume execution after a jump.
         if (instruction.mnemonic in [ "ret", "repz ret", "hlt" ] and instruction.addr >= highestReachableAddr) \
-            or (instruction.info.relativeJump and instruction.mnemonic not in [ "call" ] and instruction.source.value < funcStart):
+            or (instruction.info.relativeJump and instruction.mnemonic not in [ "call" ] and instruction.sources[0].value < funcStart):
 
             funcAddrsAndSizes.append((funcStart, instruction.addr + len(instruction.bytes) - funcStart))
             currentlyInFunction = False
@@ -1130,9 +1125,9 @@ def findFunctions( instructions ):
         # that is not a call, set the highest address to the jump destination.
         if instruction.info.relativeJump           and \
             instruction.mnemonic not in [ "call" ] and \
-            instruction.source.value > highestReachableAddr:
+            instruction.sources[0].value > highestReachableAddr:
 
-            highestReachableAddr = instruction.source.value
+            highestReachableAddr = instruction.sources[0].value
             logger.debug(f"relative jump: {instruction}")
 
         # Set the highest reachable address if the current instruction is at
