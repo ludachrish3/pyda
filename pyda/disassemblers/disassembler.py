@@ -7,6 +7,10 @@ class Instruction():
 
     def __init__(self, mnemonic, addr=0, sources=[], dest=None, exchange=False):
 
+        # The sources list must be deep copied or else the reference to it
+        # remains even after moving onto the next Instruction object. This way
+        # every list of sources is a separate copy and they will not interfere
+        # with each other.
         self.addr = addr
         self.bytes = []
         self.mnemonic = mnemonic

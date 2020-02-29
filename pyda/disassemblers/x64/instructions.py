@@ -334,31 +334,37 @@ class X64Operand( Operand ):
             if scale > 1:
                 scaleStr = f"{scale} * "
 
+        # Handle the displacement value
+        if displace != 0:
+
+            if displace > 0:
+                signStr = " + "
+
+            elif displace < 0:
+                signStr = " - "
+
+            displaceStr = f"{signStr}{hex(abs(displace))}"
+
         # Handle combining the base and index values. If at least one value is
         # not an empty string, then the values need to go in brackets. If both
         # are set, then they need to be separated by a plus sign. If only one is
         # set, then just putting them all next to each other in brackets is okay
         # because one will be nothing and the other will be the only value.
         if regName != "" or indexName != "":
+
             if regName != "" and indexName != "":
-                baseIndexStr = f"[{regName} + {scaleStr}{indexName}]"
+                baseIndexStr = f"[{regName} + {scaleStr}{indexName}{displaceStr}]"
 
             else:
-                baseIndexStr = f"[{regName}{scaleStr}{indexName}]"
+                baseIndexStr = f"[{regName}{scaleStr}{indexName}{displaceStr}]"
 
-        # Handle the displacement value
-        if displace != 0:
+        # If neither the register name nor the index name are present, then the
+        # result is just the displacment, which does not need square brackets
+        # around it or any kind of spacing around the sign.
+        else:
+            baseIndexStr = f"{hex(displace)}"
 
-            signStr = ""
-            if baseIndexStr != "" and displace > 0:
-                signStr = " + "
-
-            elif baseIndexStr != "" and displace < 0:
-                signStr = " - "
-
-            displaceStr = f"{signStr}{hex(abs(displace))}"
-
-        return f"{segmentStr}{baseIndexStr}{displaceStr}"
+        return f"{segmentStr}{baseIndexStr}"
 
 
 class X64InstructionInfo():
