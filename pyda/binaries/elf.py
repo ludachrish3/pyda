@@ -850,9 +850,18 @@ class ElfBinary(binary.Binary):
         return None
 
 
-    def getExecutableCode(self):
+    def getCodeBytes( self ):
 
-        return self._sectionDict.get(SECTION_NAME_TEXT, None)
+        startSection = self.getSectionFromAddr(self._startAddr)
+
+        # Find the associated file offset based on the start address.
+        # Get all bytes starting at the executable's start address until the
+        # end of the section that contains the starting address.
+        offset = self._startAddr - startSection.address
+        start  = startSection.fileOffset + offset
+        end    = start + startSection.size - offset
+
+        return self._exeMap[start:end]
 
 
 class Elf32Header(binary.FlexibleCStruct):
@@ -1035,6 +1044,7 @@ class ElfSection():
             f"entrySize: {self.entrySize}, "
             f"nameIndex: {self.nameIndex}"
         )
+
 
 class ElfSymbol( binary.Symbol ):
 

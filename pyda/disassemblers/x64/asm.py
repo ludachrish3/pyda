@@ -1104,22 +1104,41 @@ def findFunctions( instructions ):
 
     for instruction in instructions:
 
-        if instruction.mnemonic in [ "ret", "repz ret", "hlt" ] and instruction.addr >= highestReachableAddr:
-            funcAddrsAndSizes.append((funcStart, instruction.addr + len(instruction.bytes) - funcStart))
-            currentlyInFunction = False
-            logger.debug(f"Found end of function: {instruction}, {funcAddrsAndSizes[-1]}")
+        # First, consider whether this instruction signals the beginning of a
+        # new function. This happens when not currently in a function and an
+        # instruction that is not a NOP is found.
+        if not currentlyInFunction and instruction.mnemonic != "nop":
 
-        elif instruction.info.relativeJump and instruction.mnemonic not in [ "call", "ret" ] and instruction.source.value > highestReachableAddr:
-            highestReachableAddr = instruction.source.value
-            logger.debug(f"relative jump: {instruction}")
-
-        elif not currentlyInFunction and instruction.mnemonic != "nop":
             funcStart = instruction.addr
             highestReachableAddr = instruction.addr
             currentlyInFunction = True
             logger.debug(f"found the beginning of another function: {funcStart:x}")
 
-        elif instruction.addr > highestReachableAddr:
+        # Consider it the end of a function if currently at the highest
+        # reachable address and the instruction is a return or halt.
+        # Also, consider a jump to an address lower than the start of the
+        # current function to be the end of a function because there is no way
+        # to resume execution after a jump.
+        if (instruction.mnemonic in [ "ret", "repz ret", "hlt" ] and instruction.addr >= highestReachableAddr) \
+            or (instruction.info.relativeJump and instruction.mnemonic not in [ "call" ] and instruction.source.value < funcStart):
+
+            funcAddrsAndSizes.append((funcStart, instruction.addr + len(instruction.bytes) - funcStart))
+            currentlyInFunction = False
+            logger.debug(f"Found end of function: {instruction}, {funcAddrsAndSizes[-1]}")
+
+        # If a higher address is reachable by a jump, which is a relative jump
+        # that is not a call, set the highest address to the jump destination.
+        if instruction.info.relativeJump           and \
+            instruction.mnemonic not in [ "call" ] and \
+            instruction.source.value > highestReachableAddr:
+
+            highestReachableAddr = instruction.source.value
+            logger.debug(f"relative jump: {instruction}")
+
+        # Set the highest reachable address if the current instruction is at
+        # the highest address that has been processed.
+        if instruction.addr > highestReachableAddr:
+
             highestReachableAddr = instruction.addr
 
     return funcAddrsAndSizes

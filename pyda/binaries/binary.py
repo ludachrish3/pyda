@@ -138,7 +138,7 @@ class Binary( abc.ABC ):
 
 
     @abc.abstractmethod
-    def getExecutableCode( self ):
+    def getCodeBytes( self ):
         raise NotImplementedError
 
 

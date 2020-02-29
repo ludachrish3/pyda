@@ -66,19 +66,9 @@ def analyzeFile(filename):
     # needs to be broken up into functions and disassembled
     if exe.isStripped:
 
-        # Execution starts at the executable's start address, not necessarily
-        # at the beginning of the code section. Pass the code section starting
-        # at the start address so that it is guaranteed that the first
-        # instruction is the beginning of a function.
-        # TODO: Fix this stuff up. A lot has changed since last trying to handle
-        # a stripped binary.
-        codeSection = exe.getExecutableCode()
-        startOffset = exe.getStartAddr() - codeSection.address
-        code = codeSection.data[startOffset:]
+        code = exe.getCodeBytes()
 
         instructions = x64asm.disassemble(code, exe.getStartAddr())
-        for inst in instructions:
-            logger.info(inst)
 
         listOfAddrsAndSizes = x64asm.findFunctions(instructions)
         for addr, size in listOfAddrsAndSizes:
@@ -93,6 +83,7 @@ def analyzeFile(filename):
             # Disassemble each function. Every symbol has an entry for its name
             # and its address, so only handle symbols by name to avoid redundancy.
             if isinstance(symbol, binary.Function) and type(symbolKey) == str:
+
                 logger.info(f"function: {symbol}")
 
                 fileOffset = symbol.getFileOffset()
@@ -107,6 +98,7 @@ def analyzeFile(filename):
                 symbol.setInstructions(instructions)
 
                 for inst in instructions:
+
                     logger.info(f"{inst}")
 
     # TODO: Update instructions to use symbols instead of numbers for all known
