@@ -655,16 +655,16 @@ class ElfBinary(binary.Binary):
 
             relocation = relocationClass.from_buffer_copy(self._exeMap[entry:entry+entrySize])
 
-            # There's not much to do if there is no name mapped to the relocation
-            if relocation.symbolIndex == 0:
-               continue
-
             if hasattr(relocation, "addend"):
                 logger.debug(f"addend: {relocation.addend:x}")
 
             logger.debug(f"offset: {relocation.offset:x}")
             logger.debug(f"symbol table index: {relocation.symbolIndex}")
             logger.debug(f"type: {RELOC_TYPE_STR[relocation.type]}")
+
+            # There's not much to do if there is no name mapped to the relocation
+            if relocation.symbolIndex == 0:
+                continue
 
             # Figure out the section that holds the relocation value so that
             # its file offset can be used to find the value.

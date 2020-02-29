@@ -58,6 +58,9 @@ class Binary( abc.ABC ):
                         to ensure the correct type of symbol is retrieved from
                         the address.
 
+                        If there are no collisions at the address, then a type
+                        is not required.
+
         Arguments:      symbolIdentifier    - Name or address of the symbol
                         symbolType          - Type of symbol, as defined by the
                                               executable
@@ -79,8 +82,22 @@ class Binary( abc.ABC ):
         if type(symbolIdentifier) == int:
 
             symbolTypeDict = self._symbols.get(symbolIdentifier, None)
+
             if symbolTypeDict is not None:
-                return symbolTypeDict.get(symbolType, None)
+
+                # Have a shortcut to lookup symbols using an address if there is
+                # only one symbol at the address. This way a type is not needed
+                # if there are no collisions. dict.items() returns a tuple of
+                # the key and the value, so indexing to the zeroth entry gets
+                # the first key value pair, and the first index of that gets
+                # the value, which is the symbol.
+                if symbolType is None and len(symbolTypeDict) == 1:
+
+                    return list(symbolTypeDict.items())[0][1]
+
+                else:
+
+                    return symbolTypeDict.get(symbolType, None)
 
         return None
 
@@ -103,6 +120,7 @@ class Binary( abc.ABC ):
         symbolType = symbol.getType()
 
         if name not in [ None, "" ]:
+
             self._symbols[name] = symbol
 
         if address != 0:

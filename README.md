@@ -18,6 +18,7 @@ optional arguments:
 ## TODO
 
 * Use function sizes as more of a hint instead of a definite size. If it is nonzero, it's okay to trust it. If it's 0, then using the logic for finding functions in a stripped binary can be used to determine when the function ends. In this case, keeping the memory mapped file around is needed. This means that keeping the "assembly" field around for function symbols is unnecessary.
+* Add command line options for getting just some header info like objdump and readelf does. This should be pretty easy, and can be made more user friendly by using human readable strings.
 * Take alignment into account when looking for functions in a stripped binary. Functions need to start at an offset where address % alignment == 0
 * Convert sources or maybe all operands to a list to be acted on together. This can simplify handling immediates and maybe other things if destination is included.
 * Change error handling to be try blocks and raising exceptions instead of checking return values. Checking handleOperandAddressing() needs to be done in the case that an invalid segment register is used.
@@ -38,3 +39,4 @@ optional arguments:
 * Cross references of addresses (aggressive matching of address throughout whole binary)
 * Create a runnable version from the source code that can be used with GDB by adding DWARF debug symbols to the binary
 * Allow for manual disassembly starting at a certain offset if disassembly goes off the rails
+* Figure out how to find address of \__cxa_finalize in ELF files. It appears in the .plt.got section, but there seems to be no address to its PLT entry.
