@@ -9,11 +9,10 @@ logger = logging.getLogger(__name__)
 
 class X64Instruction( Instruction ):
 
-    def __init__( self, mnemonic="byte", addr=0, sources=[], dest=None, exchange=False, isMove=False ):
+    def __init__( self, mnemonic="byte", addr=0, sources=[], dest=None, exchange=False ):
 
         super().__init__(mnemonic, addr, sources, dest, exchange)
 
-        self.isMove        = isMove
         self.prefixSize    = None   # The size operands should be based on the prefix
         self.segmentPrefix = 0      # Opcode of the segment
         self.legacyPrefix  = None   # Lock, repeat, or operand size prefix
@@ -523,7 +522,7 @@ oneByteOpcodes = {
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
-    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SRC, isMove=True, signExtension=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_32),
+    0x63: X64InstructionInfo("movsxd", modRm=MODRM_SRC, signExtension=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_32),
 #   0x64: FS Segment Register Prefix
 #   0x65: GS Segment Register Prefix
 #   0x66: 16-bit Operand Size Prefix or access to Double Quadword Registers
@@ -560,13 +559,13 @@ oneByteOpcodes = {
     0x85: X64InstructionInfo("test",  modRm=MODRM_DST),
     0x86: X64InstructionInfo("xchg",  modRm=MODRM_SRC, inst_exchange=True),
     0x87: X64InstructionInfo("xchg",  modRm=MODRM_SRC, inst_exchange=True),
-    0x88: X64InstructionInfo("mov",   modRm=MODRM_DST, isMove=True),
-    0x89: X64InstructionInfo("mov",   modRm=MODRM_DST, isMove=True),
-    0x8a: X64InstructionInfo("mov",   modRm=MODRM_SRC, isMove=True),
-    0x8b: X64InstructionInfo("mov",   modRm=MODRM_SRC, isMove=True),
+    0x88: X64InstructionInfo("mov",   modRm=MODRM_DST),
+    0x89: X64InstructionInfo("mov",   modRm=MODRM_DST),
+    0x8a: X64InstructionInfo("mov",   modRm=MODRM_SRC),
+    0x8b: X64InstructionInfo("mov",   modRm=MODRM_SRC),
 #   0x8c: TODO: X64InstructionInfo("mov",   modRm=MODRM_SRC), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte or a memory location that is always a word long
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SRC),
-#   0x8e: TODO: X64InstructionInfo("mov",   modRm=MODRM_SRC, isMove=True), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
+#   0x8e: TODO: X64InstructionInfo("mov",   modRm=MODRM_SRC), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
     0x8f: X64InstructionInfo("pop",   modRm=MODRM_DST, extOpcode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
     0x90: {
         None: {
@@ -593,8 +592,8 @@ oneByteOpcodes = {
 #   0xa1: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
 #   0xa2: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
 #   0xa3: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
-    0xa4: X64InstructionInfo("movs",  src_segmentReg=SEGMENT_REG_DS, isMove=True, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
-    0xa5: X64InstructionInfo("movs",  src_segmentReg=SEGMENT_REG_DS, isMove=True, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xa4: X64InstructionInfo("movs",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
+    0xa5: X64InstructionInfo("movs",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
     0xa6: X64InstructionInfo("cmps",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
     0xa7: X64InstructionInfo("cmps",  src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI, dst_segmentReg=SEGMENT_REG_ES, dst_indirect=True, dst_value=REG_RDI),
     0xa8: X64InstructionInfo("test",  src_isImmediate=True),
@@ -605,30 +604,30 @@ oneByteOpcodes = {
     0xad: X64InstructionInfo("loads", src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI),
     0xae: X64InstructionInfo("scans", src_segmentReg=SEGMENT_REG_ES, src_indirect=True, src_value=REG_RDI),
     0xaf: X64InstructionInfo("scans", src_segmentReg=SEGMENT_REG_ES, src_indirect=True, src_value=REG_RDI),
-    0xb0: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb1: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb2: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb3: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb4: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb5: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb6: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb7: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb8: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xb9: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xba: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbb: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbc: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbd: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbe: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbf: X64InstructionInfo("mov",   registerCode=True, isMove=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xb0: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb1: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb2: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb3: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb4: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb5: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb6: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb7: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb8: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xb9: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xba: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbb: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbc: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbd: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbe: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbf: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
     0xc0: X64InstructionInfo("",      modRm=MODRM_DST,  extOpcode=True, src_isImmediate=True),
     0xc1: X64InstructionInfo("",      modRm=MODRM_DST,  extOpcode=True, src_isImmediate=True, src_size=REG_SIZE_8),
     0xc2: X64InstructionInfo("ret",   relativeJump=True, src_size=REG_SIZE_16, src_maxSize=REG_SIZE_16, dst_size=REG_SIZE_0),
     0xc3: X64InstructionInfo("ret",   op_size=REG_SIZE_0),
 #   0xc4: Invalid
 #   0xc5: Invalid
-    0xc6: X64InstructionInfo("mov",   modRm=MODRM_DST, isMove=True, signExtension=True, src_isImmediate=True),
-    0xc7: X64InstructionInfo("mov",   modRm=MODRM_DST, isMove=True, signExtension=True, src_isImmediate=True, src_maxSize=REG_SIZE_32),
+    0xc6: X64InstructionInfo("mov",   modRm=MODRM_DST, signExtension=True, src_isImmediate=True),
+    0xc7: X64InstructionInfo("mov",   modRm=MODRM_DST, signExtension=True, src_isImmediate=True, src_maxSize=REG_SIZE_32),
 #   0xc8: TODO: Enter, which has 2 sources and 1 destination
     0xc9: X64InstructionInfo("leave", op_size=REG_SIZE_0),
 #   0xca: TODO
@@ -738,18 +737,18 @@ oneByteOpcodes = {
 twoByteOpcodes = {
     0x10: {
         None: {
-            None: X64InstructionInfo("movups", modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0x66: X64InstructionInfo("movupd", modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0xf3: X64InstructionInfo("movss",  modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
+            None: X64InstructionInfo("movups", modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movupd", modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movss",  modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
         },
     },
     0x11: {
         None: {
-            None: X64InstructionInfo("movups", modRm=MODRM_DST, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0x66: X64InstructionInfo("movupd", modRm=MODRM_DST, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_DST, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0xf3: X64InstructionInfo("movss",  modRm=MODRM_DST, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
+            None: X64InstructionInfo("movups", modRm=MODRM_DST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movupd", modRm=MODRM_DST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_DST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movss",  modRm=MODRM_DST, op_mmRegister=True, op_size=REG_SIZE_128),
         },
     },
 
@@ -757,14 +756,14 @@ twoByteOpcodes = {
 
     0x28: {
         None: {
-            None: X64InstructionInfo("movaps", modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0x66: X64InstructionInfo("movapd", modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
+            None: X64InstructionInfo("movaps", modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movapd", modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
         },
     },
     0x29: {
         None: {
-            None: X64InstructionInfo("movaps", modRm=MODRM_DST, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0x66: X64InstructionInfo("movapd", modRm=MODRM_DST, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
+            None: X64InstructionInfo("movaps", modRm=MODRM_DST, op_mmRegister=True, op_size=REG_SIZE_128),
+            0x66: X64InstructionInfo("movapd", modRm=MODRM_DST, op_mmRegister=True, op_size=REG_SIZE_128),
         },
     },
     0x2a: {
@@ -792,22 +791,22 @@ twoByteOpcodes = {
         },
     },
 
-    0x40: X64InstructionInfo("cmovo",  modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Overflow
-    0x41: X64InstructionInfo("cmovno", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Not overflow
-    0x42: X64InstructionInfo("cmovb",  modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Less than (unsigned)
-    0x43: X64InstructionInfo("cmovae", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Greater than or equal (unsigned)
-    0x44: X64InstructionInfo("cmove",  modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Equal
-    0x45: X64InstructionInfo("cmovne", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Not equal
-    0x46: X64InstructionInfo("cmovbe", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Less than or equal (unsigned)
-    0x47: X64InstructionInfo("cmova",  modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Greater than (unsigned)
-    0x48: X64InstructionInfo("cmovs",  modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Signed
-    0x49: X64InstructionInfo("cmovns", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Unsigned
-    0x4a: X64InstructionInfo("cmovp",  modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Parity
-    0x4b: X64InstructionInfo("cmovnp", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Not parity
-    0x4c: X64InstructionInfo("cmovlt", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Less than (signed)
-    0x4d: X64InstructionInfo("cmovge", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Greater than or equal (signed)
-    0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Less than or equal (signed)
-    0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SRC, isMove=True, op_size=REG_SIZE_32), # Greater than (signed)
+    0x40: X64InstructionInfo("cmovo",  modRm=MODRM_SRC, op_size=REG_SIZE_32), # Overflow
+    0x41: X64InstructionInfo("cmovno", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Not overflow
+    0x42: X64InstructionInfo("cmovb",  modRm=MODRM_SRC, op_size=REG_SIZE_32), # Less than (unsigned)
+    0x43: X64InstructionInfo("cmovae", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Greater than or equal (unsigned)
+    0x44: X64InstructionInfo("cmove",  modRm=MODRM_SRC, op_size=REG_SIZE_32), # Equal
+    0x45: X64InstructionInfo("cmovne", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Not equal
+    0x46: X64InstructionInfo("cmovbe", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Less than or equal (unsigned)
+    0x47: X64InstructionInfo("cmova",  modRm=MODRM_SRC, op_size=REG_SIZE_32), # Greater than (unsigned)
+    0x48: X64InstructionInfo("cmovs",  modRm=MODRM_SRC, op_size=REG_SIZE_32), # Signed
+    0x49: X64InstructionInfo("cmovns", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Unsigned
+    0x4a: X64InstructionInfo("cmovp",  modRm=MODRM_SRC, op_size=REG_SIZE_32), # Parity
+    0x4b: X64InstructionInfo("cmovnp", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Not parity
+    0x4c: X64InstructionInfo("cmovlt", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Less than (signed)
+    0x4d: X64InstructionInfo("cmovge", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Greater than or equal (signed)
+    0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Less than or equal (signed)
+    0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SRC, op_size=REG_SIZE_32), # Greater than (signed)
 
     0x51: {
         None: {
@@ -905,9 +904,9 @@ twoByteOpcodes = {
 
     0x6f: {
         None: {
-            None: X64InstructionInfo("movq",   modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_64),
-            0x66: X64InstructionInfo("movdqa", modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
-            0xf3: X64InstructionInfo("movdqu", modRm=MODRM_SRC, isMove=True, op_mmRegister=True, op_size=REG_SIZE_128),
+            None: X64InstructionInfo("movq",   modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_64),
+            0x66: X64InstructionInfo("movdqa", modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movdqu", modRm=MODRM_SRC, op_mmRegister=True, op_size=REG_SIZE_128),
         },
     },
 
@@ -948,10 +947,10 @@ twoByteOpcodes = {
 
     0xaf: X64InstructionInfo("imul",  modRm=MODRM_SRC, op_size=REG_SIZE_32),
 
-    0xb6: X64InstructionInfo("movzx", modRm=MODRM_SRC, isMove=True, src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
-    0xb7: X64InstructionInfo("movzx", modRm=MODRM_SRC, isMove=True, src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
-    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SRC, isMove=True, signExtension=True,   src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
-    0xbf: X64InstructionInfo("movsx", modRm=MODRM_SRC, isMove=True, signExtension=True,   src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
+    0xb6: X64InstructionInfo("movzx", modRm=MODRM_SRC, src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
+    0xb7: X64InstructionInfo("movzx", modRm=MODRM_SRC, src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
+    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SRC, signExtension=True,   src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
+    0xbf: X64InstructionInfo("movsx", modRm=MODRM_SRC, signExtension=True,   src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
 
     0xef: {
         None: {

@@ -441,25 +441,25 @@ def handleExtendedOpcode( instruction, modRmByte ):
         instruction.dest    = None
 
         if op == 0 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovnb",  modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovnb",  modRm=MODRM_SRC, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 0:
             newInfo = X64InstructionInfo("fild",     modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 1 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovne",  modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovne",  modRm=MODRM_SRC, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 1:
             newInfo = X64InstructionInfo("fisttp",   modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
         elif op == 2 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovnbe", modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovnbe", modRm=MODRM_SRC, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 2:
             newInfo = X64InstructionInfo("fist",     modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
 
         elif op == 3 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcmovnu",  modRm=MODRM_SRC, isMove=True, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
+            newInfo = X64InstructionInfo("fcmovnu",  modRm=MODRM_SRC, op_floatReg=True, op_size=REG_SIZE_64, dst_value=REG_ST0)
 
         elif op == 3:
             newInfo = X64InstructionInfo("fistp",    modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
