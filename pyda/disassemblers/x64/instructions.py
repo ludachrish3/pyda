@@ -129,39 +129,33 @@ class X64Instruction( Instruction ):
         #  CREATE OPERANDS  #
         #####################
 
-        register = 0
-
         # Handle sign extension if the bit it meaningful
         if opcode & OP_SIGN_MASK:
             info.signExtension = True
 
         # Handle setup if there is a register code in the opcode
-        if info.registerCode:
+        if "registerCode" in srcKwargs or "registerCode" in dstKwargs:
             register = opcode & REG_MASK
 
             if self.extendBase:
                 register |= REG_EXTEND
 
-        # Create a destination operand as long as the size isn't 0 and the
-        # instruction is not a jump, which would not have a destination.
-        if self.dest is None and not info.relativeJump and dstKwargs["size"] != REG_SIZE_0:
-            if "value" not in dstKwargs:
+            if "registerCode" in srcKwargs:
+                srcKwargs["value"] = register
+
+            else:
                 dstKwargs["value"] = register
 
+        # Create a destination operand as long as it wasn't already set, the
+        # size isn't 0, and the instruction is not a jump, which would not have
+        # a destination.
+        if self.dest is None and dstKwargs["size"] != REG_SIZE_0:
             self.dest = X64Operand(**dstKwargs)
-
-            # Set the register to 0 now because the destination is always the
-            # one to get the register value unless there is no destination.
-            # This keeps the source from also getting the value if there is a
-            # destination.
-            register = 0
 
         # Create a source operand as long as the size isn't 0 and it has not
         # already been created
+        #if len(self.sources) == 0 and srcKwargs["size"] != REG_SIZE_0:
         if len(self.sources) == 0 and srcKwargs["size"] != REG_SIZE_0:
-            if "value" not in srcKwargs:
-                srcKwargs["value"] = register
-
             self.sources.insert(0, X64Operand(**srcKwargs))
 
         ################################
@@ -269,19 +263,20 @@ class X64Instruction( Instruction ):
 class X64Operand( Operand ):
 
     def __init__( self, size=REG_SIZE_32, maxSize=REG_SIZE_64, value=0, segmentReg=0,
-                  isImmediate=False, indirect=False, mmRegister=False, floatReg=False ):
+                  registerCode=False, isImmediate=False, indirect=False, mmRegister=False, floatReg=False ):
 
         super().__init__(size, value)
-        self.maxSize = maxSize          # The maximum size allowed for the operand
-        self.isImmediate = isImmediate  # Whether the operand is an immediate
-        self.segmentReg = segmentReg    # The segment register to use as a base value
-        self.mmRegister = mmRegister    # Whether the operand is an MM register
-        self.floatReg = floatReg        # Whether teh operand is a floating point register
-        self.indirect = indirect        # Whether the addressing is indirect
-        self.displacement = 0           # Value of the displacement from the register value
-        self.modRm = False              # Whether the Mod R/M byte applies
-        self.scale = 0                  # Factor to multiply the index by if SIB byte is present
-        self.index = None               # Index register if SIB byte is present
+        self.maxSize = maxSize              # The maximum size allowed for the operand
+        self.registerCode = registerCode    # Whether the value comes from the register value in the opcode
+        self.isImmediate = isImmediate      # Whether the operand is an immediate
+        self.segmentReg = segmentReg        # The segment register to use as a base value
+        self.mmRegister = mmRegister        # Whether the operand is an MM register
+        self.floatReg = floatReg            # Whether the operand is a floating point register
+        self.indirect = indirect            # Whether the addressing is indirect
+        self.displacement = 0               # Value of the displacement from the register value
+        self.modRm = False                  # Whether the Mod R/M byte applies
+        self.scale = 0                      # Factor to multiply the index by if SIB byte is present
+        self.index = None                   # Index register if SIB byte is present
 
     def __repr__( self ):
 
@@ -368,12 +363,11 @@ class X64Operand( Operand ):
 
 class X64InstructionInfo():
 
-    def __init__( self, mnemonic, registerCode=False, modRm=MODRM_NONE, extOpcode=False,
+    def __init__( self, mnemonic, modRm=MODRM_NONE, extOpcode=False,
                   relativeJump=False, signExtension=False, isConversion=False, **kwargs):
 
         # Opcode info
         self.mnemonic      = mnemonic       # The name of the instruction
-        self.registerCode  = registerCode   # Whether the least 3 significant bits of the opcode represent a register
         self.modRm         = modRm          # How the Mod R/M byte must be handled
         self.extOpcode     = extOpcode      # Whether the opcode is extended into the ModR/M
         self.signExtension = signExtension  # Whether the sign should be extended
@@ -384,10 +378,15 @@ class X64InstructionInfo():
         self.dstKwargs  = { key.split("_")[1]: value for (key, value) in kwargs.items() if key.startswith(("dst_", "op_")) }
         self.instKwargs = { key.split("_")[1]: value for (key, value) in kwargs.items() if key.startswith("inst_")         }
 
-        # Set properties that are always true if the instruction is a relative jump
+        # Set properties that are always true if the instruction is a relative jump.
+        # They can always be negative, so sign extension must be true.
+        # They are always immediate values, so the source's isImmediate must be true.
+        # There is no destination for relative jumps because there is just a single
+        # value that is a source.
         if self.relativeJump:
             self.signExtension  = True
             self.srcKwargs["isImmediate"] = True
+            self.dstKwargs["size"] = REG_SIZE_0
 
 
 # The structure for opcodes and their info is a dictionary keyed on the primary
@@ -503,22 +502,22 @@ oneByteOpcodes = {
 #   0x4d: REX.WRB Prefix
 #   0x4e: REX.WRX Prefix
 #   0x4f: REX.WRXB Prefix
-    0x50: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x51: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x52: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x53: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x54: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x55: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x56: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x57: X64InstructionInfo("push",  registerCode=True, src_size=REG_SIZE_64, dst_size=REG_SIZE_0),
-    0x59: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x5a: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x5b: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x5c: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x5d: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x5e: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x5f: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
-    0x58: X64InstructionInfo("pop",   registerCode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
+    0x50: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x51: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x52: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x53: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x54: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x55: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x56: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x57: X64InstructionInfo("push",  src_registerCode=True, op_size=REG_SIZE_64, dst_value=REG_STACK),
+    0x59: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
+    0x5a: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
+    0x5b: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
+    0x5c: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
+    0x5d: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
+    0x5e: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
+    0x5f: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
+    0x58: X64InstructionInfo("pop",   dst_registerCode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
@@ -527,9 +526,9 @@ oneByteOpcodes = {
 #   0x65: GS Segment Register Prefix
 #   0x66: 16-bit Operand Size Prefix or access to Double Quadword Registers
 #   0x67: TODO: 32-bit Address Size Prefix
-    0x68: X64InstructionInfo("push",  signExtension=True, src_isImmediate=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_0),
+    0x68: X64InstructionInfo("push",  signExtension=True, src_isImmediate=True, op_size=REG_SIZE_32, dst_value=REG_STACK),
     0x69: X64InstructionInfo("imul",  modRm=MODRM_SRC, src_size=REG_SIZE_32, signExtension=True, inst_sources=[X64Operand(isImmediate=True, size=REG_SIZE_32, maxSize=REG_SIZE_32)]),
-    0x6a: X64InstructionInfo("push",  signExtension=True, src_isImmediate=True, src_size=REG_SIZE_8, dst_size=REG_SIZE_0),
+    0x6a: X64InstructionInfo("push",  signExtension=True, src_isImmediate=True, op_size=REG_SIZE_8, dst_value=REG_STACK),
     0x6b: X64InstructionInfo("imul",  modRm=MODRM_SRC, src_size=REG_SIZE_32, signExtension=True, inst_sources=[X64Operand(isImmediate=True, size=REG_SIZE_8)]),
 #   0x6c: Debug input port to string
 #   0x6d: Debug input port to string
@@ -566,26 +565,26 @@ oneByteOpcodes = {
 #   0x8c: TODO: X64InstructionInfo("mov",   modRm=MODRM_SRC), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte or a memory location that is always a word long
     0x8d: X64InstructionInfo("lea",   modRm=MODRM_SRC),
 #   0x8e: TODO: X64InstructionInfo("mov",   modRm=MODRM_SRC), A lot is strange about this instruction. It refers to a segment register in the Mod R/M byte
-    0x8f: X64InstructionInfo("pop",   modRm=MODRM_DST, extOpcode=True, dst_size=REG_SIZE_64, src_size=REG_SIZE_0),
+    0x8f: X64InstructionInfo("pop",   modRm=MODRM_DST, extOpcode=True, op_size=REG_SIZE_64, src_value=REG_STACK),
     0x90: {
         None: {
             None: X64InstructionInfo("nop"), # This is a special case of exchange instructions that would swap EAX with EAX
             0xf3: X64InstructionInfo("pause"),
         },
     },
-    0x91: X64InstructionInfo("xchg",  registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
-    0x92: X64InstructionInfo("xchg",  registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
-    0x93: X64InstructionInfo("xchg",  registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
-    0x94: X64InstructionInfo("xchg",  registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
-    0x95: X64InstructionInfo("xchg",  registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
-    0x96: X64InstructionInfo("xchg",  registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
-    0x97: X64InstructionInfo("xchg",  registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
+    0x91: X64InstructionInfo("xchg",  src_registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
+    0x92: X64InstructionInfo("xchg",  src_registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
+    0x93: X64InstructionInfo("xchg",  src_registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
+    0x94: X64InstructionInfo("xchg",  src_registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
+    0x95: X64InstructionInfo("xchg",  src_registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
+    0x96: X64InstructionInfo("xchg",  src_registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
+    0x97: X64InstructionInfo("xchg",  src_registerCode=True, inst_exchange=True, op_size=REG_SIZE_32),
     0x98: X64InstructionInfo("",      isConversion=True, op_size=REG_SIZE_32),
     0x99: X64InstructionInfo("",      isConversion=True, op_size=REG_SIZE_32),
 #   0x9a: Invalid
     0x9b: X64InstructionInfo("fwait", src_size=REG_SIZE_0,  dst_size=REG_SIZE_0),
-    0x9c: X64InstructionInfo("pushf", src_size=REG_SIZE_64, src_value=REG_RFLAGS,  dst_size=REG_SIZE_0),
-    0x9d: X64InstructionInfo("popf",  dst_size=REG_SIZE_64, dst_value=REG_RFLAGS,  src_size=REG_SIZE_0),
+    0x9c: X64InstructionInfo("pushf", op_size=REG_SIZE_64, src_value=REG_RFLAGS,  dst_value=REG_STACK),
+    0x9d: X64InstructionInfo("popf",  op_size=REG_SIZE_64, dst_value=REG_RFLAGS,  src_value=REG_STACK),
     0x9e: X64InstructionInfo("sahf",  op_size=REG_SIZE_8,   op_maxSize=REG_SIZE_8, dst_value=REG_RFLAGS, src_value=REG_RSP),  # REG_RSP is the value for %ah at 8 bits
     0x9f: X64InstructionInfo("lahf",  op_size=REG_SIZE_8,   op_maxSize=REG_SIZE_8, src_value=REG_RFLAGS, dst_value=REG_RSP),  # REG_RSP is the value for %ah at 8 bits
 #   0xa0: X64InstructionInfo("mov",   ), TODO: Requires a displacement to place data
@@ -604,25 +603,25 @@ oneByteOpcodes = {
     0xad: X64InstructionInfo("loads", src_segmentReg=SEGMENT_REG_DS, src_indirect=True, src_value=REG_RSI),
     0xae: X64InstructionInfo("scans", src_segmentReg=SEGMENT_REG_ES, src_indirect=True, src_value=REG_RDI),
     0xaf: X64InstructionInfo("scans", src_segmentReg=SEGMENT_REG_ES, src_indirect=True, src_value=REG_RDI),
-    0xb0: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb1: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb2: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb3: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb4: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb5: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb6: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb7: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
-    0xb8: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xb9: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xba: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbb: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbc: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbd: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbe: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
-    0xbf: X64InstructionInfo("mov",   registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xb0: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb1: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb2: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb3: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb4: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb5: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb6: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb7: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_8),
+    0xb8: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xb9: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xba: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbb: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbc: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbd: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbe: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
+    0xbf: X64InstructionInfo("mov",   dst_registerCode=True, src_isImmediate=True, op_size=REG_SIZE_32),
     0xc0: X64InstructionInfo("",      modRm=MODRM_DST,  extOpcode=True, src_isImmediate=True),
     0xc1: X64InstructionInfo("",      modRm=MODRM_DST,  extOpcode=True, src_isImmediate=True, src_size=REG_SIZE_8),
-    0xc2: X64InstructionInfo("ret",   relativeJump=True, src_size=REG_SIZE_16, src_maxSize=REG_SIZE_16, dst_size=REG_SIZE_0),
+    0xc2: X64InstructionInfo("ret",   relativeJump=True, src_size=REG_SIZE_16, src_maxSize=REG_SIZE_16),
     0xc3: X64InstructionInfo("ret",   op_size=REG_SIZE_0),
 #   0xc4: Invalid
 #   0xc5: Invalid
@@ -910,22 +909,22 @@ twoByteOpcodes = {
         },
     },
 
-    0x80: X64InstructionInfo("jo",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Overflow
-    0x81: X64InstructionInfo("jno",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Not overflow
-    0x82: X64InstructionInfo("jb",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Less than (unsigned)
-    0x83: X64InstructionInfo("jae",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Greater than or equal (unsigned)
-    0x84: X64InstructionInfo("je",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Equal
-    0x85: X64InstructionInfo("jne",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Not equal
-    0x86: X64InstructionInfo("jbe",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Less than or equal (unsigned)
-    0x87: X64InstructionInfo("ja",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Greater than (unsigned)
-    0x88: X64InstructionInfo("js",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Signed
-    0x89: X64InstructionInfo("jns",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Unsigned
-    0x8a: X64InstructionInfo("jp",    relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Parity
-    0x8b: X64InstructionInfo("jnp",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Not parity
-    0x8c: X64InstructionInfo("jlt",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Less than (signed)
-    0x8d: X64InstructionInfo("jge",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Greater than or equal (signed)
-    0x8e: X64InstructionInfo("jle",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Less than or equal (signed)
-    0x8f: X64InstructionInfo("jgt",   relativeJump=True, signExtension=True, op_size=REG_SIZE_32), # Greater than (signed)
+    0x80: X64InstructionInfo("jo",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Overflow
+    0x81: X64InstructionInfo("jno",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Not overflow
+    0x82: X64InstructionInfo("jb",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than (unsigned)
+    0x83: X64InstructionInfo("jae",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than or equal (unsigned)
+    0x84: X64InstructionInfo("je",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Equal
+    0x85: X64InstructionInfo("jne",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Not equal
+    0x86: X64InstructionInfo("jbe",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than or equal (unsigned)
+    0x87: X64InstructionInfo("ja",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than (unsigned)
+    0x88: X64InstructionInfo("js",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Signed
+    0x89: X64InstructionInfo("jns",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Unsigned
+    0x8a: X64InstructionInfo("jp",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Parity
+    0x8b: X64InstructionInfo("jnp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Not parity
+    0x8c: X64InstructionInfo("jlt",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than (signed)
+    0x8d: X64InstructionInfo("jge",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than or equal (signed)
+    0x8e: X64InstructionInfo("jle",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than or equal (signed)
+    0x8f: X64InstructionInfo("jgt",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than (signed)
     0x90: X64InstructionInfo("seto",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Overflow
     0x91: X64InstructionInfo("setno", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Not Overflow
     0x92: X64InstructionInfo("setb",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Less than (unsigned)

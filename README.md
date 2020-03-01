@@ -17,8 +17,8 @@ optional arguments:
 
 ## TODO
 
-* Create a fixup function that adds values for the stack (and maybe flags), copies destination into source when needed (mainly for just math?) 
-* Create a register value that is the stack so that pushes and pops can have both a source and a destination
+* Add a value for the flags register for compare and other flag-related instructions.
+* Create a fixup function that copies destination into source when needed (mainly for just math?)
 * Update tests
 * Need to work on symbol resolution first so that more information is available for determining when functions end. For example, knowing when exit is called is a good way to indicate a possible end of function, like return would.
 * Mark each function symbol when creating them for whether they should be disassembled or not. This is useful in cases where the symbol says the size is 0 bytes when it can actually be disassembled, like \_init()

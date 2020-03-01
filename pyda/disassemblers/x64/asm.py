@@ -762,7 +762,9 @@ def handleSibByte( operand, addrMode, sibByte ):
 def handleOperandAddressing( instruction, operand, binary ):
     """
     Description:    Figures out addressing mode for an operand based on the
-                    Mod R/M byte.
+                    Mod R/M byte. If the Mod R/M byte does not apply to the
+                    operand, the value will only be set to the regOrOp value if
+                    the operand is not an immediate.
 
     Arguments:      instruction - X64Instruction object
                     operand     - X64Operand object
@@ -866,9 +868,10 @@ def handleOperandAddressing( instruction, operand, binary ):
             logger.debug(f"Adding displacement to the operand: {operand.displacement:x}")
 
     # Otherwise, set the value as long as this operand is not an immediate and
-    # the value has not been set, which would indicate that tne operand has a
-    # predetermined value and is already set to the correct value.
-    elif not operand.isImmediate and operand.value == 0:
+    # the value has not been set. If the value was already set, that would
+    # indicate that the operand has a predetermined value and is already set to
+    # the correct value.
+    elif not operand.isImmediate and operand.value is 0:
         logger.debug("Mod R/M byte is not for this operand")
         operand.value = regOrOp
 
@@ -908,12 +911,11 @@ def handleModRmByte( instruction, binary ):
         if not opcodeSuccess:
             return 0
 
-    # Set the operand addressing properties as long as they are not None and
-    # their value is 0, which would mean it does not have a predetermined value.
-    if len(instruction.sources) > 0 and instruction.sources[0].value is 0:
+    # Set the operand addressing properties as long as the operands exist.
+    if len(instruction.sources) > 0:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.sources[0], binary)
 
-    if instruction.dest is not None and instruction.dest.value is 0:
+    if instruction.dest is not None:
         numBytesConsumed += handleOperandAddressing(instruction, instruction.dest, binary)
 
     if numBytesConsumed <= len(binary):
