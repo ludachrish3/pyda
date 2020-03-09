@@ -48,6 +48,7 @@ def handlePrefixes( instruction, binary ):
         elif byte == PREFIX_16_BIT_OPERAND:
             logger.debug("Found the 16-bit prefix")
             instruction.legacyPrefix = byte
+            instruction.sizePrefix   = REG_SIZE_16
 
         # Group 4 prefixes
         elif byte == PREFIX_32_BIT_ADDRESS:
@@ -71,12 +72,12 @@ def handlePrefixes( instruction, binary ):
             # access to the extended 8-bit registers is available.
             if byte == PREFIX_REX_MASK:
                 logger.debug("8-bit REX operand size prefix")
-                instruction.prefixSize = REG_SIZE_8_REX
+                instruction.sizePrefix = REG_SIZE_8_REX
 
             # The base value of the register is extended
             if byte & PREFIX_REX_W_MASK == PREFIX_REX_W_MASK:
                 logger.debug("64-bit operand size prefix")
-                instruction.prefixSize = REG_SIZE_64
+                instruction.sizePrefix = REG_SIZE_64
 
             if byte & PREFIX_REX_R_MASK == PREFIX_REX_R_MASK:
                 logger.debug("Extended reg field prefix")
@@ -113,51 +114,89 @@ def handleOpcode( instruction, binary ):
 
     numOpcodeBytes = 0
 
-    # Check for the opcode being a 2 byte opcode
-    if binary[0] == PREFIX_2_BYTE_OPCODE and len(binary) > 1 and binary[1] in twoByteOpcodes:
-        numOpcodeBytes = 2
+    try:
+        # Check for the opcode being a 2 byte opcode
+        if binary[0] == PREFIX_2_BYTE_OPCODE:
 
-        # If the info object is actually a dictionary, then there is a secondary
-        # opcode and the next byte also needs to be consumed.
-        info = twoByteOpcodes[binary[1]]
+            numOpcodeBytes = 2
+            primaryOpcode = binary[1]
+            info = twoByteOpcodes[primaryOpcode]
+
+        else:
+
+            numOpcodeBytes = 1
+            primaryOpcode = binary[0]
+            info = oneByteOpcodes[primaryOpcode]
+
+    except NameError:
+
+        # The opcode is not a valid 1 or 2 byte opcode
+        raise Exception(f"An invalid opcode was found: {primaryOpcode:02x}")
+        return
+
+    # If the info object is a dictionary, then there is more work to be done to
+    # determine the secondary opcode, prefix, and extended opcode.
+    if type(info) == dict:
+
+        # There is a secondary opcode
+        if binary[numOpcodeBytes] in info:
+
+            info = info[binary[numOpcodeBytes]]
+            numOpcodeBytes += 1
+
+        # There are no secondary opcodes defined, so get the default
+        elif None in info:
+            info = info[None]
+
+        # If the info object is a dictionary, then there is a prefix or
+        # extended opcode. Remove the prefix value if it is actually used for
+        # specifying a different instruction.
         if type(info) == dict:
-            if len(binary) > 2 and binary[2] in info:
-                info = info[binary[2]]
-                numOpcodeBytes += 1
+
+            legacyPrefix = instruction.legacyPrefix
+            sizePrefix   = instruction.sizePrefix
+            logger.info(f"size prefix: {sizePrefix}")
+
+            if legacyPrefix is not None and legacyPrefix in info:
+                info = info[legacyPrefix]
+                instruction.legacyPrefix = None
+
+            elif sizePrefix is not None and sizePrefix in info:
+                info = info[sizePrefix]
+                instruction.sizePrefix = None
 
             elif None in info:
                 info = info[None]
 
             else:
-                raise Exception("Could not resolve opcode")
+                logger.warning(f"Failed to find the required prefix")
+                raise Exception(f"Failed to find the required prefix")
 
-        instruction.setAttributes(binary[1], info)
+            # If the info object is a dictionary, then there is an extended
+            # opcode.
+            if type(info) == dict:
 
-    # Check for the opcode being a 1 byte opcode
-    elif binary[0] in oneByteOpcodes:
-        numOpcodeBytes = 1
+                # Get the next byte, which is the Mod R/M byte to figure out the
+                # operation and, if needed, the addressing mode.
+                modRmByte = binary[numOpcodeBytes]
+                mod = modRmByte & ADDR_MOD_MASK
+                op  = (modRmByte & ADDR_REG_MASK) >> 3
 
-        # If the info object is actually a dictionary, then there is a secondary
-        # opcode and the next byte also needs to be consumed.
-        info = oneByteOpcodes[binary[0]]
-        if type(info) == dict:
-            if len(binary) > 1 and binary[1] in info:
-                info = info[binary[1]]
-                numOpcodeBytes += 1
+                info = info[op]
 
-            elif None in info:
-                logger.debug("THIS SHOULD PRINT")
-                info = info[None]
+                # One last time...
+                # If the info object is a dictionary, then there is a difference
+                # in extended opcode based on the addressing mode.
+                if type(info) == dict:
 
-            else:
-                raise Exception("Could not resolve opcode")
+                    if mod in info:
+                        info = info[mod]
 
-        instruction.setAttributes(binary[0], info)
+                    else:
+                        info = info[None]
 
-    # The opcode is not a valid 1 or 2 byte opcode, so keep the new instruction
-    # the same as the one that was passed in.
-    else:
-        logger.warning(f"An invalid opcode was found: {binary[0]:02x}")
+
+    instruction.setAttributes(primaryOpcode, info)
 
     # Append the opcode bytes to the instruction's list of bytes
     instruction.bytes += list(binary[0:numOpcodeBytes])
@@ -180,121 +219,7 @@ def handleExtendedOpcode( instruction, modRmByte ):
     mod = modRmByte & ADDR_MOD_MASK
     op  = (modRmByte & ADDR_REG_MASK) >> 3
 
-    if instruction.bytes[-1] in [ 0x80, 0x81, 0x83 ]:
-
-        if op == 0:
-            instruction.mnemonic = "add"
-
-        elif op == 1:
-            instruction.mnemonic = "or"
-
-        elif op == 2:
-            instruction.mnemonic = "adc"
-
-        elif op == 3:
-            instruction.mnemonic = "sbb"
-
-        elif op == 4:
-            instruction.mnemonic = "and"
-
-        elif op == 5:
-            instruction.mnemonic = "sub"
-
-        elif op == 6:
-            instruction.mnemonic = "xor"
-
-        elif op == 7:
-            instruction.mnemonic = "cmp"
-
-        else:
-            logger.debug("An invalid Mod R/M value was received")
-            return False
-
-    elif instruction.bytes[-1] in [ 0x8f ]:
-
-        if op != 0:
-            logger.debug("An invalid Mod R/M value was received")
-            return False
-
-    elif instruction.bytes[-1] in [ 0xc0, 0xc1, 0xd0, 0xd1, 0xd2, 0xd3 ]:
-
-        if op == 0:
-            instruction.mnemonic = "rol"
-
-        elif op == 1:
-            instruction.mnemonic = "ror"
-
-        elif op == 2:
-            instruction.mnemonic = "rcl"
-
-        elif op == 3:
-            instruction.mnemonic = "rcr"
-
-        elif op == 4:
-            instruction.mnemonic = "shl"
-
-        elif op == 5:
-            instruction.mnemonic = "shr"
-
-        elif op == 6:
-            instruction.mnemonic = "sal"
-
-        elif op == 7:
-            instruction.mnemonic = "sar"
-
-        else:
-            logger.debug("An invalid Mod R/M value was received")
-            return False
-
-    elif instruction.bytes[-1] in [ 0xfe ]:
-
-        if op == 0:
-            instruction.mnemonic = "inc"
-
-        elif op == 1:
-            instruction.mnemonic = "dec"
-
-        else:
-            logger.debug("An invalid Mod R/M value was received")
-            return False
-
-    elif instruction.bytes[-1] in [ 0xff ]:
-
-        # Clear out the source and destination operands because they might be
-        # removed depending on which value is used.
-        instruction.sources = []
-        instruction.dest    = None
-
-        if op == 0:
-            newInfo = X64InstructionInfo("inc", modRm=MODRM_DST, src_size=REG_SIZE_0)
-
-        elif op == 1:
-            newInfo = X64InstructionInfo("dec", modRm=MODRM_DST, src_size=REG_SIZE_0)
-
-        elif op == 2:
-            newInfo = X64InstructionInfo("call", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
-
-        elif op == 3 and mod != MOD_DIRECT:
-            newInfo = X64InstructionInfo("callf", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
-            # TODO: This needs to be done correctly. See Intel documentation
-
-        elif op == 4:
-            newInfo = X64InstructionInfo("jmp", modRm=MODRM_SRC, src_size=REG_SIZE_32, dst_size=REG_SIZE_0)
-
-        elif op == 5 and mod != MOD_DIRECT:
-            newInfo = X64InstructionInfo("jmpf", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
-            # TODO: This needs to be done correctly. See Intel documentation
-
-        elif op == 6:
-            newInfo = X64InstructionInfo("push", modRm=MODRM_SRC, src_size=REG_SIZE_64, dst_size=REG_SIZE_0)
-
-        else:
-            logger.debug("An invalid Mod R/M value was received")
-            return False
-
-        instruction.setAttributes(instruction.bytes[-1], newInfo)
-
-    elif instruction.bytes[-1] in [ 0xf6, 0xf7 ]:
+    if instruction.bytes[-1] in [ 0xf6, 0xf7 ]:
 
         # Clear out the source and destination operands because they might be
         # removed depending on which value is used.
@@ -340,61 +265,6 @@ def handleExtendedOpcode( instruction, modRmByte ):
         else:
             logger.debug("An invalid Mod R/M value was received")
             return False
-
-    elif instruction.bytes[-1] in [ 0xd8 ]:
-
-        # Clear out the source and destination operands because they might be
-        # removed depending on which value is used.
-        instruction.sources = []
-        instruction.dest    = None
-
-        if op == 0 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fadd",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 0:
-            newInfo = X64InstructionInfo("fadd",   modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 1 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fmul",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 1:
-            newInfo = X64InstructionInfo("fmul",   modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 2 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcom",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 3 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fcomp",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 4 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fsub",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 4:
-            newInfo = X64InstructionInfo("fsub",   modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 5 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fsubr",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 5:
-            newInfo = X64InstructionInfo("fsubr",  modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 6 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fdiv",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 6:
-            newInfo = X64InstructionInfo("fdiv",  modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 7 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fdivr",  op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 7:
-            newInfo = X64InstructionInfo("fdivr",  modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        else:
-            logger.debug("An invalid Mod R/M value was received")
-            return False
-
-        instruction.setAttributes(instruction.bytes[-1], newInfo)
 
     elif instruction.bytes[-1] in [ 0xd9 ]:
 
@@ -871,7 +741,7 @@ def handleOperandAddressing( instruction, operand, binary ):
     # the value has not been set. If the value was already set, that would
     # indicate that the operand has a predetermined value and is already set to
     # the correct value.
-    elif not operand.isImmediate and operand.value is 0:
+    elif operand.reg:
         logger.debug("Mod R/M byte is not for this operand")
         operand.value = regOrOp
 
@@ -897,32 +767,16 @@ def handleModRmByte( instruction, binary ):
         return 0
 
     numBytesConsumed = 1
-    modRmByte = binary[0]
-    mod     = modRmByte & ADDR_MOD_MASK
-    regOrOp = (modRmByte & ADDR_REG_MASK) >> 3
-    regmem  = modRmByte & ADDR_RM_MASK
 
-    # If the instruction has an extended opcode, the REG value is actually
-    # part of the opcode.
-    if instruction.info.extOpcode:
-
-        logger.debug(f"Found an opcode that needs to be extended: {instruction.bytes[-1]:x}")
-        opcodeSuccess = handleExtendedOpcode(instruction, modRmByte)
-        if not opcodeSuccess:
-            return 0
-
-    # Set the operand addressing properties as long as the operands exist.
-    if len(instruction.sources) > 0:
-        numBytesConsumed += handleOperandAddressing(instruction, instruction.sources[0], binary)
-
-    if instruction.dest is not None:
-        numBytesConsumed += handleOperandAddressing(instruction, instruction.dest, binary)
+    # Set the addressing properties for each operand
+    for operand in instruction.operands:
+        numBytesConsumed += handleOperandAddressing(instruction, operand, binary)
 
     if numBytesConsumed <= len(binary):
         instruction.bytes += list(binary[:numBytesConsumed])
 
     else:
-        return 0
+        raise IndexError("There were not enough bytes to handle the Mod R/M byte")
 
     return numBytesConsumed
 
@@ -947,10 +801,10 @@ def handleImmediate( instruction, operand, binary ):
 
     # Round the operand size down because there are some register sizes that use
     # decimal values to differentiate them. The actual size is always the
-    # truncated value of the register size.
+    # truncated value of the register size. Relative jumps are always signed.
     numBytes = int(operand.size)
     instruction.bytes += list(binary[:numBytes])
-    immediate = int.from_bytes(binary[:numBytes], "little", signed=instruction.info.signExtension)
+    immediate = int.from_bytes(binary[:numBytes], "little", signed=instruction.info.relativeJump)
 
     # If the instruction is a relative jump, mark the source as indirect from
     # the RIP register so that it can be resolved once processing all
@@ -1031,6 +885,7 @@ def disassemble( binary, addr ):
 
         # Replace the instruction with the one that corresponds to the opcode.
         # Consume all opcodes bytes from the binary.
+        # TODO: Add exceptionf or IndexError if binary bytes run out
         numOpcodeBytes = handleOpcode(curInstruction, binary)
         binary = binary[numOpcodeBytes:]
         if numOpcodeBytes == 0 or curInstruction.info is None:
@@ -1044,7 +899,7 @@ def disassemble( binary, addr ):
             continue
 
         # If the instruction has a Mod R/M byte, parse it next
-        if curInstruction.info.modRm != MODRM_NONE:
+        if curInstruction.hasModRm:
             numModRmBytes = handleModRmByte(curInstruction, binary)
             if numModRmBytes > 0:
                 binary = binary[numModRmBytes:]
@@ -1060,12 +915,12 @@ def disassemble( binary, addr ):
         # "==" because there is an instruction that loads 0.0 into floating
         # point registers, and this prevents that instruction or others like it
         # from trying to consume bytes for an immediate.
-        for sourceOperand in curInstruction.sources:
+        for operand in curInstruction.operands:
 
-            if sourceOperand.isImmediate and sourceOperand.value is 0:
+            if operand.isImmediate and operand.value is 0:
 
                 logger.debug("Handling the extra immeidate")
-                numImmediateBytes = handleImmediate(curInstruction, sourceOperand, binary)
+                numImmediateBytes = handleImmediate(curInstruction, operand, binary)
                 if numImmediateBytes < 0:
 
                     offTheRails = True
@@ -1073,11 +928,7 @@ def disassemble( binary, addr ):
 
                 binary = binary[numImmediateBytes:]
 
-            resolveRelativeAddr(curInstruction, sourceOperand)
-
-        # Resolve any addresses that are relative now that the value of RIP can
-        # be calculated because all bytes of the current isntruction are consumed.
-        resolveRelativeAddr(curInstruction, curInstruction.dest)
+            resolveRelativeAddr(curInstruction, operand)
 
         logger.debug(curInstruction)
 
@@ -1086,6 +937,14 @@ def disassemble( binary, addr ):
         addr += len(curInstruction.bytes)
 
     return instructions
+
+def normalize ( instruction ):
+    # TODO: Fix up the instruction to have the destination copied to the sources
+    # if that applies. Otherwise, separate source and destination operands
+    # because the base Instruction class only has source and destination
+    # members, not one list of operands.
+
+    return instruction
 
 
 def findFunctions( instructions ):

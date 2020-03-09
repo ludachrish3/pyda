@@ -17,6 +17,10 @@ optional arguments:
 
 ## TODO
 
+* Redo how operands are handled so that they are properly assigned source and destination.
+* Don't create an instruction right away in the disassemble loop. Start off just keeping track of values and then have handleOpcode() create the instruction. This will help handle instruction types that should eventually be supported (add, subtrace, compare, branch, call, etc)
+* Change relative jumps to just have a value of REG_RIP, and then mark the operand as indirect and set its displacement if the operand's value is REG_RIP. Whether the operand is signed will be determined by whether the operand is indirect.
+* Redo how extended opcodes work. Add the op value and the address mode as levels to the dictionary. Maybe distinguish extended opcodes using a Mod R/M byte from secondary opcodes by introducing another layer between opcodes and their secondary opcodes that says whether they are extended or secondary opcodes.
 * Add a value for the flags register for compare and other flag-related instructions.
 * Create a fixup function that copies destination into source when needed (mainly for just math?)
 * Update tests
