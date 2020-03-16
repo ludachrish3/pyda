@@ -279,6 +279,13 @@ class X64InstructionInfo():
         self.instKwargs = { key.split("_")[0]: value for (key, value) in kwargs.items() if key.endswith("_inst") }
         self.operandKwargs = []
 
+        # If there are no operands, then make sure the list of destinations is
+        # empty. There can't be destinations if there are no operands. The
+        # opposite is not true, however, so a lack of destinations does not
+        # imply that there are no operands.
+        if numOperands == 0:
+            destinations = []
+
         for operandIndex in range(numOperands):
 
             self.operandKwargs.append({ key.split("_")[0]: value for (key, value) in kwargs.items() if key.endswith((f"_{operandIndex}", "_op")) })
@@ -289,9 +296,9 @@ class X64InstructionInfo():
 
             logger.debug(f"operand kwargs #{operandIndex}: {self.operandKwargs[operandIndex]}")
 
+
         # Operands with an index in destinations gets the isDestination value
         # set to True
-        # TODO: maybe need destinationIndices = copy.deepcopy(destinations)
         for dest in destinations:
             self.operandKwargs[dest]["isDestination"] = True
 
@@ -522,8 +529,8 @@ oneByteOpcodes = {
     },
     0x84: X64InstructionInfo("test",  numOperands=3, value_0=REG_RFLAGS, modRm_1=True, reg_2=True),
     0x85: X64InstructionInfo("test",  numOperands=3, value_0=REG_RFLAGS, modRm_1=True, reg_2=True),
-    0x86: X64InstructionInfo("xchg",  modRm_1=True, reg_0=True, inst_exchange=True),
-    0x87: X64InstructionInfo("xchg",  modRm_1=True, reg_0=True, inst_exchange=True),
+    0x86: X64InstructionInfo("xchg",  modRm_1=True, reg_0=True, exchange_inst=True),
+    0x87: X64InstructionInfo("xchg",  modRm_1=True, reg_0=True, exchange_inst=True),
     0x88: X64InstructionInfo("mov",   modRm_0=True, reg_1=True),
     0x89: X64InstructionInfo("mov",   modRm_0=True, reg_1=True),
     0x8a: X64InstructionInfo("mov",   modRm_1=True, reg_0=True),
@@ -544,13 +551,13 @@ oneByteOpcodes = {
             0xf3: X64InstructionInfo("pause"),
         },
     },
-    0x91: X64InstructionInfo("xchg",  value_0=1, inst_exchange=True, size_op=REG_SIZE_32),
-    0x92: X64InstructionInfo("xchg",  value_0=2, inst_exchange=True, size_op=REG_SIZE_32),
-    0x93: X64InstructionInfo("xchg",  value_0=3, inst_exchange=True, size_op=REG_SIZE_32),
-    0x94: X64InstructionInfo("xchg",  value_0=4, inst_exchange=True, size_op=REG_SIZE_32),
-    0x95: X64InstructionInfo("xchg",  value_0=5, inst_exchange=True, size_op=REG_SIZE_32),
-    0x96: X64InstructionInfo("xchg",  value_0=6, inst_exchange=True, size_op=REG_SIZE_32),
-    0x97: X64InstructionInfo("xchg",  value_0=7, inst_exchange=True, size_op=REG_SIZE_32),
+    0x91: X64InstructionInfo("xchg",  value_0=1, exchange_inst=True, size_op=REG_SIZE_32),
+    0x92: X64InstructionInfo("xchg",  value_0=2, exchange_inst=True, size_op=REG_SIZE_32),
+    0x93: X64InstructionInfo("xchg",  value_0=3, exchange_inst=True, size_op=REG_SIZE_32),
+    0x94: X64InstructionInfo("xchg",  value_0=4, exchange_inst=True, size_op=REG_SIZE_32),
+    0x95: X64InstructionInfo("xchg",  value_0=5, exchange_inst=True, size_op=REG_SIZE_32),
+    0x96: X64InstructionInfo("xchg",  value_0=6, exchange_inst=True, size_op=REG_SIZE_32),
+    0x97: X64InstructionInfo("xchg",  value_0=7, exchange_inst=True, size_op=REG_SIZE_32),
     0x98: {
         None: { # There are no secondary opcodes
             PREFIX_16_BIT_OPERAND: X64InstructionInfo("cbw",  size_0=REG_SIZE_16, size_1=REG_SIZE_8),
@@ -566,7 +573,7 @@ oneByteOpcodes = {
         },
     },
 #   0x9a: Invalid
-    0x9b: X64InstructionInfo("fwait", numOperands=0, destinations=[]),
+    0x9b: X64InstructionInfo("fwait", numOperands=0),
     0x9c: X64InstructionInfo("pushf", value_0=REG_STACK,  value_1=REG_RFLAGS, size_op=REG_SIZE_64),
     0x9d: X64InstructionInfo("popf",  value_1=REG_STACK,  value_0=REG_RFLAGS, size_op=REG_SIZE_64),
     0x9e: X64InstructionInfo("sahf",  value_0=REG_RFLAGS, value_1=REG_RSP, size_op=REG_SIZE_8, op_maxSize=REG_SIZE_8),  # REG_RSP is the value for %ah at 8 bits
@@ -620,19 +627,19 @@ oneByteOpcodes = {
     0xc1: {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
-                0: X64InstructionInfo("rol", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
-                1: X64InstructionInfo("ror", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
-                2: X64InstructionInfo("rcl", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
-                3: X64InstructionInfo("rcr", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
-                4: X64InstructionInfo("shl", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
-                5: X64InstructionInfo("shr", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
-                6: X64InstructionInfo("sal", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
-                7: X64InstructionInfo("sar", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_32),
+                0: X64InstructionInfo("rol", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
+                1: X64InstructionInfo("ror", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
+                2: X64InstructionInfo("rcl", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
+                3: X64InstructionInfo("rcr", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
+                4: X64InstructionInfo("shl", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
+                5: X64InstructionInfo("shr", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
+                6: X64InstructionInfo("sal", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
+                7: X64InstructionInfo("sar", modRm_0=True, isImmediate_1=True, size_1=REG_SIZE_8),
             },
         },
     },
     0xc2: X64InstructionInfo("ret",   numOperands=1, destinations=[], relativeJump=True, size_0=REG_SIZE_16, _maxSize_0=REG_SIZE_16),
-    0xc3: X64InstructionInfo("ret",   numOperands=0, destinations=[]),
+    0xc3: X64InstructionInfo("ret",   numOperands=0),
 #   0xc4: Invalid
 #   0xc5: Invalid
     0xc6: {
@@ -650,9 +657,9 @@ oneByteOpcodes = {
         },
     },
     0xc8: X64InstructionInfo("enter", numOperands=2, destinations=[], isImmediate_op=True, size_0=REG_SIZE_16, size_1=REG_SIZE_8),
-    0xc9: X64InstructionInfo("leave", numOperands=0, destinations=[]),
+    0xc9: X64InstructionInfo("leave", numOperands=0),
     0xca: X64InstructionInfo("retf",  numOperands=1, destinations=[], isImmediate_0=True,  size_0=REG_SIZE_16),
-    0xcb: X64InstructionInfo("retf",  numOperands=0, destinations=[]),
+    0xcb: X64InstructionInfo("retf",  numOperands=0),
     0xcc: X64InstructionInfo("int",   destinations=[], isImmediate_0=True, value_0=3, value_1=REG_RFLAGS),
     0xcd: X64InstructionInfo("int",   destinations=[], isImmediate_0=True, value_1=REG_RFLAGS),
     0xce: X64InstructionInfo("into",  destinations=[], value_0=REG_RFLAGS),
@@ -716,7 +723,7 @@ oneByteOpcodes = {
 #   0xd4: Invalid
 #   0xd5: Invalid
 #   0xd6: Invalid
-    0xd7: X64InstructionInfo("xlat", size_op=REG_SIZE_8, segmentRegister_1=SEGMENT_REG_DS),
+    0xd7: X64InstructionInfo("xlat", size_op=REG_SIZE_8, segmentReg_1=SEGMENT_REG_DS),
     0xd8: {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
@@ -754,44 +761,68 @@ oneByteOpcodes = {
         },
     },
     0xd9: {
-        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
-        0xd0: X64InstructionInfo("nop",     size_op=REG_SIZE_0),
-        0xe0: X64InstructionInfo("fchs",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
-        0xe1: X64InstructionInfo("fabs",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
-        0xe4: X64InstructionInfo("ftest",   dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
-        0xe5: X64InstructionInfo("fxam",    dst_size=REG_SIZE_64, dst_value=REG_ST0, src_size=REG_SIZE_0),
-        0xe8: X64InstructionInfo("fld1",    src_isImmediate=True, size_op=REG_SIZE_64,  dst_value=REG_ST0, src_value=1.0),
-        0xe9: X64InstructionInfo("fldl2t",  src_isImmediate=True, size_op=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(10, 2)),
-        0xea: X64InstructionInfo("fldl2e",  src_isImmediate=True, size_op=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(10, math.e)),
-        0xeb: X64InstructionInfo("fldpi",   src_isImmediate=True, size_op=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.pi),
-        0xec: X64InstructionInfo("fldlg2",  src_isImmediate=True, size_op=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(2, 10)),
-        0xed: X64InstructionInfo("fldln2",  src_isImmediate=True, size_op=REG_SIZE_64,  dst_value=REG_ST0, src_value=math.log(math.e, 2)),
-        0xee: X64InstructionInfo("fldz",    src_isImmediate=True, size_op=REG_SIZE_64,  dst_value=REG_ST0, src_value=0.0),
-        0xf0: X64InstructionInfo("f2xm1",   size_op=REG_SIZE_64,  op_value=REG_ST0),
-        0xf1: X64InstructionInfo("fyl2x",   size_op=REG_SIZE_64,  src_value=REG_ST0, dst_value=REG_ST1),
-        0xf2: X64InstructionInfo("fptan",   size_op=REG_SIZE_64,  op_value=REG_ST0),
-        0xf3: X64InstructionInfo("fpatan",  size_op=REG_SIZE_64,  src_value=REG_ST0, dst_value=REG_ST1),
-        0xf4: X64InstructionInfo("fxtract", size_op=REG_SIZE_64,  op_value=REG_ST0),
-        0xf5: X64InstructionInfo("fprem1",  size_op=REG_SIZE_64,  src_value=REG_ST1, dst_value=REG_ST0),
-        0xf6: X64InstructionInfo("fdecstp", size_op=REG_SIZE_0),
-        0xf7: X64InstructionInfo("fincstp", size_op=REG_SIZE_0),
-        0xf8: X64InstructionInfo("fprem",   size_op=REG_SIZE_64,  src_value=REG_ST1, dst_value=REG_ST0),
-        0xf9: X64InstructionInfo("fyl2xp1", size_op=REG_SIZE_64,  src_value=REG_ST0, dst_value=REG_ST1),
-        0xfa: X64InstructionInfo("fsqrt",   size_op=REG_SIZE_64,  op_value=REG_ST0),
-        0xfb: X64InstructionInfo("fsincos", size_op=REG_SIZE_64,  op_value=REG_ST0),
-        0xfc: X64InstructionInfo("frndint", size_op=REG_SIZE_64,  op_value=REG_ST0),
-        0xfd: X64InstructionInfo("fscale",  size_op=REG_SIZE_64,  src_value=REG_ST1, dst_value=REG_ST0),
-        0xfe: X64InstructionInfo("fsin",    size_op=REG_SIZE_64,  op_value=REG_ST0),
-        0xff: X64InstructionInfo("fcos",    size_op=REG_SIZE_64,  op_value=REG_ST0),
+        None: {
+            None: {
+                0: X64InstructionInfo("fld", floatReg_op=True, modRm_1=True, size_op=REG_SIZE_32, value_0=REG_ST0),
+                1: {
+                    MOD_DIRECT: X64InstructionInfo("fxch", floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                },
+                2: X64InstructionInfo("fxch",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_1=REG_ST0, exchange_inst=True),
+                3: X64InstructionInfo("fstp",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                4: X64InstructionInfo("fldenv", modRm_1=True, size_op=REG_SIZE_64, value_0=REG_FPENV),
+                5: X64InstructionInfo("fldcw",  modRm_1=True, size_op=REG_SIZE_16, value_0=REG_FPENV),
+                6: X64InstructionInfo("fstenv", modRm_0=True, size_op=REG_SIZE_64, value_1=REG_FPENV),
+                7: X64InstructionInfo("fstcw",  modRm_0=True, size_op=REG_SIZE_16, value_1=REG_FPENV),
+            },
+        },
+        0xd0: X64InstructionInfo("nop",     numOperands=0),
+        0xe0: X64InstructionInfo("fchs",    numOperands=1, value=REG_ST0, size_0=REG_SIZE_64),
+        0xe1: X64InstructionInfo("fabs",    numOperands=1, value=REG_ST0, size_0=REG_SIZE_64),
+        0xe4: X64InstructionInfo("ftst",    numOperands=3, value_0=REG_RFLAGS, value_1=REG_ST0, value_2=0.0, size_op=REG_SIZE_64),
+        0xe5: X64InstructionInfo("fxam",    value_0=REG_RFLAGS, value_1=REG_ST0, size_op=REG_SIZE_64),
+        0xe8: X64InstructionInfo("fld1",    numOperands=1, value_0=REG_ST0, value_1=1.0, isImmediate_1=True, size_op=REG_SIZE_64),
+        0xe9: X64InstructionInfo("fldl2t",  numOperands=1, value_0=REG_ST0, value_1=math.log(10, 2),      isImmediate_1=True, size_op=REG_SIZE_64),
+        0xea: X64InstructionInfo("fldl2e",  numOperands=1, value_0=REG_ST0, value_1=math.log(10, math.e), isImmediate_1=True, size_op=REG_SIZE_64),
+        0xeb: X64InstructionInfo("fldpi",   numOperands=1, value_0=REG_ST0, value_1=math.pi,              isImmediate_1=True, size_op=REG_SIZE_64),
+        0xec: X64InstructionInfo("fldlg2",  numOperands=1, value_0=REG_ST0, value_1=math.log(2, 10),      isImmediate_1=True, size_op=REG_SIZE_64),
+        0xed: X64InstructionInfo("fldln2",  numOperands=1, value_0=REG_ST0, value_1=math.log(math.e, 2),  isImmediate_1=True, size_op=REG_SIZE_64),
+        0xee: X64InstructionInfo("fldz",    numOperands=1, value_0=REG_ST0, value_1=0.0, isImmediate_1=True, size_op=REG_SIZE_64),
+        0xf0: X64InstructionInfo("f2xm1",   numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xf1: X64InstructionInfo("fyl2x",   numOperands=1, value_0=REG_ST1, value_1=REG_ST0, size_op=REG_SIZE_64),
+        0xf2: X64InstructionInfo("fptan",   numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xf3: X64InstructionInfo("fpatan",  value_0=REG_ST1, value_1=REG_ST0, size_op=REG_SIZE_64),
+        0xf4: X64InstructionInfo("fxtract", numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xf5: X64InstructionInfo("fprem1",  value_0=REG_ST1, value_1=REG_ST0, size_op=REG_SIZE_64),
+        0xf6: X64InstructionInfo("fdecstp", numOperands=0),
+        0xf7: X64InstructionInfo("fincstp", numOperands=0),
+        0xf8: X64InstructionInfo("fprem",   value_0=REG_ST0, value_1=REG_ST1, size_op=REG_SIZE_64),
+        0xf9: X64InstructionInfo("fyl2xp1", value_0=REG_ST1, value_1=REG_ST0, size_op=REG_SIZE_64),
+        0xfa: X64InstructionInfo("fsqrt",   numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xfb: X64InstructionInfo("fsincos", numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xfc: X64InstructionInfo("frndint", numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xfd: X64InstructionInfo("fscale",  value_0=REG_ST0, value_1=REG_ST1, size_op=REG_SIZE_64),
+        0xfe: X64InstructionInfo("fsin",    numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xff: X64InstructionInfo("fcos",    numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
     },
 #   0xda: TODO:
     0xdb: {
-        None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
-        0xe0: X64InstructionInfo("nop",     size_op=REG_SIZE_0),
-        0xe1: X64InstructionInfo("nop",     size_op=REG_SIZE_0),
-        0xe2: X64InstructionInfo("fclex",   size_op=REG_SIZE_0),
-        0xe3: X64InstructionInfo("finit",   size_op=REG_SIZE_0),
-        0xe4: X64InstructionInfo("nop",     size_op=REG_SIZE_0),
+        None: {
+            None: {
+                0: {
+                    None:       X64InstructionInfo("fild",   floatReg_op=True, modRm_1=True, value_0=REG_ST0),
+                    MOD_DIRECT: X64InstructionInfo("cmovnb", floatReg_op=True, modRm_1=True, value_0=REG_ST0),
+                },
+                1: {
+                    None:       X64InstructionInfo("fisttp",  floatReg_op=True, modRm_0=True, value_1=REG_ST0),
+                    MOD_DIRECT: X64InstructionInfo("fcmovne", floatReg_op=True, modRm_0=True, value_1=REG_ST0),
+                },
+            },
+        },
+        0xe0: X64InstructionInfo("nop",     numOperands=0),
+        0xe1: X64InstructionInfo("nop",     numOperands=0),
+        0xe2: X64InstructionInfo("fclex",   numOperands=0),
+        0xe3: X64InstructionInfo("finit",   numOperands=0),
+        0xe4: X64InstructionInfo("nop",     numOperands=0),
     },
     0xdc: {
         None: X64InstructionInfo("",        modRm=MODRM_SRC, extOpcode=True),
@@ -814,10 +845,10 @@ oneByteOpcodes = {
 #   0xe5: TODO:
 #   0xe6: TODO:
 #   0xe7: TODO:
-    0xe8: X64InstructionInfo("call",  relativeJump=True, signExtension=True, src_size=REG_SIZE_32, src_maxSize=REG_SIZE_32),
-    0xe9: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32, src_maxSize=REG_SIZE_32),
+    0xe8: X64InstructionInfo("call",  destinations=[], relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
+    0xe9: X64InstructionInfo("jmp",   destinations=[], relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
 #   0xea: Invalid
-    0xeb: X64InstructionInfo("jmp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_8),
+    0xeb: X64InstructionInfo("jmp",   destinations=[], relativeJump=True, size_0=REG_SIZE_8),
 #   0xec: TODO:
 #   0xed: TODO:
 #   0xee: TODO:
@@ -826,16 +857,16 @@ oneByteOpcodes = {
 #   0xf1: TODO:
 #   0xf2: Repeat while not zero prefix
 #   0xf3: Repeat while zero prefix
-    0xf4: X64InstructionInfo("hlt",   src_size=REG_SIZE_0, dst_size=REG_SIZE_0),
-    0xf5: X64InstructionInfo("cmc",   size_op=REG_SIZE_0),
+    0xf4: X64InstructionInfo("hlt",   numOperands=0),
+    0xf5: X64InstructionInfo("cmc",   numOperands=0),
     0xf6: X64InstructionInfo("",      modRm=MODRM_SRC, extOpcode=True),
     0xf7: X64InstructionInfo("",      modRm=MODRM_SRC, extOpcode=True),
-    0xf8: X64InstructionInfo("clc",   size_op=REG_SIZE_0),
-    0xf9: X64InstructionInfo("stc",   size_op=REG_SIZE_0),
-    0xfa: X64InstructionInfo("cli",   size_op=REG_SIZE_0),
-    0xfb: X64InstructionInfo("sti",   size_op=REG_SIZE_0),
-    0xfc: X64InstructionInfo("cld",   size_op=REG_SIZE_0),
-    0xfd: X64InstructionInfo("std",   size_op=REG_SIZE_0),
+    0xf8: X64InstructionInfo("clc",   numOperands=0),
+    0xf9: X64InstructionInfo("stc",   numOperands=0),
+    0xfa: X64InstructionInfo("cli",   numOperands=0),
+    0xfb: X64InstructionInfo("sti",   numOperands=0),
+    0xfc: X64InstructionInfo("cld",   numOperands=0),
+    0xfd: X64InstructionInfo("std",   numOperands=0),
     0xfe: {
         None: {
             None: {

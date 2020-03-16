@@ -266,43 +266,6 @@ def handleExtendedOpcode( instruction, modRmByte ):
             logger.debug("An invalid Mod R/M value was received")
             return False
 
-    elif instruction.bytes[-1] in [ 0xd9 ]:
-
-        # Clear out the source and destination operands because they might be
-        # removed depending on which value is used.
-        instruction.sources = []
-        instruction.dest    = None
-
-        if op == 0:
-            newInfo = X64InstructionInfo("fld",    op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 1 and mod == MOD_DIRECT:
-            newInfo = X64InstructionInfo("fxch",   op_floatReg=True, modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_ST0)
-
-        elif op == 2 and mod != MOD_DIRECT:
-            newInfo = X64InstructionInfo("fst",    modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
-
-        elif op == 3 and mod != MOD_DIRECT:
-            newInfo = X64InstructionInfo("fstp",   modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_ST0)
-
-        elif op == 4:
-            newInfo = X64InstructionInfo("fldenv", modRm=MODRM_SRC, op_size=REG_SIZE_64, dst_value=REG_FPENV)
-
-        elif op == 5:
-            newInfo = X64InstructionInfo("fldcw",  modRm=MODRM_SRC, op_size=REG_SIZE_16, dst_value=REG_FPENV)
-
-        elif op == 6:
-            newInfo = X64InstructionInfo("fstenv", modRm=MODRM_DST, op_size=REG_SIZE_64, src_value=REG_FPENV)
-
-        elif op == 7:
-            newInfo = X64InstructionInfo("fstcw",  modRm=MODRM_DST, op_size=REG_SIZE_16, src_value=REG_FPENV)
-
-        else:
-            logger.debug("An invalid Mod R/M value was received")
-            return False
-
-        instruction.setAttributes(instruction.bytes[-1], newInfo)
-
     elif instruction.bytes[-1] in [ 0xdb ]:
 
         # Clear out the source and destination operands because they might be
