@@ -21,7 +21,7 @@ optional arguments:
 * Don't create an instruction right away in the disassemble loop. Start off just keeping track of values and then have handleOpcode() create the instruction. This will help handle instruction types that should eventually be supported (add, subtrace, compare, branch, call, etc)
 * Change relative jumps to just have a value of REG_RIP, and then mark the operand as indirect and set its displacement if the operand's value is REG_RIP. Whether the operand is signed will be determined by whether the operand is indirect.
 * Redo how extended opcodes work. Add the op value and the address mode as levels to the dictionary. Maybe distinguish extended opcodes using a Mod R/M byte from secondary opcodes by introducing another layer between opcodes and their secondary opcodes that says whether they are extended or secondary opcodes.
-* Add a value for the flags register for compare and other flag-related instructions.
+* Assign instruction types for each X64InstructionInfo object. This can implicitly hold properties that are always true for a type of instruction, like for exchanges and floating point instructions.
 * Create a fixup function that copies destination into source when needed (mainly for just math?)
 * Update tests
 * Need to work on symbol resolution first so that more information is available for determining when functions end. For example, knowing when exit is called is a good way to indicate a possible end of function, like return would.
@@ -35,9 +35,7 @@ optional arguments:
 * In order to find functions in a stripped binary, start at beginning of .text section. Start disassembling and consider all jumps that can be taken. If there are no jumps left and a ret instruction is reached, then that is the end of the function. All instructions after it (not including NOPs) are another function.
 * Come up with a way to find functions in stripped binaries
 * Get 100% code coverage in tests (or close to it)
-* Cross compile for the Raspberry Pi
 * Create a disassembler for ARM (whatever version is on the Raspberry Pi v4)
-* Come up with an abstraction layer for instructions so that decompiling all ISAs is the same. Will possibly need to break instructions up into multiple ones or combine instructions into one
 * Support both Intel and AT&T assembly syntax
 * Generate a set of known function prototypes and variable types for type inference
 * Visual representation of the stack
