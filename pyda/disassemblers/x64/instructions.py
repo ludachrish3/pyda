@@ -935,8 +935,8 @@ oneByteOpcodes = {
         },
     },
     0xde: {
-        None: {
-            None: {
+        None: { # There are no secondary opcodes
+            None: { # There are no prefixes
                 0: {
                     None:       X64InstructionInfo("fiadd", floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
                     MOD_DIRECT: X64InstructionInfo("faddp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
@@ -973,8 +973,8 @@ oneByteOpcodes = {
         },
     },
     0xdf: {
-        None: {
-            None: {
+        None: { # There are no secondary opcodes
+            None: { # There are no prefixes
                 0: {
                     None:       X64InstructionInfo("fild",   floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
                     MOD_DIRECT: X64InstructionInfo("ffreep", numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
@@ -1019,10 +1019,10 @@ oneByteOpcodes = {
 #   0xe5: TODO:
 #   0xe6: TODO:
 #   0xe7: TODO:
-    0xe8: X64InstructionInfo("call",  destinations=[], relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
-    0xe9: X64InstructionInfo("jmp",   destinations=[], relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
+    0xe8: X64InstructionInfo("call",  destinations=[], numOperands=1, relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
+    0xe9: X64InstructionInfo("jmp",   destinations=[], numOperands=1, relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
 #   0xea: Invalid
-    0xeb: X64InstructionInfo("jmp",   destinations=[], relativeJump=True, size_0=REG_SIZE_8),
+    0xeb: X64InstructionInfo("jmp",   destinations=[], numOperands=1, relativeJump=True, size_0=REG_SIZE_8),
 #   0xec: TODO:
 #   0xed: TODO:
 #   0xee: TODO:
@@ -1033,8 +1033,34 @@ oneByteOpcodes = {
 #   0xf3: Repeat while zero prefix
     0xf4: X64InstructionInfo("hlt",   numOperands=0),
     0xf5: X64InstructionInfo("cmc",   numOperands=0),
-    0xf6: X64InstructionInfo("",      modRm=MODRM_SRC, extOpcode=True),
-    0xf7: X64InstructionInfo("",      modRm=MODRM_SRC, extOpcode=True),
+    0xf6: {
+        None: { # There are no secondary opcodes
+            None: { # There are no prefixes
+                0: X64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
+                1: X64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
+                2: X64InstructionInfo("not",  numOperands=1, modRm_0=True),
+                3: X64InstructionInfo("neg",  numOperands=1, modRm_0=True),
+                4: X64InstructionInfo("mul",  numOperands=3, modRm_2=True, size_0=REG_SIZE_16),
+                5: X64InstructionInfo("imul", numOperands=3, modRm_2=True, size_0=REG_SIZE_16),
+                6: X64InstructionInfo("div",  numOperands=4, destinations=[0,1], modRm_3=True, value_1=REG_RSP, size_2=REG_SIZE_16), # REG_RSP is the value for %ah at 8 bits
+                7: X64InstructionInfo("idiv", numOperands=4, destinations=[0,1], modRm_3=True, value_1=REG_RSP, size_2=REG_SIZE_16), # REG_RSP is the value for %ah at 8 bits
+            },
+        },
+    },
+    0xf7: {
+        None: { # There are no secondary opcodes
+            None: { # There are no prefixes
+                0: X64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
+                1: X64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
+                2: X64InstructionInfo("not",  numOperands=1, modRm_0=True),
+                3: X64InstructionInfo("neg",  numOperands=1, modRm_0=True),
+                4: X64InstructionInfo("mul",  numOperands=3, destinations=[0,1], modRm_2=True, value_0=REG_RDX),
+                5: X64InstructionInfo("imul", numOperands=3, destinations=[0,1], modRm_2=True, value_0=REG_RDX),
+                6: X64InstructionInfo("mul",  numOperands=3, destinations=[0,1], modRm_2=True, value_0=REG_RDX),
+                7: X64InstructionInfo("imul", numOperands=3, destinations=[0,1], modRm_2=True, value_0=REG_RDX),
+            },
+        },
+    },
     0xf8: X64InstructionInfo("clc",   numOperands=0),
     0xf9: X64InstructionInfo("stc",   numOperands=0),
     0xfa: X64InstructionInfo("cli",   numOperands=0),
