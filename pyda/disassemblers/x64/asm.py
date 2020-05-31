@@ -592,7 +592,7 @@ def findFunctions( instructions ):
         # current function to be the end of a function because there is no way
         # to resume execution after a jump.
         if (instruction.mnemonic in [ "ret", "repz ret", "hlt" ] and instruction.addr >= highestReachableAddr) \
-            or (instruction.info.relativeJump and instruction.mnemonic not in [ "call" ] and instruction.sources[0].value < funcStart):
+            or (instruction.info.relativeJump and instruction.mnemonic not in [ "call" ] and instruction.operands[0].value < funcStart):
 
             funcAddrsAndSizes.append((funcStart, instruction.addr + len(instruction.bytes) - funcStart))
             currentlyInFunction = False
@@ -602,9 +602,9 @@ def findFunctions( instructions ):
         # that is not a call, set the highest address to the jump destination.
         if instruction.info.relativeJump           and \
             instruction.mnemonic not in [ "call" ] and \
-            instruction.sources[0].value > highestReachableAddr:
+            instruction.operands[0].value > highestReachableAddr:
 
-            highestReachableAddr = instruction.sources[0].value
+            highestReachableAddr = instruction.operands[0].value
             logger.debug(f"relative jump: {instruction}")
 
         # Set the highest reachable address if the current instruction is at

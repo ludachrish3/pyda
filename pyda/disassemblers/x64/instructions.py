@@ -264,12 +264,12 @@ class X64Operand( Operand ):
 class X64InstructionInfo():
 
     def __init__( self, mnemonic, extOpcode=False, relativeJump=False,
-                  isConversion=False, destinations=[0], numOperands=2, **kwargs):
+                  comparison=False, destinations=[0], numOperands=2, **kwargs):
 
         # Opcode info
         self.mnemonic      = mnemonic       # The name of the instruction
         self.extOpcode     = extOpcode      # Whether the opcode is extended into the ModR/M
-        self.isConversion  = isConversion   # Whether the instruction is size conversion
+        self.comparison    = comparison     # Whether the instruction is a comparison
         self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
 
         # Relative jumps always have only 1 operand
@@ -444,14 +444,14 @@ oneByteOpcodes = {
     0x55: X64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RBP, size_op=REG_SIZE_64),
     0x56: X64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RSI, size_op=REG_SIZE_64),
     0x57: X64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RDI, size_op=REG_SIZE_64),
-    0x59: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RAX, size_op=REG_SIZE_64),
-    0x5a: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RCX, size_op=REG_SIZE_64),
-    0x5b: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RDX, size_op=REG_SIZE_64),
-    0x5c: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RBX, size_op=REG_SIZE_64),
-    0x5d: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RSP, size_op=REG_SIZE_64),
-    0x5e: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RBP, size_op=REG_SIZE_64),
-    0x5f: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RSI, size_op=REG_SIZE_64),
-    0x58: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RDI, size_op=REG_SIZE_64),
+    0x58: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RAX, size_op=REG_SIZE_64),
+    0x59: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RCX, size_op=REG_SIZE_64),
+    0x5a: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RDX, size_op=REG_SIZE_64),
+    0x5b: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RBX, size_op=REG_SIZE_64),
+    0x5c: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RSP, size_op=REG_SIZE_64),
+    0x5d: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RBP, size_op=REG_SIZE_64),
+    0x5e: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RSI, size_op=REG_SIZE_64),
+    0x5f: X64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RDI, size_op=REG_SIZE_64),
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
@@ -547,8 +547,8 @@ oneByteOpcodes = {
     },
     0x90: {
         None: { # There are no secondary opcodes
-            None: X64InstructionInfo("nop"), # This is a special case of exchange instructions that would swap EAX with EAX
-            0xf3: X64InstructionInfo("pause"),
+            None: X64InstructionInfo("nop", numOperands=0), # This is a special case of exchange instructions that would exchange EAX with EAX
+            0xf3: X64InstructionInfo("pause", numOperands=0),
         },
     },
     0x91: X64InstructionInfo("xchg",  value_0=1, exchange_inst=True, size_op=REG_SIZE_32),
@@ -1091,227 +1091,330 @@ oneByteOpcodes = {
 }
 
 twoByteOpcodes = {
+#   0x00: TODO:
+#   0x01: TODO:
+#   0x02: TODO:
+#   0x03: TODO:
+#   0x04: TODO:
+#   0x05: TODO:
+#   0x06: TODO:
+#   0x07: TODO:
+#   0x08: TODO:
+#   0x09: TODO:
+#   0x0a: TODO:
+#   0x0b: TODO:
+#   0x0c: TODO:
+#   0x0d: TODO:
+#   0x0e: TODO:
+#   0x0f: TODO:
     0x10: {
         None: {
-            None: X64InstructionInfo("movups", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("movupd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("movss",  modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("movups", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("movupd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("movsd",  modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movss",  modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x11: {
         None: {
-            None: X64InstructionInfo("movups", modRm=MODRM_DST, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("movupd", modRm=MODRM_DST, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("movsd",  modRm=MODRM_DST, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("movss",  modRm=MODRM_DST, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("movups", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("movupd", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("movsd",  modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movss",  modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
-
-    0x1f: X64InstructionInfo("nop",   modRm=MODRM_SRC),
-
+#   0x12: TODO:
+#   0x13: TODO:
+#   0x14: TODO:
+#   0x15: TODO:
+#   0x16: TODO:
+#   0x17: TODO:
+#   0x18: TODO:
+    0x19: X64InstructionInfo("nop", modRm_0=True),
+    0x1a: X64InstructionInfo("nop", modRm_0=True),
+    0x1b: X64InstructionInfo("nop", modRm_0=True),
+    0x1c: X64InstructionInfo("nop", modRm_0=True),
+    0x1d: X64InstructionInfo("nop", modRm_0=True),
+    0x1e: X64InstructionInfo("nop", modRm_0=True),
+    0x1f: X64InstructionInfo("nop", modRm_0=True),
+#   0x20: TODO:
+#   0x21: TODO:
+#   0x22: TODO:
+#   0x23: TODO:
+#   0x24: TODO:
+#   0x25: TODO:
+#   0x26: TODO:
+#   0x27: TODO:
     0x28: {
         None: {
-            None: X64InstructionInfo("movaps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("movapd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("movaps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("movapd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x29: {
         None: {
-            None: X64InstructionInfo("movaps", modRm=MODRM_DST, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("movapd", modRm=MODRM_DST, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("movaps", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("movapd", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x2a: {
         None: {
-            None: X64InstructionInfo("cvtpi2ps", modRm=MODRM_SRC, op_mmRegister=True,  src_size=REG_SIZE_64, dst_size=REG_SIZE_128),
-            0x66: X64InstructionInfo("cvtpi2pd", modRm=MODRM_SRC, op_mmRegister=True,  src_size=REG_SIZE_64, dst_size=REG_SIZE_128),
-            0xf2: X64InstructionInfo("cvtsi2sd", modRm=MODRM_SRC, dst_mmRegister=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_128),
-            0xf3: X64InstructionInfo("cvtsi2ss", modRm=MODRM_SRC, dst_mmRegister=True, src_size=REG_SIZE_32, dst_size=REG_SIZE_128),
+            None: X64InstructionInfo("cvtpi2ps", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_64, size_0=REG_SIZE_128),
+            0x66: X64InstructionInfo("cvtpi2pd", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_64, size_0=REG_SIZE_128),
+            0xf2: X64InstructionInfo("cvtsi2sd", modRm_1=True, reg_0=True, mmRegister_0=True,  size_1=REG_SIZE_32, size_0=REG_SIZE_128),
+            0xf3: X64InstructionInfo("cvtsi2ss", modRm_1=True, reg_0=True, mmRegister_0=True,  size_1=REG_SIZE_32, size_0=REG_SIZE_128),
         },
     },
-
+#   0x2b: TODO:
     0x2c: {
         None: {
-            None: X64InstructionInfo("cvttps2pi", modRm=MODRM_SRC, op_mmRegister=True,  size_op=REG_SIZE_64),
-            0x66: X64InstructionInfo("cvttpd2pi", modRm=MODRM_SRC, op_mmRegister=True,  src_size=REG_SIZE_128, dst_size=REG_SIZE_64),
-            0xf2: X64InstructionInfo("cvttsd2si", modRm=MODRM_SRC, src_mmRegister=True, src_size=REG_SIZE_128, dst_size=REG_SIZE_32),
-            0xf3: X64InstructionInfo("cvttss2si", modRm=MODRM_SRC, src_mmRegister=True, src_size=REG_SIZE_128, dst_size=REG_SIZE_32),
+            None: X64InstructionInfo("cvttps2pi", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_64),
+            0x66: X64InstructionInfo("cvttpd2pi", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_128, size_0=REG_SIZE_64),
+            0xf2: X64InstructionInfo("cvttsd2si", modRm_1=True, reg_0=True, mmRegister_1=True,  size_1=REG_SIZE_128, size_0=REG_SIZE_32),
+            0xf3: X64InstructionInfo("cvttss2si", modRm_1=True, reg_0=True, mmRegister_1=True,  size_1=REG_SIZE_128, size_0=REG_SIZE_32),
         },
     },
-
+#   0x2d: TODO:
     0x2e: {
         None: {
-            None: X64InstructionInfo("ucomiss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("ucomisd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("ucomiss", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
+            0x66: X64InstructionInfo("ucomisd", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
         },
     },
-
-    0x40: X64InstructionInfo("cmovo",  modRm=MODRM_SRC, size_op=REG_SIZE_32), # Overflow
-    0x41: X64InstructionInfo("cmovno", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Not overflow
-    0x42: X64InstructionInfo("cmovb",  modRm=MODRM_SRC, size_op=REG_SIZE_32), # Less than (unsigned)
-    0x43: X64InstructionInfo("cmovae", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Greater than or equal (unsigned)
-    0x44: X64InstructionInfo("cmove",  modRm=MODRM_SRC, size_op=REG_SIZE_32), # Equal
-    0x45: X64InstructionInfo("cmovne", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Not equal
-    0x46: X64InstructionInfo("cmovbe", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Less than or equal (unsigned)
-    0x47: X64InstructionInfo("cmova",  modRm=MODRM_SRC, size_op=REG_SIZE_32), # Greater than (unsigned)
-    0x48: X64InstructionInfo("cmovs",  modRm=MODRM_SRC, size_op=REG_SIZE_32), # Signed
-    0x49: X64InstructionInfo("cmovns", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Unsigned
-    0x4a: X64InstructionInfo("cmovp",  modRm=MODRM_SRC, size_op=REG_SIZE_32), # Parity
-    0x4b: X64InstructionInfo("cmovnp", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Not parity
-    0x4c: X64InstructionInfo("cmovlt", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Less than (signed)
-    0x4d: X64InstructionInfo("cmovge", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Greater than or equal (signed)
-    0x4e: X64InstructionInfo("cmovle", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Less than or equal (signed)
-    0x4f: X64InstructionInfo("cmovgt", modRm=MODRM_SRC, size_op=REG_SIZE_32), # Greater than (signed)
-
+    0x2f: {
+        None: {
+            None: X64InstructionInfo("comiss", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
+            0x66: X64InstructionInfo("comisd", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
+        },
+    },
+#   0x30: TODO:
+#   0x31: TODO:
+#   0x32: TODO:
+#   0x33: TODO:
+#   0x34: TODO:
+#   0x35: TODO:
+#   0x36: TODO:
+#   0x37: TODO:
+#   0x38: TODO:
+#   0x39: TODO:
+#   0x3a: TODO:
+#   0x3b: TODO:
+#   0x3c: TODO:
+#   0x3d: TODO:
+#   0x3e: TODO:
+#   0x3f: TODO:
+    0x40: X64InstructionInfo("cmovo",  modRm_1=True, reg_0=True), # Overflow
+    0x41: X64InstructionInfo("cmovno", modRm_1=True, reg_0=True), # Not overflow
+    0x42: X64InstructionInfo("cmovb",  modRm_1=True, reg_0=True), # Less than (unsigned)
+    0x43: X64InstructionInfo("cmovae", modRm_1=True, reg_0=True), # Greater than or equal (unsigned)
+    0x44: X64InstructionInfo("cmove",  modRm_1=True, reg_0=True), # Equal
+    0x45: X64InstructionInfo("cmovne", modRm_1=True, reg_0=True), # Not equal
+    0x46: X64InstructionInfo("cmovbe", modRm_1=True, reg_0=True), # Less than or equal (unsigned)
+    0x47: X64InstructionInfo("cmova",  modRm_1=True, reg_0=True), # Greater than (unsigned)
+    0x48: X64InstructionInfo("cmovs",  modRm_1=True, reg_0=True), # Signed
+    0x49: X64InstructionInfo("cmovns", modRm_1=True, reg_0=True), # Unsigned
+    0x4a: X64InstructionInfo("cmovp",  modRm_1=True, reg_0=True), # Parity
+    0x4b: X64InstructionInfo("cmovnp", modRm_1=True, reg_0=True), # Not parity
+    0x4c: X64InstructionInfo("cmovlt", modRm_1=True, reg_0=True), # Less than (signed)
+    0x4d: X64InstructionInfo("cmovge", modRm_1=True, reg_0=True), # Greater than or equal (signed)
+    0x4e: X64InstructionInfo("cmovle", modRm_1=True, reg_0=True), # Less than or equal (signed)
+    0x4f: X64InstructionInfo("cmovgt", modRm_1=True, reg_0=True), # Greater than (signed)
+#   0x50: TODO:
     0x51: {
         None: {
-            None: X64InstructionInfo("sqrtps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("sqrtpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("sqrtsd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("sqrtss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("sqrtps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("sqrtpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("sqrtsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("sqrtss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x52: {
         None: {
-            None: X64InstructionInfo("rsqrtps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("rsqrtss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("rsqrtps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("rsqrtss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x53: {
         None: {
-            None: X64InstructionInfo("rcpps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("rcpss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("rcpps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("rcpss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x54: {
         None: {
-            None: X64InstructionInfo("andps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("andpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("andps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("andpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x55: {
         None: {
-            None: X64InstructionInfo("addps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("addpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("addps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("addpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x56: {
         None: {
-            None: X64InstructionInfo("orps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("orpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("orps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("orpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x57: {
         None: {
-            None: X64InstructionInfo("xorps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("xorpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("xorps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("xorpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x58: {
         None: {
-            None: X64InstructionInfo("addps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("addpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("addsd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("addss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("addps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("addpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("addsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("addss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x59: {
         None: {
-            None: X64InstructionInfo("mulps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("mulpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("mulsd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("mulss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("mulps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("mulpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("mulsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("mulss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
-
+#   0x5a: TODO:
+#   0x5b: TODO:
     0x5c: {
         None: {
-            None: X64InstructionInfo("subps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("subpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("subsd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("subss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("subps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("subpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("subsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("subss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x5d: {
         None: {
-            None: X64InstructionInfo("minps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("minpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("minsd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("minss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("minps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("minpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("minsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("minss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x5e: {
         None: {
-            None: X64InstructionInfo("divps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("divpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("divsd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("divss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("divps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("divpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("divsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("divss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x5f: {
         None: {
-            None: X64InstructionInfo("maxps", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0x66: X64InstructionInfo("maxpd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf2: X64InstructionInfo("maxsd", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("maxss", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("maxps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X64InstructionInfo("maxpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf2: X64InstructionInfo("maxsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("maxss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
-
+#   0x60: TODO:
+#   0x61: TODO:
+#   0x62: TODO:
+#   0x63: TODO:
+#   0x64: TODO:
+#   0x65: TODO:
+#   0x66: TODO:
+#   0x67: TODO:
+#   0x68: TODO:
+#   0x69: TODO:
+#   0x6a: TODO:
+#   0x6b: TODO:
+#   0x6c: TODO:
+#   0x6d: TODO:
+#   0x6e: TODO:
     0x6f: {
         None: {
-            None: X64InstructionInfo("movq",   modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_64),
-            0x66: X64InstructionInfo("movdqa", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
-            0xf3: X64InstructionInfo("movdqu", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("movq",   modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_64),
+            0x66: X64InstructionInfo("movdqa", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0xf3: X64InstructionInfo("movdqu", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
-
-    0x80: X64InstructionInfo("jo",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Overflow
-    0x81: X64InstructionInfo("jno",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Not overflow
-    0x82: X64InstructionInfo("jb",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than (unsigned)
-    0x83: X64InstructionInfo("jae",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than or equal (unsigned)
-    0x84: X64InstructionInfo("je",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Equal
-    0x85: X64InstructionInfo("jne",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Not equal
-    0x86: X64InstructionInfo("jbe",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than or equal (unsigned)
-    0x87: X64InstructionInfo("ja",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than (unsigned)
-    0x88: X64InstructionInfo("js",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Signed
-    0x89: X64InstructionInfo("jns",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Unsigned
-    0x8a: X64InstructionInfo("jp",    relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Parity
-    0x8b: X64InstructionInfo("jnp",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Not parity
-    0x8c: X64InstructionInfo("jlt",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than (signed)
-    0x8d: X64InstructionInfo("jge",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than or equal (signed)
-    0x8e: X64InstructionInfo("jle",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Less than or equal (signed)
-    0x8f: X64InstructionInfo("jgt",   relativeJump=True, signExtension=True, src_size=REG_SIZE_32), # Greater than (signed)
-    0x90: X64InstructionInfo("seto",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Overflow
-    0x91: X64InstructionInfo("setno", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Not Overflow
-    0x92: X64InstructionInfo("setb",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Less than (unsigned)
-    0x93: X64InstructionInfo("setae", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Greater than or equal (unsigned)
-    0x94: X64InstructionInfo("sete",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Equal
-    0x95: X64InstructionInfo("setne", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Not equal
-    0x96: X64InstructionInfo("setbe", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Less than or equal (unsigned)
-    0x97: X64InstructionInfo("seta",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Greater than (unsigned)
-    0x98: X64InstructionInfo("sets",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Signed
-    0x99: X64InstructionInfo("setns", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Not signed
-    0x9a: X64InstructionInfo("setp",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Parity
-    0x9b: X64InstructionInfo("setnp", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Not parity
-    0x9c: X64InstructionInfo("setl",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Less than (signed)
-    0x9d: X64InstructionInfo("setge", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Greater than or equal (signed)
-    0x9e: X64InstructionInfo("setle", modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Less than or equal (signed)
-    0x9f: X64InstructionInfo("setg",  modRm=MODRM_DST, src_size=REG_SIZE_0, dst_size=REG_SIZE_8), # Greater than (signed)
-
-    0xa3: X64InstructionInfo("bt",    modRm=MODRM_DST, size_op=REG_SIZE_32),
-
-    0xaf: X64InstructionInfo("imul",  modRm=MODRM_SRC, size_op=REG_SIZE_32),
-
-    0xb6: X64InstructionInfo("movzx", modRm=MODRM_SRC, src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
-    0xb7: X64InstructionInfo("movzx", modRm=MODRM_SRC, src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
-    0xbe: X64InstructionInfo("movsx", modRm=MODRM_SRC, signExtension=True,   src_size=REG_SIZE_8,  dst_size=REG_SIZE_32),
-    0xbf: X64InstructionInfo("movsx", modRm=MODRM_SRC, signExtension=True,   src_size=REG_SIZE_16, dst_size=REG_SIZE_32, src_maxSize=REG_SIZE_16),
+#   0x70: TODO:
+#   0x71: TODO:
+#   0x72: TODO:
+#   0x73: TODO:
+#   0x74: TODO:
+#   0x75: TODO:
+#   0x76: TODO:
+#   0x77: TODO:
+#   0x78: TODO:
+#   0x79: TODO:
+#   0x7a: TODO:
+#   0x7b: TODO:
+#   0x7c: TODO:
+#   0x7d: TODO:
+#   0x7e: TODO:
+#   0x7f: TODO:
+    0x80: X64InstructionInfo("jo",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Overflow
+    0x81: X64InstructionInfo("jno",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Not overflow
+    0x82: X64InstructionInfo("jb",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than (unsigned)
+    0x83: X64InstructionInfo("jae",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than or equal (unsigned)
+    0x84: X64InstructionInfo("je",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Equal
+    0x85: X64InstructionInfo("jne",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Not equal
+    0x86: X64InstructionInfo("jbe",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than or equal (unsigned)
+    0x87: X64InstructionInfo("ja",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than (unsigned)
+    0x88: X64InstructionInfo("js",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Signed
+    0x89: X64InstructionInfo("jns",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Unsigned
+    0x8a: X64InstructionInfo("jp",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Parity
+    0x8b: X64InstructionInfo("jnp",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Not parity
+    0x8c: X64InstructionInfo("jlt",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than (signed)
+    0x8d: X64InstructionInfo("jge",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than or equal (signed)
+    0x8e: X64InstructionInfo("jle",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than or equal (signed)
+    0x8f: X64InstructionInfo("jgt",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than (signed)
+    0x90: X64InstructionInfo("seto",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Overflow
+    0x91: X64InstructionInfo("setno", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not Overflow
+    0x92: X64InstructionInfo("setb",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than (unsigned)
+    0x93: X64InstructionInfo("setae", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than or equal (unsigned)
+    0x94: X64InstructionInfo("sete",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Equal
+    0x95: X64InstructionInfo("setne", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not equal
+    0x96: X64InstructionInfo("setbe", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than or equal (unsigned)
+    0x97: X64InstructionInfo("seta",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than (unsigned)
+    0x98: X64InstructionInfo("sets",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Signed
+    0x99: X64InstructionInfo("setns", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not signed
+    0x9a: X64InstructionInfo("setp",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Parity
+    0x9b: X64InstructionInfo("setnp", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not parity
+    0x9c: X64InstructionInfo("setl",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than (signed)
+    0x9d: X64InstructionInfo("setge", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than or equal (signed)
+    0x9e: X64InstructionInfo("setle", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than or equal (signed)
+    0x9f: X64InstructionInfo("setg",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than (signed)
+#   0xa0: TODO:
+#   0xa1: TODO:
+#   0xa2: TODO:
+    0xa3: X64InstructionInfo("bt",    modRm_0=True, reg_1=True, size_op=REG_SIZE_32),
+#   0xa4: TODO:
+#   0xa5: TODO:
+#   0xa6: TODO:
+#   0xa7: TODO:
+#   0xa8: TODO:
+#   0xa9: TODO:
+#   0xaa: TODO:
+#   0xab: TODO:
+#   0xac: TODO:
+#   0xad: TODO:
+#   0xae: TODO:
+    0xaf: X64InstructionInfo("imul",  modRm_1=True, reg_0=True, size_op=REG_SIZE_32),
+#   0xb0: TODO:
+#   0xb1: TODO:
+#   0xb2: TODO:
+#   0xb3: TODO:
+#   0xb4: TODO:
+#   0xb5: TODO:
+    0xb6: X64InstructionInfo("movzx", modRm_1=True, reg_0=True, size_1=REG_SIZE_8,  size_0=REG_SIZE_32),
+    0xb7: X64InstructionInfo("movzx", modRm_1=True, reg_0=True, size_1=REG_SIZE_16, size_0=REG_SIZE_32, src_maxSize=REG_SIZE_16),
+    0xbe: X64InstructionInfo("movsx", reg_0=True, modRm_1=True, size_0=REG_SIZE_32,  size_1=REG_SIZE_8),
+    0xbf: X64InstructionInfo("movsx", reg_0=True, modRm_1=True, size_0=REG_SIZE_32,  size_1=REG_SIZE_16),
 
     0xef: {
         None: {
-            None: X64InstructionInfo("pxor", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_64),
-            0x66: X64InstructionInfo("pxor", modRm=MODRM_SRC, op_mmRegister=True, size_op=REG_SIZE_128),
+            None: X64InstructionInfo("pxor", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_64),
+            0x66: X64InstructionInfo("pxor", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
 }
