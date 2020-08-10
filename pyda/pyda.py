@@ -1,8 +1,15 @@
+"""
+Name:           pyda.py
+
+Description:    This file is the CLI frontend for interacting with the pyda
+                library.
+"""
+
 from argparse import ArgumentParser
 import traceback
 import os
 
-from pyda import analyzer
+from pyda.exeParsers import exeParser
 from pyda.decompilers import decompiler
 
 import logging
@@ -45,10 +52,10 @@ def main():
             exit(1)
 
         try:
-            binaryFile = analyzer.analyzeFile(filename)
+            executable = exeParser.parseExe(filename)
 
         except Exception as e:
-            logger.error(f"An error occurred while analyzing the binary: {e}")
+            logger.error(f"An error occurred while parsing the executable: {e}")
             traceback.print_tb(e.__traceback__)
             exit(1)
 

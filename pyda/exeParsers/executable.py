@@ -1,3 +1,10 @@
+"""
+Name:           executable.py
+
+Description:    This file is responsible for determining the type of executable
+                file and using the appropriate module for parsing its data.
+"""
+
 import abc
 import ctypes
 
@@ -17,19 +24,12 @@ ISA_IA_64       = "Intel IA-64"
 BIN_ENDIAN_LITTLE = "little"
 BIN_ENDIAN_BIG    = "big"
 
-class Binary( abc.ABC ):
+class Executable( abc.ABC ):
 
     @abc.abstractmethod
-    def analyze( self, exeMap ):
+    def parse( self, exeMap ):
         """
         Parse a binary file to get its basic arch info, sections, and symbols.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def resolveExternalSymbols( self, exeMap ):
-        """
-        Resolve all external symbols if there are any.
         """
         raise NotImplementedError
 
@@ -152,6 +152,10 @@ class Binary( abc.ABC ):
 
         return self._startAddr
 
+class Section (abc.ABC ):
+
+    pass
+
 
 class Symbol( abc.ABC ):
 
@@ -239,6 +243,10 @@ class Function( Symbol ):
 
 
 class FlexibleCStruct(ctypes.Structure):
+    """
+    This class is based on a ctypes Structure, but those cannot have additional
+    fields. This way standard ELF structures can be extended for pyda purposes.
+    """
 
     def getDictionary( self ):
 

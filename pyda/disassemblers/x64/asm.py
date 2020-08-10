@@ -247,8 +247,8 @@ def handleOperandAddressing( instruction, operand, binary ):
     """
     Description:    Figures out addressing mode for an operand based on the
                     Mod R/M byte. If the Mod R/M byte does not apply to the
-                    operand, the value will only be set to the regOrOp value if
-                    the operand is not an immediate.
+                    operand, the value will be set to the regOrOp value if the
+                    operand is not an immediate.
 
     Arguments:      instruction - X64Instruction object
                     operand     - X64Operand object

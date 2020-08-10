@@ -1,5 +1,5 @@
 """
-Name:           analyzer.py
+Name:           exeParser.py
 
 Description:    This file is responsible for determining the type of executable
                 file and using the appropriate module for parsing its data.
@@ -8,7 +8,7 @@ Description:    This file is responsible for determining the type of executable
 import os
 import mmap
 
-from pyda.binaries import binary, elf
+from pyda.exeParsers import executable, elf
 
 from pyda.disassemblers.x64 import asm as x64asm
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Magic numbers used to determine file types
 MAGIC_NUM_ELF = b'\x7fELF'
 
-def getBinary( exeMap ):
+def getExecutable( exeMap ):
     """
     Description:    Analyzes just enough to figure out the type of file
 
@@ -32,35 +32,34 @@ def getBinary( exeMap ):
     fileHeader = exeMap[:4]
 
     if fileHeader == MAGIC_NUM_ELF:
-        return elf.ElfBinary(exeMap)
+        return elf.ElfExecutable(exeMap)
 
     else:
-        raise binary.AnalysisError("The file type could not be determined")
+        raise executable.AnalysisError("The file type could not be determined")
 
 
-def analyzeFile(filename):
+def parseExe( filename ):
 
     # stat the file to get the size
     try:
-        binStat = os.stat(filename)
+        exeStat = os.stat(filename)
 
     except FileNotFoundError as e:
         return None
 
-    if binStat.st_size < 4:
+    # TODO: Create a global value for this size, and name it to represent the
+    # minimum size of an executable to determine its type.
+    if exeStat.st_size < 4:
         return None
 
-    with open(filename, "rb") as binaryFile:
+    with open(filename, "rb") as exeFile:
 
-        exeMap = mmap.mmap(binaryFile.fileno(), 0, access=mmap.ACCESS_READ)
+        exeMap = mmap.mmap(exeFile.fileno(), 0, access=mmap.ACCESS_READ)
 
-    exe = getBinary(exeMap)
-    exe.analyze()
+    exe = getExecutable(exeMap)
+    exe.parse()
 
     logger.info(exe)
-
-    # Resolve external symbols
-    exe.resolveExternalSymbols()
 
     # If the executable did not have a symbol table, then the .text section
     # needs to be broken up into functions and disassembled
@@ -82,7 +81,7 @@ def analyzeFile(filename):
 
             # Disassemble each function. Every symbol has an entry for its name
             # and its address, so only handle symbols by name to avoid redundancy.
-            if isinstance(symbol, binary.Function) and type(symbolKey) == str:
+            if isinstance(symbol, executable.Function) and type(symbolKey) == str:
 
                 logger.info(f"function: {symbol}")
 
@@ -90,7 +89,7 @@ def analyzeFile(filename):
                 size       = symbol.getSize()
                 assembly   = exeMap[fileOffset:fileOffset+size]
 
-                if exe.getISA() == binary.ISA_X86_64:
+                if exe.getISA() == executable.ISA_X86_64:
 
                     disassembler = x64asm
 

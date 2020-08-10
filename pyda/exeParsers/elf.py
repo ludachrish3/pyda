@@ -1,4 +1,4 @@
-from pyda.binaries import binary
+from pyda.exeParsers import executable
 import ctypes
 
 import logging
@@ -87,15 +87,15 @@ ALLOWED_ISAS = [
 ]
 
 ISA_STR = {
-    ISA_SPARC:       binary.ISA_SPARC,
-    ISA_X86:         binary.ISA_X86,
-    ISA_MIPS:        binary.ISA_MIPS,
-    ISA_POWER_PC:    binary.ISA_POWER_PC,
-    ISA_POWER_PC_64: binary.ISA_POWER_PC_64,
-    ISA_ARM:         binary.ISA_ARM,
-    ISA_SUPER_H:     binary.ISA_SUPER_H,
-    ISA_IA_64:       binary.ISA_IA_64,
-    ISA_X86_64:      binary.ISA_X86_64,
+    ISA_SPARC:       executable.ISA_SPARC,
+    ISA_X86:         executable.ISA_X86,
+    ISA_MIPS:        executable.ISA_MIPS,
+    ISA_POWER_PC:    executable.ISA_POWER_PC,
+    ISA_POWER_PC_64: executable.ISA_POWER_PC_64,
+    ISA_ARM:         executable.ISA_ARM,
+    ISA_SUPER_H:     executable.ISA_SUPER_H,
+    ISA_IA_64:       executable.ISA_IA_64,
+    ISA_X86_64:      executable.ISA_X86_64,
 }
 
 
@@ -294,11 +294,14 @@ DYNAMIC_STR = {
 }
 
 
-class ElfBinary(binary.Binary):
+class ElfExecutable(executable.Executable):
 
     def __init__( self, exeMap ):
 
+        # Temporary variable to hold all executable bytes. They will eventually
+        # be split up and kept in the ElfSections instead for each of indexing.
         self._exeMap   = exeMap
+
         self._type     = None
 
         self._sectionList = [] # Needed to associate sections by index number
@@ -306,8 +309,8 @@ class ElfBinary(binary.Binary):
 
         self.libraries = []
 
-        # By default, assume the binary is stripped. This is changed to False if a
-        # symbol table section is found later.
+        # By default, assume the executable is stripped. This is changed to
+        # False if a symbol table section is found later.
         self.isStripped = True
 
         # Dictionary keyed on section name that contains the string at a given index
@@ -379,16 +382,14 @@ class ElfBinary(binary.Binary):
         if index < 0 or index >= section.size:
             raise IndexError(f"The requested string index is out of bounds of the string table: {index}")
 
-        # Set the position in the file to the beginning of the string based
-        # on the table offset and the section's index.
-        start = section.fileOffset + index
-        currentPos = start
+        # Search for the end of the string (null byte) in the string table
+        currentPos = index
 
-        while self._exeMap[currentPos] != 0:
-            currentChar = self._exeMap[currentPos]
+        while section.bytes[currentPos] != 0:
+            currentChar = section.bytes[currentPos]
             currentPos += 1
 
-        string = self._exeMap[start:currentPos].decode("ascii")
+        string = section.bytes[index:currentPos].decode("ascii")
         self._strings[sectionName][index] = string
 
         return string
@@ -397,33 +398,33 @@ class ElfBinary(binary.Binary):
     def setArch(self, arch):
 
         if arch == ARCH_32BIT:
-            self.arch = binary.BIN_ARCH_32BIT
+            self.arch = executable.BIN_ARCH_32BIT
             self.addrSize = 4
 
         elif arch == ARCH_64BIT:
-            self.arch = binary.BIN_ARCH_64BIT
+            self.arch = executable.BIN_ARCH_64BIT
             self.addrSize = 8
 
         else:
-            raise binary.AnalysisError(f"The architecture could not be determined: {arch}")
+            raise executable.AnalysisError(f"The architecture could not be determined: {arch}")
 
 
     def setEndianness(self, endianness):
         if endianness == ENDIAN_LITTLE:
-            self.endianness = binary.BIN_ENDIAN_LITTLE
+            self.endianness = executable.BIN_ENDIAN_LITTLE
 
         elif endianness == ENDIAN_BIG:
-            self.endianness = binary.BIN_ENDIAN_BIG
+            self.endianness = executable.BIN_ENDIAN_BIG
 
         else:
-            raise binary.AnalysisError(f"The endianness could not be determined: {endianness}")
+            raise executable.AnalysisError(f"The endianness could not be determined: {endianness}")
 
 
     def setFileType(self, fileType):
 
         # Make sure that the file type is one of the defined types
         if fileType not in ALLOWED_TYPES:
-            raise binary.AnalysisError(f"The ELF file type could not be determined: {fileType}")
+            raise executable.AnalysisError(f"The ELF file type could not be determined: {fileType}")
 
         # Do not allow relocatable files for now because they are not supported
         if fileType == TYPE_RELOC:
@@ -440,7 +441,7 @@ class ElfBinary(binary.Binary):
     def setISA( self, isa ):
 
         if isa not in ALLOWED_ISAS:
-            raise binary.AnalysisError(f"The ISA could not be determined: {isa}")
+            raise executable.AnalysisError(f"The ISA could not be determined: {isa}")
 
         # Many ISAs are not currently suported, so throw exceptions for them
         if isa == ISA_X86:
@@ -468,6 +469,14 @@ class ElfBinary(binary.Binary):
 
 
     def parseElfHeader( self ):
+        """
+        Description:    Parses the ELF header structure and saves all fields to
+                        this executable object.
+
+        Arguments:      None
+
+        Return:         None
+        """
 
         elfHeader = Elf64Header.from_buffer_copy(self._exeMap)
 
@@ -486,18 +495,29 @@ class ElfBinary(binary.Binary):
         self.numProgramEntries = elfHeader.numProgramEntries
         self.sectionEntrySize = elfHeader.sectionEntrySize
         self.numSectionEntries = elfHeader.numSectionEntries
-        self.sectionNameIndex = elfHeader.nameSectionIndex
+        self.nameSectionIndex = elfHeader.nameSectionIndex
 
         logger.debug(f"Start addr:     0x{self.getStartAddr():08x}")
 
 
     def parseSectionEntries( self ):
+        """
+        Description:    Parses the section entries and creates ElfSection
+                        objects based on the information in the section entries.
+                        The only section that is parsed in this function is the
+                        section containing section names so that each section
+                        can be named.
+
+        Arguments:      None
+
+        Return:         None
+        """
 
         # Determine which structure to overlay onto each entry
-        if self.arch == binary.BIN_ARCH_32BIT:
+        if self.arch == executable.BIN_ARCH_32BIT:
             sectionClass = Elf32SectionEntry
 
-        elif self.arch == binary.BIN_ARCH_64BIT:
+        elif self.arch == executable.BIN_ARCH_64BIT:
             sectionClass = Elf64SectionEntry
 
         # Create a ctypes object from each entry. Then convert it into a proper
@@ -508,10 +528,11 @@ class ElfBinary(binary.Binary):
 
             sectionEntry = sectionClass.from_buffer_copy(self._exeMap[start:start+self.sectionEntrySize])
 
-            sectionObject = ElfSection(sectionEntry)
+            sectionObject = ElfSection(sectionEntry, self._exeMap)
             self._sectionList.append(sectionObject)
 
-        sectionNameSection = self._sectionList[self.sectionNameIndex]
+        # Make note of which section contains the names of the sections
+        sectionNameSection = self._sectionList[self.nameSectionIndex]
 
         logger.info("Sections:")
 
@@ -525,6 +546,10 @@ class ElfBinary(binary.Binary):
             self._sectionDict[section.name] = section
 
             logger.info(f"{section}")
+
+        # The bytes of the full executable are no longer needed because they
+        # have been saved to the section objects
+        del self._exeMap
 
 
     def setSymbol( self, symbol ):
@@ -570,33 +595,36 @@ class ElfBinary(binary.Binary):
         """
 
         # Determine which structure to overlay onto the entry
-        if self.arch == binary.BIN_ARCH_32BIT:
+        if self.arch == executable.BIN_ARCH_32BIT:
 
             symboClass = Elf32SymbolEntry
 
-        elif self.arch == binary.BIN_ARCH_64BIT:
+        elif self.arch == executable.BIN_ARCH_64BIT:
 
             symbolClass = Elf64SymbolEntry
 
-        for entry in range(section.fileOffset, section.fileOffset + section.size, section.entrySize):
+        # Determine which section is the string table holding the symbol names
+        stringTable = self._sectionList[section.link]
 
-            symbolStruct = symbolClass.from_buffer_copy(self._exeMap[entry:entry+section.entrySize])
+        for entry in range(0, section.size, section.entrySize):
+
+            symbolStruct = symbolClass.from_buffer_copy(section.bytes[entry:entry+section.entrySize])
 
             # Create the real Python objects based on the ctypes structures
             # and assign the symbols their names
             if symbolStruct.type == SYMBOL_TYPE_SECTION:
 
                 # Unlike other symbol types, the names of section symbols are
-                # not set by the symbol table index, so looking them up based
-                # on the saved section info is needed.
+                # not set by the symbol table index, so look them up based on
+                # the section list. The indexes refer to the section index in
+                # the list of sections.
                 name = self._sectionList[symbolStruct.sectionIndex].name
                 symbol = ElfSymbol(name, symbolStruct)
 
             else:
 
                 # Look up the name of the symbol
-                stringTable = self._sectionList[section.link]
-                name        = self.getStringFromTable(stringTable, symbolStruct.nameIndex)
+                name = self.getStringFromTable(stringTable, symbolStruct.nameIndex)
 
                 if symbolStruct.type == SYMBOL_TYPE_FUNCTION:
                     symbol = ElfFunction(name, symbolStruct)
@@ -638,22 +666,22 @@ class ElfBinary(binary.Binary):
             return
 
         # Determine which structure to overlay onto each entry
-        if self.arch == binary.BIN_ARCH_32BIT and hasAddend:
+        if self.arch == executable.BIN_ARCH_32BIT and hasAddend:
             relocationClass = Elf32RelocationAddend
 
-        elif self.arch == binary.BIN_ARCH_32BIT and not hasAddend:
+        elif self.arch == executable.BIN_ARCH_32BIT and not hasAddend:
             relocationClass = Elf32Relocation
 
-        elif self.arch == binary.BIN_ARCH_64BIT and hasAddend:
+        elif self.arch == executable.BIN_ARCH_64BIT and hasAddend:
             relocationClass = Elf64RelocationAddend
 
-        elif self.arch == binary.BIN_ARCH_64BIT and not hasAddend:
+        elif self.arch == executable.BIN_ARCH_64BIT and not hasAddend:
             relocationClass = Elf64Relocation
 
         # Iterate through each relocation entry
-        for entry in range(section.fileOffset, section.fileOffset + section.size, entrySize):
+        for entry in range(0, section.size, entrySize):
 
-            relocation = relocationClass.from_buffer_copy(self._exeMap[entry:entry+entrySize])
+            relocation = relocationClass.from_buffer_copy(section.bytes[entry:entry+entrySize])
 
             if hasattr(relocation, "addend"):
                 logger.debug(f"addend: {relocation.addend:x}")
@@ -672,8 +700,8 @@ class ElfBinary(binary.Binary):
             # relocation value's address.
             # relocValue is the value of the relocation.
             holdingSection = self.getSectionFromAddr(relocation.offset)
-            relocValueOffset = holdingSection.fileOffset + relocation.offset - holdingSection.address
-            relocValue = self.bytesToInt(self._exeMap[relocValueOffset:relocValueOffset+self.addrSize])
+            relocValueOffset = relocation.offset - holdingSection.address
+            relocValue = self.bytesToInt(holdingSection.bytes[relocValueOffset:relocValueOffset+self.addrSize])
 
             logger.debug(f"relocation value: {relocValue:x}")
 
@@ -733,16 +761,16 @@ class ElfBinary(binary.Binary):
         # Save the entry size for convenience later
         entrySize = section.entrySize
 
-        if self.arch == binary.BIN_ARCH_32BIT:
+        if self.arch == executable.BIN_ARCH_32BIT:
             dynamicClass = Elf32Dynamic
 
-        elif self.arch == binary.BIN_ARCH_64BIT:
+        elif self.arch == executable.BIN_ARCH_64BIT:
             dynamicClass = Elf64Dynamic
 
         # Iterate through each relocation entry
-        for entry in range(section.fileOffset, section.fileOffset + section.size, entrySize):
+        for entry in range(0, section.size, entrySize):
 
-            dynamic = dynamicClass.from_buffer_copy(self._exeMap[entry:entry+entrySize])
+            dynamic = dynamicClass.from_buffer_copy(section.bytes[entry:entry+entrySize])
 
             # Get the library name and append it to a list for the executable
             if dynamic.tag == DYN_TAG_NEEDED:
@@ -752,19 +780,22 @@ class ElfBinary(binary.Binary):
                 self.libraries.append(name)
 
 
-    def analyze( self ):
+    def parse( self ):
+        """
+        Description:    Definition of the abstract parse() function in the base
+                        Executable class. This function parses and saves all
+                        sections and symbols present in the executable.
+
+        Arguments:      None
+
+        Return:         None
+        """
 
         # Parse the ELF header to get basic information about the file
         self.parseElfHeader()
 
-        # Handle sections and save them
+        # Parse section entries and save all sections
         self.parseSectionEntries()
-
-        # Set the code and global offsets for use when creating symbols
-        codeSection      = self._sectionDict[SECTION_NAME_TEXT]
-        globSection      = self._sectionDict[SECTION_NAME_GLOBAL_OFFSET_TABLE]
-        self.codeOffset  = codeSection.address - codeSection.fileOffset
-        self.globOffset  = globSection.address - globSection.fileOffset
 
         for section in self._sectionList:
 
@@ -787,6 +818,8 @@ class ElfBinary(binary.Binary):
             elif section.type == SECTION_TYPE_DYNAMIC_LINK:
 
                 self.parseDynamic(section)
+
+        self.resolveExternalSymbols()
 
 
     def resolveExternalSymbols( self ):
@@ -825,11 +858,11 @@ class ElfBinary(binary.Binary):
 
             if section.type == SECTION_TYPE_RELOC_ADDEND:
 
-                self.parseRelocation(section, True)
+                self.parseRelocation(section, hasAddend=True)
 
             elif section.type == SECTION_TYPE_RELOC_NO_ADD:
 
-                self.parseRelocation(section, False)
+                self.parseRelocation(section, hasAddend=False)
 
 
     def getSectionFromAddr( self, address ):
@@ -861,10 +894,10 @@ class ElfBinary(binary.Binary):
         start  = startSection.fileOffset + offset
         end    = start + startSection.size - offset
 
-        return self._exeMap[start:end]
+        return startSection.bytes
 
 
-class Elf32Header(binary.FlexibleCStruct):
+class Elf32Header(executable.FlexibleCStruct):
 
     _fields_ = [
         ("magic",               ctypes.c_char * 4),
@@ -889,7 +922,7 @@ class Elf32Header(binary.FlexibleCStruct):
     ]
 
 
-class Elf64Header(binary.FlexibleCStruct):
+class Elf64Header(executable.FlexibleCStruct):
 
     _fields_ = [
         ("magic",               ctypes.c_char * 4),
@@ -914,7 +947,7 @@ class Elf64Header(binary.FlexibleCStruct):
     ]
 
 
-class Elf32SectionEntry(binary.FlexibleCStruct):
+class Elf32SectionEntry(executable.FlexibleCStruct):
 
     _fields_ = [
         ("nameIndex",   ctypes.c_uint32),
@@ -930,7 +963,7 @@ class Elf32SectionEntry(binary.FlexibleCStruct):
     ]
 
 
-class Elf64SectionEntry(binary.FlexibleCStruct):
+class Elf64SectionEntry(executable.FlexibleCStruct):
 
     _fields_ = [
         ("nameIndex",   ctypes.c_uint32),
@@ -946,7 +979,7 @@ class Elf64SectionEntry(binary.FlexibleCStruct):
     ]
 
 
-class Elf32SymbolEntry(binary.FlexibleCStruct):
+class Elf32SymbolEntry(executable.FlexibleCStruct):
 
     _fields_ = [
         ("nameIndex",       ctypes.c_uint32),
@@ -960,7 +993,7 @@ class Elf32SymbolEntry(binary.FlexibleCStruct):
     ]
 
 
-class Elf64SymbolEntry(binary.FlexibleCStruct):
+class Elf64SymbolEntry(executable.FlexibleCStruct):
 
     _fields_ = [
         ("nameIndex",       ctypes.c_uint32),
@@ -974,7 +1007,7 @@ class Elf64SymbolEntry(binary.FlexibleCStruct):
     ]
 
 
-class Elf32Relocation(binary.FlexibleCStruct):
+class Elf32Relocation(executable.FlexibleCStruct):
 
     _fields_ = [
         ("offset",      ctypes.c_uint32),
@@ -990,7 +1023,7 @@ class Elf32RelocationAddend(Elf32Relocation):
     ]
 
 
-class Elf64Relocation(binary.FlexibleCStruct):
+class Elf64Relocation(executable.FlexibleCStruct):
 
     _fields_ = [
         ("offset",      ctypes.c_uint64),
@@ -1006,7 +1039,7 @@ class Elf64RelocationAddend(Elf64Relocation):
     ]
 
 
-class Elf32Dynamic(binary.FlexibleCStruct):
+class Elf32Dynamic(executable.FlexibleCStruct):
 
     _fields_ = [
         ("tag",     ctypes.c_int32),
@@ -1014,7 +1047,7 @@ class Elf32Dynamic(binary.FlexibleCStruct):
     ]
 
 
-class Elf64Dynamic(binary.FlexibleCStruct):
+class Elf64Dynamic(executable.FlexibleCStruct):
 
     _fields_ = [
         ("tag",     ctypes.c_int64),
@@ -1022,12 +1055,13 @@ class Elf64Dynamic(binary.FlexibleCStruct):
     ]
 
 
-class ElfSection():
+class ElfSection( executable.Section ):
 
-    def __init__ ( self, section, name=".null" ):
+    def __init__ ( self, section, exeMap, name=None ):
 
         self.__dict__.update(section.getDictionary())
         self.name = name
+        self.bytes = exeMap[self.fileOffset:self.fileOffset+self.size]
 
     def __repr__(self):
 
@@ -1046,7 +1080,7 @@ class ElfSection():
         )
 
 
-class ElfSymbol( binary.Symbol ):
+class ElfSymbol( executable.Symbol ):
 
     def __init__( self, name, symbol ):
 
@@ -1073,7 +1107,7 @@ class ElfSymbol( binary.Symbol ):
         )
 
 
-class ElfFunction( binary.Function, ElfSymbol ):
+class ElfFunction( executable.Function, ElfSymbol ):
 
     def __init__( self, name, function ):
 

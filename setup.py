@@ -9,7 +9,7 @@ setup(name='pyda',
       license='MIT',
       packages=[
         'pyda',
-        'pyda.binaries',
+        'pyda.exeParsers',
         'pyda.disassemblers',
         'pyda.disassemblers.x64',
         'pyda.decompilers',
