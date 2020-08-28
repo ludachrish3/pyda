@@ -827,6 +827,23 @@ class ElfExecutable(executable.Executable):
         Description:    Resolves external symbols that are normally resolved
                         during linking.
 
+                        +--------------------------------------------+
+        PLT             | plt_stub   | func1_stub | func2_stub | ... |
+                        +--------------------------------------------+
+                       /             |           /             |
+                      /              |         /               |
+                     /               |      /                  |
+                    /                |   /                     |
+                   +-----------------+  +----------------------+
+                   | push link_map   |  | jmp  <func2 address> |
+                   | jmp  dl_resolve |  | push <reloc index>   |
+                   | nop             |  | jmp  <plt_stub>      |
+                   +-----------------+  +----------------------+
+
+            +-----------------------------------------------------------------+
+        GOT |    | link_map | dl_resolve | func1 addr | func2 addr |
+            +-----------------------------------------------------------------+
+
                         This is done in ELF files by looking at the Procedure
                         Linkage Table (PLT) and the Global Offset Table (GOT).
                         The PLT holds stubs that jump to a location in the GOT.
