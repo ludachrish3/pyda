@@ -34,6 +34,13 @@ class Executable( abc.ABC ):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def resolveExternalSymbols( self ):
+        """
+        Resolve any external symbols by binding their names to their addresses.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def setArch( self, arch ):
         raise NotImplementedError
 
@@ -137,11 +144,6 @@ class Executable( abc.ABC ):
         return self._symbols
 
 
-    @abc.abstractmethod
-    def getCodeBytes( self ):
-        raise NotImplementedError
-
-
     def setStartAddr( self, startAddr ):
 
         if startAddr > 0:
@@ -154,7 +156,25 @@ class Executable( abc.ABC ):
 
 class Section (abc.ABC ):
 
-    pass
+    def __init__( self ):
+
+        self._instructions = []
+
+    def getBytes( self, start=None, end=None ):
+
+        return self._bytes[start:end]
+
+    def setBytes( self, sectionContent ):
+
+        self._bytes = sectionContent
+
+    def getInstructions( self ):
+
+        return self._instructions
+
+    def setInstructions( self, instructions ):
+
+        self._instructions = instructions
 
 
 class Symbol( abc.ABC ):

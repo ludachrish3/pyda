@@ -1,7 +1,25 @@
+import abc
 import copy
 
 OPERAND_TYPE_REG = 1
 OPERAND_TYPE_MEM = 2
+
+class Disassembler(abc.ABC):
+
+    @classmethod
+    @abc.abstractmethod
+    def disassemble( cls, byteBuffer, addr ):
+        """
+        Description:    Disassembles a stream of bytes and creates a list of
+                        instructions.
+
+        Arguments:      byteBuffer - bytes object to disassemble
+                        addr       - starting address to use when disassembling
+
+        Return:         The list of instructions that are created.
+        """
+        raise NotImplementedError
+
 
 class Instruction():
 

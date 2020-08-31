@@ -11,7 +11,7 @@ setup(name='pyda',
         'pyda',
         'pyda.exeParsers',
         'pyda.disassemblers',
-        'pyda.disassemblers.x64',
+        'pyda.disassemblers.x86_64',
         'pyda.decompilers',
       ],
       scripts=[

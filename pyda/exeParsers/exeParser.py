@@ -10,8 +10,6 @@ import mmap
 
 from pyda.exeParsers import executable, elf
 
-from pyda.disassemblers.x64 import asm as x64asm
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -60,47 +58,5 @@ def parseExe( filename ):
     exe.parse()
 
     logger.info(exe)
-
-    # If the executable did not have a symbol table, then the .text section
-    # needs to be broken up into functions and disassembled
-    if exe.isStripped:
-
-        code = exe.getCodeBytes()
-
-        instructions = x64asm.disassemble(code, exe.getStartAddr())
-
-        listOfAddrsAndSizes = x64asm.findFunctions(instructions)
-        for addr, size in listOfAddrsAndSizes:
-            logger.info(f"func_{addr:08x}: {size}")
-
-    # Otherwise, disassemble all functions in the executable
-    else:
-
-        # Disassemble all functions in the executable
-        for symbolKey, symbol in exe.getSymbols().items():
-
-            # Disassemble each function. Every symbol has an entry for its name
-            # and its address, so only handle symbols by name to avoid redundancy.
-            if isinstance(symbol, executable.Function) and type(symbolKey) == str:
-
-                logger.info(f"function: {symbol}")
-
-                fileOffset = symbol.getFileOffset()
-                size       = symbol.getSize()
-                assembly   = exeMap[fileOffset:fileOffset+size]
-
-                if exe.getISA() == executable.ISA_X86_64:
-
-                    disassembler = x64asm
-
-                instructions = disassembler.disassemble(assembly, symbol.getAddress())
-                symbol.setInstructions(instructions)
-
-                for inst in instructions:
-
-                    logger.info(f"{inst}")
-
-    # TODO: Update instructions to use symbols instead of numbers for all known
-    # symbols because they should all be known by this point.
 
     return None

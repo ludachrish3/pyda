@@ -1,4 +1,5 @@
 from pyda.exeParsers import executable
+from pyda.disassemblers.x86_64.asm import X86_64Disassembler
 import ctypes
 
 import logging
@@ -145,17 +146,11 @@ SECTION_TYPE_STR = {
     SECTION_TYPE_GNU_VERSION:   "GNU version",
 }
 
-SECTION_NAME_SECTION_NAMES = ".shstrtab"
-SECTION_NAME_STRING_TABLE = ".strtab"
-SECTION_NAME_SYMBOL_TABLE = ".symtab"
-SECTION_NAME_DYN_SYMBOL_TABLE = ".dynsym"
-SECTION_NAME_DYN_STRING_TABLE = ".dynstr"
-SECTION_NAME_GLOBAL_OFFSET_TABLE = ".got"
-SECTION_NAME_INIT = ".init"
-SECTION_NAME_DATA = ".data"
-SECTION_NAME_TEXT = ".text"
-SECTION_NAME_RODATA = ".rodata"
-
+SECTION_FLAG_WRITE     = 0x01       # Section contains writable data
+SECTION_FLAG_ALLOC     = 0x02       # Section is allocated in memory image of program
+SECTION_FLAG_EXECINSTR = 0x04       # Section contains executable instructions
+SECTION_FLAG_MASKOS    = 0x0f000000 # Environment-specific use
+SECTION_FLAG_MASKPROC  = 0xf0000000 # Processor-specific use
 
 SYMBOL_BIND_LOCAL  = 0
 SYMBOL_BIND_GLOBAL = 1
@@ -368,7 +363,7 @@ class ElfExecutable(executable.Executable):
         Return:         The string found in the string table.
         """
 
-        sectionName = section.name
+        sectionName = section.getName()
 
         # If this section has never been queried before, add it to the dictionary
         if sectionName not in self._strings:
@@ -385,11 +380,12 @@ class ElfExecutable(executable.Executable):
         # Search for the end of the string (null byte) in the string table
         currentPos = index
 
-        while section.bytes[currentPos] != 0:
-            currentChar = section.bytes[currentPos]
+        sectionBytes = section.getBytes()
+        while sectionBytes[currentPos] != 0:
+            currentChar = sectionBytes[currentPos]
             currentPos += 1
 
-        string = section.bytes[index:currentPos].decode("ascii")
+        string = section.getBytes(index, currentPos).decode("ascii")
         self._strings[sectionName][index] = string
 
         return string
@@ -435,7 +431,7 @@ class ElfExecutable(executable.Executable):
 
     def getISA(self):
 
-        return ISA_STR[self.isa]
+        return self.isa
 
 
     def setISA( self, isa ):
@@ -608,7 +604,7 @@ class ElfExecutable(executable.Executable):
 
         for entry in range(0, section.size, section.entrySize):
 
-            symbolStruct = symbolClass.from_buffer_copy(section.bytes[entry:entry+section.entrySize])
+            symbolStruct = symbolClass.from_buffer_copy(section.getBytes(entry, entry+section.entrySize))
 
             # Create the real Python objects based on the ctypes structures
             # and assign the symbols their names
@@ -681,7 +677,7 @@ class ElfExecutable(executable.Executable):
         # Iterate through each relocation entry
         for entry in range(0, section.size, entrySize):
 
-            relocation = relocationClass.from_buffer_copy(section.bytes[entry:entry+entrySize])
+            relocation = relocationClass.from_buffer_copy(section.getBytes(entry, entry+entrySize))
 
             if hasattr(relocation, "addend"):
                 logger.debug(f"addend: {relocation.addend:x}")
@@ -701,7 +697,7 @@ class ElfExecutable(executable.Executable):
             # relocValue is the value of the relocation.
             holdingSection = self.getSectionFromAddr(relocation.offset)
             relocValueOffset = relocation.offset - holdingSection.address
-            relocValue = self.bytesToInt(holdingSection.bytes[relocValueOffset:relocValueOffset+self.addrSize])
+            relocValue = self.bytesToInt(holdingSection.getBytes(relocValueOffset, relocValueOffset+self.addrSize))
 
             logger.debug(f"relocation value: {relocValue:x}")
 
@@ -770,7 +766,7 @@ class ElfExecutable(executable.Executable):
         # Iterate through each relocation entry
         for entry in range(0, section.size, entrySize):
 
-            dynamic = dynamicClass.from_buffer_copy(section.bytes[entry:entry+entrySize])
+            dynamic = dynamicClass.from_buffer_copy(section.getBytes(entry, entry+entrySize))
 
             # Get the library name and append it to a list for the executable
             if dynamic.tag == DYN_TAG_NEEDED:
@@ -819,7 +815,26 @@ class ElfExecutable(executable.Executable):
 
                 self.parseDynamic(section)
 
-        self.resolveExternalSymbols()
+            # Handle executable sections that hold instructions that need to be
+            # disassembled
+            elif section.type == SECTION_TYPE_PROGRAM_DATA and \
+                 section.flags & SECTION_FLAG_EXECINSTR != 0:
+
+                isa = self.getISA()
+                logger.info(f"{section.name} executable ISA: {ISA_STR[isa]}")
+                if isa == ISA_X86_64:
+                    disassembler = X86_64Disassembler
+
+                else:
+                    raise NotImplementedError(f"The ISA {ISA_STR[isa]} is not supported")
+
+                # Disassemble the section and save the instructions to it
+                instructions = disassembler.disassemble(section.getBytes(), section.address)
+                section.setInstructions(instructions)
+
+        # TODO: Perform external symbol resolution
+
+        # TODO: Resolve addresses to symbols within the instructions
 
 
     def resolveExternalSymbols( self ):
@@ -898,20 +913,6 @@ class ElfExecutable(executable.Executable):
                 return section
 
         return None
-
-
-    def getCodeBytes( self ):
-
-        startSection = self.getSectionFromAddr(self._startAddr)
-
-        # Find the associated file offset based on the start address.
-        # Get all bytes starting at the executable's start address until the
-        # end of the section that contains the starting address.
-        offset = self._startAddr - startSection.address
-        start  = startSection.fileOffset + offset
-        end    = start + startSection.size - offset
-
-        return startSection.bytes
 
 
 class Elf32Header(executable.FlexibleCStruct):
@@ -1077,8 +1078,16 @@ class ElfSection( executable.Section ):
     def __init__ ( self, section, exeMap, name=None ):
 
         self.__dict__.update(section.getDictionary())
-        self.name = name
-        self.bytes = exeMap[self.fileOffset:self.fileOffset+self.size]
+        self.setName(name)
+        self.setBytes(exeMap[self.fileOffset:self.fileOffset+self.size])
+
+    def setName( self, name ):
+
+        self._name = name
+
+    def getName ( self ):
+
+        return self._name
 
     def __repr__(self):
 
