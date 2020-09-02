@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 import traceback
 import os, sys
 
-from pyda.exeParsers import exeParser
+from pyda.exeParsers import exeParser, executable
 from pyda.decompilers import decompiler
 
 import logging
@@ -17,23 +17,122 @@ import logging
 logger = logging.getLogger(__package__)
 
 helpMessage = """
-[l]ist - list the available things
-[s]how - show a function
-[h]elp - show this help output
-[e]xit - exit the program (same as quit)
-[q]uit - quit the program (same as exit)
+l\u0332ist - list the available things
+s\u0332how - show a function
+h\u0332elp - show this help output
+e\u0332xit - exit the program (same as quit)
+q\u0332uit - quit the program (same as exit)
 """
 
 listHelpMessage = """
-list [f]unctions        - lists the names of all functions
-list [g]lobal variables - lists the names of all global variables
-list [s]ymbols          - lists all symbols and their info
+list f\u0332unctions - lists the names of all functions
+list g\u0332lobals   - lists the names of all global variables
+list s\u0332ymbols   - lists all symbols and their info
 """
 
 showHelpMessage = """
-show [[a]ssembly] <function name> - shows a function's code, or its assembly if
-                                    "assembly" is also provided
+show [a\u0332ssembly] <function name> - shows a function's code, or its assembly if
+                                  "assembly" is also provided
 """
+
+
+def listCommand( exe, tokens ):
+    """
+    Description:    Performs the list command based on the tokens from the
+                    user's input.
+
+    Arguments:      exe    - Executable object to inspect
+                    tokens - List of tokens after the initial 'list' token
+
+    Return:         None
+    """
+
+    # TODO: Support sorting by a certain column in ascending or descending order
+
+    if tokens[0] in ["f", "functions"]:
+
+        functions = exe.getSymbols(symbolType=executable.SYMBOL_TYPE_FUNCTION, byName=True)
+
+        # Convert the functions into a table-friendly format
+        functions = [ {"Name": func.getName(), "Address": f"{func.getAddress():#010x}"} for func in functions ]
+
+        printTable(functions)
+
+    elif tokens[0] in ["g", "globals"]:
+
+        globalVars = exe.getSymbols(symbolType=executable.SYMBOL_TYPE_GLOBAL, byName=True)
+
+        # Convert the global variables into a table-friendly format
+        globalVars = [ {"Name": var.getName(), "Address": f"{var.getAddress():#010x}"} for var in globalVars ]
+
+        printTable(globalVars)
+
+    elif tokens[0] in ["s", "symbols"]:
+
+        symbols = exe.getSymbols(byName=True)
+
+        # Convert the symbols into a table-friendly format
+        symbols = [ {"Name": sym.getName(), "Address": f"{sym.getAddress():#010x}"} for sym in symbols ]
+
+        printTable(symbols)
+
+    else:
+        print(f"'{tokens[0]}' is not a valid object to list")
+
+
+def showCommand( exe, tokens ):
+
+    print("showing things")
+
+
+
+def printTable( data ):
+    """
+    Description:    Prints a list of data entries in a table. The header of
+                    each column is the key for value, and all values are
+                    expected to be strings in the format in which they should
+                    be printed.
+
+    Arguments:      data - Dictionary keyed on column name containing formatted
+                           strings for the values.
+
+    Return:         None
+    """
+
+    if len(data) == 0:
+
+        print("No results")
+        return
+
+    widths = {}
+    titles = []
+
+    rowSeparator = "+"
+
+    for key in data[0]:
+
+        # Take max of list of data entries with the given key.
+        # Also take width of title into account just in case it is longer than
+        # any of the values.
+        keyMaxWidth = max([ len(entry[key]) for entry in data ])
+        keyMaxWidth = max(keyMaxWidth, len(key))
+
+        widths[key] = keyMaxWidth
+        titles.append(key.ljust(keyMaxWidth))
+        rowSeparator += "-" * (keyMaxWidth + 2) + "+"
+
+    # Print the header
+    header = "| " +  " | ".join(titles) + " |"
+    print(rowSeparator)
+    print(header)
+    print(rowSeparator)
+
+    # Print the data, everything right aligned because numbers look better that way
+    for entry in data:
+
+        values = [ value.ljust(widths[key]) for key, value in entry.items() ]
+        print("| " + " | ".join(values) + " |")
+        print(rowSeparator)
 
 
 def runTui( executables ):
@@ -45,25 +144,33 @@ def runTui( executables ):
     Return:         None
     """
 
-    prompt = "pyda> "
-
     listCommands = ["l", "list"]
     showCommands = ["s", "show"]
     exitCommands = ["q", "e", "quit", "exit"]
     helpCommands = ["h", "help"]
 
     # TODO: Support multiple executables that are imported together
-    executable = executables[0]
+    exe = executables[0]
 
     while True:
 
-        print(f"{prompt}", end='')
-        line = input().strip().lower()
+        line = input("pyda> ").strip().lower()
 
+        # Split up the tokens by whitespace, and remove any extra spaces
         tokens = line.split(" ")
+        tokens = [ token for token in tokens if len(token) > 0 ]
 
         if tokens[0] in exitCommands:
             break
+
+        elif tokens[0] in listCommands:
+
+            listCommand(exe, tokens[1:])
+
+        elif tokens[0] in showCommands:
+
+            print("showing things")
+            showCommand(exe, tokens[1:])
 
         elif tokens[0] in helpCommands:
 
@@ -83,14 +190,6 @@ def runTui( executables ):
             else:
 
                 print(f"'{tokens[1]}' is not a valid command")
-
-        elif tokens[0] in listCommands:
-
-            print("listing things")
-
-        elif tokens[0] in showCommands:
-
-            print("showing things")
 
         else:
             print(f"'{tokens[0]}' is not a valid command")

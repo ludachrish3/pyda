@@ -59,4 +59,4 @@ def parseExe( filename ):
 
     logger.info(exe)
 
-    return None
+    return exe

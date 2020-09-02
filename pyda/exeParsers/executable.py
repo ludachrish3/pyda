@@ -24,6 +24,11 @@ ISA_IA_64       = "Intel IA-64"
 BIN_ENDIAN_LITTLE = "little"
 BIN_ENDIAN_BIG    = "big"
 
+SYMBOL_TYPE_NONE     = "none"
+SYMBOL_TYPE_GLOBAL   = "global"
+SYMBOL_TYPE_FUNCTION = "function"
+SYMBOL_TYPE_SECTION  = "section"
+
 class Executable( abc.ABC ):
 
     @abc.abstractmethod
@@ -139,9 +144,41 @@ class Executable( abc.ABC ):
                 self._symbols[address][symbolType] = symbol
 
 
-    def getSymbols( self ):
+    def getSymbols( self, symbolType=None, byName=False ):
 
-        return self._symbols
+        # By default, return all of the symbols
+        if symbolType is None and not byName:
+
+            return self._symbols
+
+        # Return symbols by name. Look only for strings as key, and add them to
+        # the list of matching symbols if the symbol type matches.
+        if byName:
+
+            matchingSymbols = []
+
+            for name, symbol in self._symbols.items():
+
+                if type(name) == str and symbol.getType() == symbolType:
+                    matchingSymbols.append(symbol)
+
+                # Add all symbols regardless of type if symbolType is None
+                elif type(name) == str and symbolType is None:
+                    matchingSymbols.append(symbol)
+
+        # If symbols by address are requested, then look for only integers as
+        # keys, and add them to the list of matching symbols if the symbol type
+        # is available for the address.
+        else:
+
+            matchingSymbols = []
+
+            for addr, types in self._symbols.items():
+
+                if type(addr) == int and symbolType in types:
+                    matchingSymbols.append(types[symbolType])
+
+        return matchingSymbols
 
 
     def setStartAddr( self, startAddr ):
@@ -213,9 +250,12 @@ class Symbol( abc.ABC ):
         return self.size
 
 
+    @abc.abstractmethod
     def setType ( self, symbolType ):
-
-        self.type = symbolType
+        """
+        Set the type to be a generic type in the child class
+        """
+        raise NotImplementedError
 
 
     def getType ( self ):

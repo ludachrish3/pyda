@@ -162,7 +162,7 @@ SYMBOL_BIND_STR = {
     SYMBOL_BIND_WEAK:   "weak"
 }
 
-SYMBOL_TYPE_NOTYPE   = 0
+SYMBOL_TYPE_NONE     = 0
 SYMBOL_TYPE_OBJECT   = 1
 SYMBOL_TYPE_FUNCTION = 2
 SYMBOL_TYPE_SECTION  = 3
@@ -170,10 +170,10 @@ SYMBOL_TYPE_FILE     = 4
 SYMBOL_TYPE_COMMON   = 5
 
 SYMBOL_TYPE_STR = {
-    SYMBOL_TYPE_NOTYPE:   "no type",
-    SYMBOL_TYPE_OBJECT:   "object",
-    SYMBOL_TYPE_FUNCTION: "function",
-    SYMBOL_TYPE_SECTION:  "section",
+    SYMBOL_TYPE_NONE:     executable.SYMBOL_TYPE_NONE,
+    SYMBOL_TYPE_OBJECT:   executable.SYMBOL_TYPE_GLOBAL,
+    SYMBOL_TYPE_FUNCTION: executable.SYMBOL_TYPE_FUNCTION,
+    SYMBOL_TYPE_SECTION:  executable.SYMBOL_TYPE_SECTION,
     SYMBOL_TYPE_FILE:     "file",
     SYMBOL_TYPE_COMMON:   "common"
 }
@@ -1121,12 +1121,16 @@ class ElfSymbol( executable.Symbol ):
         self.setType(symbol.type)
         self.setIsExternal(False)
 
+    def setType( self, symbolType ):
+
+        self.type = SYMBOL_TYPE_STR[symbolType]
+
 
     def __repr__(self):
 
         return (
             f"{super().__repr__()}, "
-            f"type: {SYMBOL_TYPE_STR[self.getType()]}, "
+            f"type: {self.getType()}, "
             f"bind: {SYMBOL_BIND_STR[self.bind]}, "
             f"visibility: {SYMBOL_VIS_STR[self.visibility]}, "
             f"section index: {self.sectionIndex}"
@@ -1139,7 +1143,7 @@ class ElfFunction( executable.Function, ElfSymbol ):
 
         super().__init__(name, function)
 
-        if self.type != SYMBOL_TYPE_FUNCTION:
+        if self.type != executable.SYMBOL_TYPE_FUNCTION:
             raise Exception("Cannot create an ElfFunction with a symbol type other than function")
 
         self.fileOffset = 0

@@ -24,6 +24,7 @@ optional arguments:
 * Create a fixup function that copies destination into source when needed so that operands are explicit (mainly for just math?) Need to still have correct syntax in Intel and AT&T format.
 * Support AT&T assembly syntax so that it can be diffed against objdump output
 * Support Intel assembly syntax
+* Add sorting list results by column in ascending and descending order
 * Change relative jumps to just have a value of REG_RIP, and then mark the operand as indirect and set its displacement if the operand's value is REG_RIP. Whether the operand is signed will be determined by whether the operand is indirect.
 * In order to find functions in a stripped binary, start at beginning of .text section. Start disassembling and consider all jumps that can be taken. If there are no jumps left and a ret instruction is reached, then that is the end of the function. All instructions after it (not including NOPs) are another function.
 * Update tests
