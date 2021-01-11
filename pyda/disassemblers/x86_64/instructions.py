@@ -161,13 +161,14 @@ class X86_64Instruction( Instruction ):
 class X86_64Operand( Operand ):
 
     def __init__( self, value=0, size=REG_SIZE_32, maxSize=REG_SIZE_64, segmentReg=0,
-                  isDestination=False, modRm=False, reg=False,
+                  isDestination=False, modRm=False, reg=False, isOffset=False, isSigned=False,
                   isImmediate=False, indirect=False, mmRegister=False, floatReg=False ):
 
         super().__init__(size, value, isDestination)
         self.maxSize = maxSize              # The maximum size allowed for the operand
         self.modRm = modRm                  # Whether the operand uses the Mod R/M values in the Mod R/M byte
         self.reg   = reg                    # Whether the operand uses the Reg value in the Mod R/M byte
+        self.isOffset = isOffset            # Whether the operand is an offset from the end of the instruction
         self.isImmediate = isImmediate      # Whether the operand is an immediate
         self.segmentReg = segmentReg        # The segment register to use as a base value
         self.mmRegister = mmRegister        # Whether the operand is an MM register
@@ -263,18 +264,11 @@ class X86_64Operand( Operand ):
 
 class X86_64InstructionInfo():
 
-    def __init__( self, mnemonic, extOpcode=False, relativeJump=False,
-                  comparison=False, destinations=[0], numOperands=2, **kwargs):
+    def __init__( self, mnemonic, extOpcode=False, destinations=[0], numOperands=2, **kwargs):
 
         # Opcode info
         self.mnemonic      = mnemonic       # The name of the instruction
         self.extOpcode     = extOpcode      # Whether the opcode is extended into the ModR/M
-        self.comparison    = comparison     # Whether the instruction is a comparison
-        self.relativeJump  = relativeJump   # Whether the instruction is a relative jump and expects an immediate to follow the opcode
-
-        # Relative jumps always have only 1 operand
-        if relativeJump:
-            numOperands = 1
 
         self.instKwargs = { key.split("_")[0]: value for (key, value) in kwargs.items() if key.endswith("_inst") }
         self.operandKwargs = []
@@ -301,12 +295,6 @@ class X86_64InstructionInfo():
         # set to True
         for dest in destinations:
             self.operandKwargs[dest]["isDestination"] = True
-
-        # Set properties that are always true if the instruction is a relative jump.
-        # They can always be negative, so sign extension must be true.
-        # They are always immediate values, so isImmediate must be true.
-        if self.relativeJump:
-            self.operandKwargs[0]["isImmediate"] = True
 
 
 # The structure for opcodes and their info is a dictionary keyed on the primary
@@ -468,22 +456,22 @@ oneByteOpcodes = {
 #   0x6d: Debug input port to string
 #   0x6e: Debug output string to port
 #   0x6f: Debug output string to port
-    0x70: X86_64InstructionInfo("jo",    numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Overflow
-    0x71: X86_64InstructionInfo("jno",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Not overflow
-    0x72: X86_64InstructionInfo("jb",    numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Less than (unsigned)
-    0x73: X86_64InstructionInfo("jae",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Greater than or equal (unsigned)
-    0x74: X86_64InstructionInfo("je",    numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Equal
-    0x75: X86_64InstructionInfo("jne",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Not equal
-    0x76: X86_64InstructionInfo("jbe",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Less than or equal (unsigned)
-    0x77: X86_64InstructionInfo("ja",    numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Greater than (unsigned)
-    0x78: X86_64InstructionInfo("js",    numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Signed
-    0x79: X86_64InstructionInfo("jns",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Unsigned
-    0x7a: X86_64InstructionInfo("jp",    numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Parity
-    0x7b: X86_64InstructionInfo("jnp",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Not parity
-    0x7c: X86_64InstructionInfo("jlt",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Less than (signed)
-    0x7d: X86_64InstructionInfo("jge",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Greater than or equal (signed)
-    0x7e: X86_64InstructionInfo("jle",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Less than or equal (signed)
-    0x7f: X86_64InstructionInfo("jgt",   numOperands=1, relativeJump=True, size_0=REG_SIZE_8), # Greater than (signed)
+    0x70: X86_64InstructionInfo("jo",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Overflow
+    0x71: X86_64InstructionInfo("jno",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not overflow
+    0x72: X86_64InstructionInfo("jb",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than (unsigned)
+    0x73: X86_64InstructionInfo("jae",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than or equal (unsigned)
+    0x74: X86_64InstructionInfo("je",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Equal
+    0x75: X86_64InstructionInfo("jne",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not equal
+    0x76: X86_64InstructionInfo("jbe",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than or equal (unsigned)
+    0x77: X86_64InstructionInfo("ja",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than (unsigned)
+    0x78: X86_64InstructionInfo("js",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Signed
+    0x79: X86_64InstructionInfo("jns",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Unsigned
+    0x7a: X86_64InstructionInfo("jp",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Parity
+    0x7b: X86_64InstructionInfo("jnp",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not parity
+    0x7c: X86_64InstructionInfo("jlt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than (signed)
+    0x7d: X86_64InstructionInfo("jge",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than or equal (signed)
+    0x7e: X86_64InstructionInfo("jle",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than or equal (signed)
+    0x7f: X86_64InstructionInfo("jgt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than (signed)
     0x80: {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
@@ -638,7 +626,7 @@ oneByteOpcodes = {
             },
         },
     },
-    0xc2: X86_64InstructionInfo("ret",   numOperands=1, destinations=[], relativeJump=True, size_0=REG_SIZE_16, _maxSize_0=REG_SIZE_16),
+    0xc2: X86_64InstructionInfo("ret",   numOperands=1, size_0=REG_SIZE_16, maxSize_0=REG_SIZE_16),
     0xc3: X86_64InstructionInfo("ret",   numOperands=0),
 #   0xc4: Invalid
 #   0xc5: Invalid
@@ -1019,10 +1007,10 @@ oneByteOpcodes = {
 #   0xe5: TODO:
 #   0xe6: TODO:
 #   0xe7: TODO:
-    0xe8: X86_64InstructionInfo("call",  destinations=[], numOperands=1, relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
-    0xe9: X86_64InstructionInfo("jmp",   destinations=[], numOperands=1, relativeJump=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
+    0xe8: X86_64InstructionInfo("call",  numOperands=1, isOffset_0=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
+    0xe9: X86_64InstructionInfo("jmp",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32, maxSize_0=REG_SIZE_32),
 #   0xea: Invalid
-    0xeb: X86_64InstructionInfo("jmp",   destinations=[], numOperands=1, relativeJump=True, size_0=REG_SIZE_8),
+    0xeb: X86_64InstructionInfo("jmp",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8),
 #   0xec: TODO:
 #   0xed: TODO:
 #   0xee: TODO:
@@ -1352,22 +1340,22 @@ twoByteOpcodes = {
 #   0x7d: TODO:
 #   0x7e: TODO:
 #   0x7f: TODO:
-    0x80: X86_64InstructionInfo("jo",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Overflow
-    0x81: X86_64InstructionInfo("jno",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Not overflow
-    0x82: X86_64InstructionInfo("jb",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than (unsigned)
-    0x83: X86_64InstructionInfo("jae",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than or equal (unsigned)
-    0x84: X86_64InstructionInfo("je",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Equal
-    0x85: X86_64InstructionInfo("jne",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Not equal
-    0x86: X86_64InstructionInfo("jbe",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than or equal (unsigned)
-    0x87: X86_64InstructionInfo("ja",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than (unsigned)
-    0x88: X86_64InstructionInfo("js",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Signed
-    0x89: X86_64InstructionInfo("jns",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Unsigned
-    0x8a: X86_64InstructionInfo("jp",    numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Parity
-    0x8b: X86_64InstructionInfo("jnp",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Not parity
-    0x8c: X86_64InstructionInfo("jlt",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than (signed)
-    0x8d: X86_64InstructionInfo("jge",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than or equal (signed)
-    0x8e: X86_64InstructionInfo("jle",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Less than or equal (signed)
-    0x8f: X86_64InstructionInfo("jgt",   numOperands=1, relativeJump=True, size_0=REG_SIZE_32), # Greater than (signed)
+    0x80: X86_64InstructionInfo("jo",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Overflow
+    0x81: X86_64InstructionInfo("jno",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Not overflow
+    0x82: X86_64InstructionInfo("jb",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than (unsigned)
+    0x83: X86_64InstructionInfo("jae",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than or equal (unsigned)
+    0x84: X86_64InstructionInfo("je",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Equal
+    0x85: X86_64InstructionInfo("jne",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Not equal
+    0x86: X86_64InstructionInfo("jbe",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than or equal (unsigned)
+    0x87: X86_64InstructionInfo("ja",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than (unsigned)
+    0x88: X86_64InstructionInfo("js",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Signed
+    0x89: X86_64InstructionInfo("jns",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Unsigned
+    0x8a: X86_64InstructionInfo("jp",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Parity
+    0x8b: X86_64InstructionInfo("jnp",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Not parity
+    0x8c: X86_64InstructionInfo("jlt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than (signed)
+    0x8d: X86_64InstructionInfo("jge",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than or equal (signed)
+    0x8e: X86_64InstructionInfo("jle",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than or equal (signed)
+    0x8f: X86_64InstructionInfo("jgt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than (signed)
     0x90: X86_64InstructionInfo("seto",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Overflow
     0x91: X86_64InstructionInfo("setno", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not Overflow
     0x92: X86_64InstructionInfo("setb",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than (unsigned)

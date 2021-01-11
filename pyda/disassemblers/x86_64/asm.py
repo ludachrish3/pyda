@@ -83,7 +83,7 @@ class X86_64Disassembler( Disassembler ):
             # from trying to consume bytes for an immediate.
             for operand in curInstruction.operands:
 
-                if operand.isImmediate and operand.value is 0:
+                if operand.isOffset or (operand.isImmediate and operand.value is 0):
 
                     logger.debug("Handling the extra immeidate")
                     numImmediateBytes = cls.__handleImmediate(curInstruction, operand, byteBuffer)
@@ -241,7 +241,7 @@ class X86_64Disassembler( Disassembler ):
         if type(info) == dict:
 
             # There is a secondary opcode
-            if byteBuffer[numOpcodeBytes] in info:
+            if len(byteBuffer) > numOpcodeBytes and byteBuffer[numOpcodeBytes] in info:
 
                 info = info[byteBuffer[numOpcodeBytes]]
                 numOpcodeBytes += 1
@@ -523,15 +523,16 @@ class X86_64Disassembler( Disassembler ):
 
         # Round the operand size down because there are some register sizes that use
         # decimal values to differentiate them. The actual size is always the
-        # truncated value of the register size. Relative jumps are always signed.
+        # truncated value of the register size. RIP offsets are always signed.
         numBytes = int(operand.size)
         instruction.bytes += list(byteBuffer[:numBytes])
-        immediate = int.from_bytes(byteBuffer[:numBytes], "little", signed=instruction.info.relativeJump)
+        immediate = int.from_bytes(byteBuffer[:numBytes], "little", signed=operand.isOffset)
 
-        # If the instruction is a relative jump, mark the source as indirect from
-        # the RIP register so that it can be resolved once processing all
-        # instruction bytes is done and the length of the instruction is known.
-        if instruction.info.relativeJump:
+        # If the instruction is an offset from the RIP, mark the source as
+        # indirect from the RIP register so that it can be resolved once
+        # processing all instruction bytes is done and the length of the
+        # instruction is known.
+        if operand.isOffset:
             operand.indirect = True
             operand.value = REG_RIP
             operand.displacement = immediate
@@ -609,7 +610,7 @@ class X86_64Disassembler( Disassembler ):
             # current function to be the end of a function because there is no way
             # to resume execution after a jump.
             if (instruction.mnemonic in [ "ret", "repz ret", "hlt" ] and instruction.addr >= highestReachableAddr) \
-                or (instruction.info.relativeJump and instruction.mnemonic not in [ "call" ] and instruction.operands[0].value < funcStart):
+                or (instruction.operands[0].isOffset and instruction.mnemonic not in [ "call" ] and instruction.operands[0].value < funcStart):
 
                 funcAddrsAndSizes.append((funcStart, instruction.addr + len(instruction.bytes) - funcStart))
                 currentlyInFunction = False
@@ -617,7 +618,7 @@ class X86_64Disassembler( Disassembler ):
 
             # If a higher address is reachable by a jump, which is a relative jump
             # that is not a call, set the highest address to the jump destination.
-            if instruction.info.relativeJump           and \
+            if instruction.operands[0].isOffset        and \
                 instruction.mnemonic not in [ "call" ] and \
                 instruction.operands[0].value > highestReachableAddr:
 
