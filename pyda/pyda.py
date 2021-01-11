@@ -49,6 +49,10 @@ def listCommand( exe, tokens ):
 
     # TODO: Support sorting by a certain column in ascending or descending order
 
+    if len(tokens) == 0:
+        print(f"Invalid list command.\n{listHelpMessage}")
+        return
+
     if tokens[0] in ["f", "functions"]:
 
         functions = exe.getSymbols(symbolType=executable.SYMBOL_TYPE_FUNCTION, byName=True)
