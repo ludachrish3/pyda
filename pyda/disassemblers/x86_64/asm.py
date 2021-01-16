@@ -51,7 +51,7 @@ class X86_64Disassembler( Disassembler ):
 
             # Replace the instruction with the one that corresponds to the opcode.
             # Consume all opcodes bytes from the byteBuffer.
-            # TODO: Add exceptionf or IndexError if byteBuffer bytes run out
+            # TODO: Add exceptions or IndexError if byteBuffer bytes run out
             numOpcodeBytes = cls.__handleOpcode(curInstruction, byteBuffer)
             byteBuffer = byteBuffer[numOpcodeBytes:]
             if numOpcodeBytes == 0 or curInstruction.info is None:

@@ -20,7 +20,6 @@ optional arguments:
 * Add a user interface that take input to print certain things, like all symbols, functions, global variables, instructions in a function
 * Add command line options for getting just some header info like objdump and readelf does. This should be pretty easy, and can be made more user friendly by using human readable strings.
 * Add semantics to instructions at the base level. There should be types of instructions, like add, subtract, multiply, call function, pop stack push stack, type conversion, etc
-* Make comparison instructions automatically set the destination to the REG_RFLAGS register
 * Create a fixup function that copies destination into source when needed so that operands are explicit (mainly for just math?) Need to still have correct syntax in Intel and AT&T format.
 * Support AT&T assembly syntax so that it can be diffed against objdump output
 * Support Intel assembly syntax

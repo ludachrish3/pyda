@@ -9,10 +9,15 @@ logger = logging.getLogger(__name__)
 
 class X86_64Instruction( Instruction ):
 
-    def __init__( self, mnemonic="byte", addr=0, operands=[], exchange=False ):
+    def __init__( self, mnemonic="byte", addr=0, operands=[], destIsAlsoSource=True, exchange=False ):
 
         super().__init__(mnemonic, addr, operands, exchange)
 
+        # Whether the destination operand is also a source operand.
+        # This is useful when construction pcode
+        self.destIsAlsoSource = destIsAlsoSource
+
+        # Set defaults for all values
         self.sizePrefix    = None   # The size operands should be based on the prefix
         self.segmentPrefix = 0      # Opcode of the segment
         self.legacyPrefix  = None   # Lock, repeat, or operand size prefix
@@ -264,7 +269,8 @@ class X86_64Operand( Operand ):
 
 class X86_64InstructionInfo():
 
-    def __init__( self, mnemonic, extOpcode=False, destinations=[0], numOperands=2, **kwargs):
+    def __init__( self, mnemonic, extOpcode=False, destinations=[0], numOperands=2,
+                  **kwargs):
 
         # Opcode info
         self.mnemonic      = mnemonic       # The name of the instruction
@@ -400,12 +406,12 @@ oneByteOpcodes = {
     0x35: X86_64InstructionInfo("xor",   isImmediate_1=True, maxSize_1=REG_SIZE_32),
 #   0x36: SS Segment Register Prefix
 #   0x37: Invalid
-    0x38: X86_64InstructionInfo("cmp",   numOperands=3, value_0=REG_RFLAGS, modRm_1=True, reg_2=True),
-    0x39: X86_64InstructionInfo("cmp",   numOperands=3, value_0=REG_RFLAGS, modRm_1=True, reg_2=True),
-    0x3a: X86_64InstructionInfo("cmp",   numOperands=3, value_0=REG_RFLAGS, reg_1=True,   modRm_2=True),
-    0x3b: X86_64InstructionInfo("cmp",   numOperands=3, value_0=REG_RFLAGS, reg_1=True,   modRm_2=True),
-    0x3c: X86_64InstructionInfo("cmp",   numOperands=3, value_0=REG_RFLAGS, isImmediate_2=True),
-    0x3d: X86_64InstructionInfo("cmp",   numOperands=3, value_0=REG_RFLAGS, isImmediate_2=True, maxSize_2=REG_SIZE_32),
+    0x38: X86_64InstructionInfo("cmp",   modRm_0=True, reg_1=True),
+    0x39: X86_64InstructionInfo("cmp",   modRm_0=True, reg_1=True),
+    0x3a: X86_64InstructionInfo("cmp",   reg_0=True,   modRm_1=True),
+    0x3b: X86_64InstructionInfo("cmp",   reg_0=True,   modRm_1=True),
+    0x3c: X86_64InstructionInfo("cmp",   isImmediate_1=True),
+    0x3d: X86_64InstructionInfo("cmp",   isImmediate_1=True, maxSize_1=REG_SIZE_32),
 #   0x3e: DS Segment Register Prefix
 #   0x3f: Invalid
 #   0x40: REX Prefix (accesses extended 8-bit registers)
@@ -424,22 +430,22 @@ oneByteOpcodes = {
 #   0x4d: REX.WRB Prefix
 #   0x4e: REX.WRX Prefix
 #   0x4f: REX.WRXB Prefix
-    0x50: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RAX, size_op=REG_SIZE_64),
-    0x51: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RCX, size_op=REG_SIZE_64),
-    0x52: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RDX, size_op=REG_SIZE_64),
-    0x53: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RBX, size_op=REG_SIZE_64),
-    0x54: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RSP, size_op=REG_SIZE_64),
-    0x55: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RBP, size_op=REG_SIZE_64),
-    0x56: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RSI, size_op=REG_SIZE_64),
-    0x57: X86_64InstructionInfo("push",  value_0=REG_STACK, value_1=REG_RDI, size_op=REG_SIZE_64),
-    0x58: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RAX, size_op=REG_SIZE_64),
-    0x59: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RCX, size_op=REG_SIZE_64),
-    0x5a: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RDX, size_op=REG_SIZE_64),
-    0x5b: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RBX, size_op=REG_SIZE_64),
-    0x5c: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RSP, size_op=REG_SIZE_64),
-    0x5d: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RBP, size_op=REG_SIZE_64),
-    0x5e: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RSI, size_op=REG_SIZE_64),
-    0x5f: X86_64InstructionInfo("pop",   value_1=REG_STACK, value_0=REG_RDI, size_op=REG_SIZE_64),
+    0x50: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RAX, size_op=REG_SIZE_64),
+    0x51: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RCX, size_op=REG_SIZE_64),
+    0x52: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RDX, size_op=REG_SIZE_64),
+    0x53: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RBX, size_op=REG_SIZE_64),
+    0x54: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RSP, size_op=REG_SIZE_64),
+    0x55: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RBP, size_op=REG_SIZE_64),
+    0x56: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RSI, size_op=REG_SIZE_64),
+    0x57: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RDI, size_op=REG_SIZE_64),
+    0x58: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RAX, size_op=REG_SIZE_64),
+    0x59: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RCX, size_op=REG_SIZE_64),
+    0x5a: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RDX, size_op=REG_SIZE_64),
+    0x5b: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RBX, size_op=REG_SIZE_64),
+    0x5c: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RSP, size_op=REG_SIZE_64),
+    0x5d: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RBP, size_op=REG_SIZE_64),
+    0x5e: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RSI, size_op=REG_SIZE_64),
+    0x5f: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RDI, size_op=REG_SIZE_64),
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
@@ -448,30 +454,30 @@ oneByteOpcodes = {
 #   0x65: GS Segment Register Prefix
 #   0x66: 16-bit Operand Size Prefix or access to Double Quadword Registers
 #   0x67: TODO: 32-bit Address Size Prefix
-    0x68: X86_64InstructionInfo("push",  value_0=REG_STACK, isImmediate_1=True, size_0=REG_SIZE_64, size_1=REG_SIZE_32),
+    0x68: X86_64InstructionInfo("push",  numOperands=1, destinations=[], isImmediate_0=True, size_0=REG_SIZE_32),
     0x69: X86_64InstructionInfo("imul",  numOperands=3, reg_0=True, modRm_1=True, size_op=REG_SIZE_32, isImmediate_2=True, maxSize_2=REG_SIZE_32),
-    0x6a: X86_64InstructionInfo("push",  value_0=REG_STACK, isImmediate_1=True, size_0=REG_SIZE_64, size_1=REG_SIZE_8),
+    0x6a: X86_64InstructionInfo("push",  numOperands=1, destinations=[], isImmediate_1=True, size_1=REG_SIZE_8),
     0x6b: X86_64InstructionInfo("imul",  numOperands=3, reg_0=True, modRm_1=True, size_0=REG_SIZE_32, size_1=REG_SIZE_32, isImmediate_2=True, size_2=REG_SIZE_8),
 #   0x6c: Debug input port to string
 #   0x6d: Debug input port to string
 #   0x6e: Debug output string to port
 #   0x6f: Debug output string to port
-    0x70: X86_64InstructionInfo("jo",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Overflow
-    0x71: X86_64InstructionInfo("jno",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not overflow
-    0x72: X86_64InstructionInfo("jb",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than (unsigned)
-    0x73: X86_64InstructionInfo("jae",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than or equal (unsigned)
-    0x74: X86_64InstructionInfo("je",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Equal
-    0x75: X86_64InstructionInfo("jne",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not equal
-    0x76: X86_64InstructionInfo("jbe",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than or equal (unsigned)
-    0x77: X86_64InstructionInfo("ja",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than (unsigned)
-    0x78: X86_64InstructionInfo("js",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Signed
-    0x79: X86_64InstructionInfo("jns",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Unsigned
-    0x7a: X86_64InstructionInfo("jp",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Parity
-    0x7b: X86_64InstructionInfo("jnp",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not parity
-    0x7c: X86_64InstructionInfo("jlt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than (signed)
-    0x7d: X86_64InstructionInfo("jge",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than or equal (signed)
-    0x7e: X86_64InstructionInfo("jle",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than or equal (signed)
-    0x7f: X86_64InstructionInfo("jgt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than (signed)
+    0x70: X86_64InstructionInfo("jo",    destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Overflow
+    0x71: X86_64InstructionInfo("jno",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not overflow
+    0x72: X86_64InstructionInfo("jb",    destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than (unsigned)
+    0x73: X86_64InstructionInfo("jae",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than or equal (unsigned)
+    0x74: X86_64InstructionInfo("je",    destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Equal
+    0x75: X86_64InstructionInfo("jne",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not equal
+    0x76: X86_64InstructionInfo("jbe",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than or equal (unsigned)
+    0x77: X86_64InstructionInfo("ja",    destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than (unsigned)
+    0x78: X86_64InstructionInfo("js",    destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Signed
+    0x79: X86_64InstructionInfo("jns",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Unsigned
+    0x7a: X86_64InstructionInfo("jp",    destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Parity
+    0x7b: X86_64InstructionInfo("jnp",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Not parity
+    0x7c: X86_64InstructionInfo("jlt",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than (signed)
+    0x7d: X86_64InstructionInfo("jge",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than or equal (signed)
+    0x7e: X86_64InstructionInfo("jle",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Less than or equal (signed)
+    0x7f: X86_64InstructionInfo("jgt",   destinations=[], numOperands=1, isOffset_0=True, size_0=REG_SIZE_8), # Greater than (signed)
     0x80: {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
@@ -626,7 +632,7 @@ oneByteOpcodes = {
             },
         },
     },
-    0xc2: X86_64InstructionInfo("ret",   numOperands=1, size_0=REG_SIZE_16, maxSize_0=REG_SIZE_16),
+    0xc2: X86_64InstructionInfo("ret",   destinations=[], numOperands=1, size_0=REG_SIZE_16, maxSize_0=REG_SIZE_16),
     0xc3: X86_64InstructionInfo("ret",   numOperands=0),
 #   0xc4: Invalid
 #   0xc5: Invalid
@@ -646,7 +652,7 @@ oneByteOpcodes = {
     },
     0xc8: X86_64InstructionInfo("enter", numOperands=3, isImmediate_1=True, isImmediate_2=True, size_0=REG_SIZE_64, size_1=REG_SIZE_16, size_2=REG_SIZE_8),
     0xc9: X86_64InstructionInfo("leave", numOperands=0),
-    0xca: X86_64InstructionInfo("retf",  numOperands=1, destinations=[], isImmediate_0=True,  size_0=REG_SIZE_16),
+    0xca: X86_64InstructionInfo("retf",  destinations=[], numOperands=1, isImmediate_0=True,  size_0=REG_SIZE_16),
     0xcb: X86_64InstructionInfo("retf",  numOperands=0),
     0xcc: X86_64InstructionInfo("int",   destinations=[], isImmediate_0=True, value_0=3, value_1=REG_RFLAGS),
     0xcd: X86_64InstructionInfo("int",   destinations=[], isImmediate_0=True, value_1=REG_RFLAGS),
@@ -786,17 +792,17 @@ oneByteOpcodes = {
         0xd0: X86_64InstructionInfo("fnop",    numOperands=0),
         0xe0: X86_64InstructionInfo("fchs",    numOperands=1, value=REG_ST0, size_0=REG_SIZE_64),
         0xe1: X86_64InstructionInfo("fabs",    numOperands=1, value=REG_ST0, size_0=REG_SIZE_64),
-        0xe4: X86_64InstructionInfo("ftst",    numOperands=3, value_0=REG_RFLAGS, value_1=REG_ST0, value_2=0.0, size_op=REG_SIZE_64),
-        0xe5: X86_64InstructionInfo("fxam",    value_0=REG_RFLAGS, value_1=REG_ST0, size_op=REG_SIZE_64),
-        0xe8: X86_64InstructionInfo("fld1",    numOperands=1, value_0=REG_ST0, value_1=1.0, isImmediate_1=True, size_op=REG_SIZE_64),
-        0xe9: X86_64InstructionInfo("fldl2t",  numOperands=1, value_0=REG_ST0, value_1=math.log(10, 2),      isImmediate_1=True, size_op=REG_SIZE_64),
-        0xea: X86_64InstructionInfo("fldl2e",  numOperands=1, value_0=REG_ST0, value_1=math.log(10, math.e), isImmediate_1=True, size_op=REG_SIZE_64),
-        0xeb: X86_64InstructionInfo("fldpi",   numOperands=1, value_0=REG_ST0, value_1=math.pi,              isImmediate_1=True, size_op=REG_SIZE_64),
-        0xec: X86_64InstructionInfo("fldlg2",  numOperands=1, value_0=REG_ST0, value_1=math.log(2, 10),      isImmediate_1=True, size_op=REG_SIZE_64),
-        0xed: X86_64InstructionInfo("fldln2",  numOperands=1, value_0=REG_ST0, value_1=math.log(math.e, 2),  isImmediate_1=True, size_op=REG_SIZE_64),
-        0xee: X86_64InstructionInfo("fldz",    numOperands=1, value_0=REG_ST0, value_1=0.0, isImmediate_1=True, size_op=REG_SIZE_64),
+        0xe4: X86_64InstructionInfo("ftst",    destinations=[], value_0=REG_ST0, value_1=0.0, size_op=REG_SIZE_64),
+        0xe5: X86_64InstructionInfo("fxam",    numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
+        0xe8: X86_64InstructionInfo("fld1",    value_0=REG_ST0, value_1=1.0, isImmediate_1=True, size_op=REG_SIZE_64),
+        0xe9: X86_64InstructionInfo("fldl2t",  value_0=REG_ST0, value_1=math.log(10, 2),      isImmediate_1=True, size_op=REG_SIZE_64),
+        0xea: X86_64InstructionInfo("fldl2e",  value_0=REG_ST0, value_1=math.log(10, math.e), isImmediate_1=True, size_op=REG_SIZE_64),
+        0xeb: X86_64InstructionInfo("fldpi",   value_0=REG_ST0, value_1=math.pi,              isImmediate_1=True, size_op=REG_SIZE_64),
+        0xec: X86_64InstructionInfo("fldlg2",  value_0=REG_ST0, value_1=math.log(2, 10),      isImmediate_1=True, size_op=REG_SIZE_64),
+        0xed: X86_64InstructionInfo("fldln2",  value_0=REG_ST0, value_1=math.log(math.e, 2),  isImmediate_1=True, size_op=REG_SIZE_64),
+        0xee: X86_64InstructionInfo("fldz",    value_0=REG_ST0, value_1=0.0, isImmediate_1=True, size_op=REG_SIZE_64),
         0xf0: X86_64InstructionInfo("f2xm1",   numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
-        0xf1: X86_64InstructionInfo("fyl2x",   numOperands=1, value_0=REG_ST1, value_1=REG_ST0, size_op=REG_SIZE_64),
+        0xf1: X86_64InstructionInfo("fyl2x",   value_0=REG_ST1, value_1=REG_ST0, size_op=REG_SIZE_64),
         0xf2: X86_64InstructionInfo("fptan",   numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),
         0xf3: X86_64InstructionInfo("fpatan",  value_0=REG_ST1, value_1=REG_ST0, size_op=REG_SIZE_64),
         0xf4: X86_64InstructionInfo("fxtract", numOperands=1, value_0=REG_ST0, size_op=REG_SIZE_64),

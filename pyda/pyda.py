@@ -164,6 +164,9 @@ def runTui( executables ):
         tokens = line.split(" ")
         tokens = [ token for token in tokens if len(token) > 0 ]
 
+        if len(tokens) == 0:
+            continue
+
         if tokens[0] in exitCommands:
             break
 
