@@ -1,4 +1,11 @@
 
+# Names of the syntaxes supported for this ISA
+syntaxes = [
+            "pyda",
+            "intel",
+            "att",
+           ]
+
 PREFIX_64_BIT_OPERAND = 0x48
 PREFIX_16_BIT_OPERAND = 0x66
 PREFIX_32_BIT_ADDRESS = 0x67

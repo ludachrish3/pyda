@@ -1,9 +1,6 @@
 import abc
 import copy
 
-OPERAND_TYPE_REG = 1
-OPERAND_TYPE_MEM = 2
-
 class Disassembler(abc.ABC):
 
     @classmethod
@@ -37,8 +34,6 @@ class Instruction():
 
 
     def __repr__(self):
-
-        bytesStr = " ".join([f"{x:02x}" for x in self.bytes])
 
         # Do not show operands if the instruction is a NOP because sometimes
         # NOP instructions create operands, but they don't mean anything.
@@ -83,7 +78,7 @@ class Instruction():
             else:
                 operandString = f"{sourceString}{destString}"
 
-        return f"{self.addr: >6x}:  {bytesStr: <20}  {self.mnemonic: <7} {operandString}"
+        return f"{self.mnemonic: <7} {operandString}"
 
 
 class Operand():

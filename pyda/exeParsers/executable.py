@@ -145,6 +145,23 @@ class Executable( abc.ABC ):
 
 
     def getSymbols( self, symbolType=None, byName=False ):
+        """
+        Description:    Retrieves all symbols for the executable. The list can
+                        be filtered by symbol type to only retrieve all symbols
+                        of a certain type. By default a dictionary of all
+                        symbols is returned that contains keys for both the
+                        names and addresses of all symbols.
+
+        Arguments:      symbolType - The type of symbols to return. The default
+                                     is None, which returns all symbol types.
+                        byName     - Whether to only return symbols keyed on
+                                     name instead of on name and address. The
+                                     default is False, which returns all keys.
+
+        Return:         Dictionary of symbols keyed on name and potentially
+                        address if byName is False.
+
+        """
 
         # By default, return all of the symbols
         if symbolType is None and not byName:
@@ -152,19 +169,19 @@ class Executable( abc.ABC ):
             return self._symbols
 
         # Return symbols by name. Look only for strings as key, and add them to
-        # the list of matching symbols if the symbol type matches.
+        # the dictionary of matching symbols if the symbol type matches.
         if byName:
 
-            matchingSymbols = []
+            matchingSymbols = {}
 
             for name, symbol in self._symbols.items():
 
                 if type(name) == str and symbol.getType() == symbolType:
-                    matchingSymbols.append(symbol)
+                    matchingSymbols[name] = symbol
 
                 # Add all symbols regardless of type if symbolType is None
                 elif type(name) == str and symbolType is None:
-                    matchingSymbols.append(symbol)
+                    matchingSymbols[name] = symbol
 
         # If symbols by address are requested, then look for only integers as
         # keys, and add them to the list of matching symbols if the symbol type

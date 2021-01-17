@@ -536,12 +536,12 @@ class ElfExecutable(executable.Executable):
         # in the file, get the section names from the string table.
         for section in self._sectionList:
 
-            section.name = self.getStringFromTable(sectionNameSection, section.nameIndex)
+            section.setName(self.getStringFromTable(sectionNameSection, section.nameIndex))
 
             # Now that the section's name is known, it can be correctly assigned
-            self._sectionDict[section.name] = section
+            self._sectionDict[section.getName()] = section
 
-            logger.info(f"{section}")
+            logger.info(f"Section: {section}")
 
         # The bytes of the full executable are no longer needed because they
         # have been saved to the section objects
@@ -614,7 +614,7 @@ class ElfExecutable(executable.Executable):
                 # not set by the symbol table index, so look them up based on
                 # the section list. The indexes refer to the section index in
                 # the list of sections.
-                name = self._sectionList[symbolStruct.sectionIndex].name
+                name = self._sectionList[symbolStruct.sectionIndex].getName()
                 symbol = ElfSymbol(name, symbolStruct)
 
             else:
@@ -643,7 +643,7 @@ class ElfExecutable(executable.Executable):
         Return:         None
         """
 
-        logger.debug(f"Parsing relocations for {section.name}")
+        logger.debug(f"Parsing relocations for {section.getName()}")
 
         # Save the entry size for convenience later
         entrySize = section.entrySize
@@ -654,7 +654,7 @@ class ElfExecutable(executable.Executable):
         if section.link > 0:
 
             stringTableIndex = self._sectionList[section.link].link
-            stringTableName  = self._sectionList[stringTableIndex].name
+            stringTableName  = self._sectionList[stringTableIndex].getName()
             stringTableList  = list(self._strings[stringTableName].values())
 
         else:
@@ -793,6 +793,16 @@ class ElfExecutable(executable.Executable):
         # Parse section entries and save all sections
         self.parseSectionEntries()
 
+        # Figure out the ISA and disassembler once and use in all executable
+        # sections when looping though them
+        isa = self.getISA()
+        logger.info(f"ISA: {ISA_STR[isa]}")
+        if isa == ISA_X86_64:
+            disassembler = X86_64Disassembler
+
+        else:
+            raise NotImplementedError(f"The ISA {ISA_STR[isa]} is not supported")
+
         for section in self._sectionList:
 
             if section.type == SECTION_TYPE_SYMBOL_TABLE:
@@ -820,21 +830,70 @@ class ElfExecutable(executable.Executable):
             elif section.type == SECTION_TYPE_PROGRAM_DATA and \
                  section.flags & SECTION_FLAG_EXECINSTR != 0:
 
-                isa = self.getISA()
-                logger.info(f"{section.name} executable ISA: {ISA_STR[isa]}")
-                if isa == ISA_X86_64:
-                    disassembler = X86_64Disassembler
-
-                else:
-                    raise NotImplementedError(f"The ISA {ISA_STR[isa]} is not supported")
+                logger.info(f"{section.getName()} is executable")
 
                 # Disassemble the section and save the instructions to it
                 instructions = disassembler.disassemble(section.getBytes(), section.address)
                 section.setInstructions(instructions)
 
+        # Resolve the locations and sizes of external symbols now that all
+        # executable sections have been disassembled. This was needed to handle
+        # the PLT properly.
+        self.resolveExternalSymbols()
+
+        # Assign instruction in the section to the corresponding functions.
+        # This can only be done after parsing all sections to ensure all symbol
+        # tables have been parsed before attempting to assign instructions to
+        # the symbols.
+        for section in self._sectionList:
+            if section.type == SECTION_TYPE_PROGRAM_DATA and \
+               section.flags & SECTION_FLAG_EXECINSTR != 0:
+
+                self.assignInstructionsToFunctions(section)
+
         # TODO: Perform external symbol resolution
 
         # TODO: Resolve addresses to symbols within the instructions
+
+
+    def assignInstructionsToFunctions( self, section ):
+        """
+        Description:    Assign each instruction to a symbol if one exists
+                        TODO: Also need to do this without a symbol table if
+                        the executable is stripped.
+
+        Arguments:      section - ElfSection to assign instructions to functions
+
+        Return:         None
+        """
+
+        startAddr = section.address
+        endAddr   = section.address + section.size
+        instructions = section.getInstructions()
+        logger.info(f"Assigning instructions for {startAddr:x} to {endAddr:x}")
+
+        functionSymbols = self.getSymbols(executable.SYMBOL_TYPE_FUNCTION, byName=True)
+
+        for instruction in instructions:
+
+            for functionName, function in functionSymbols.items():
+
+                functionStart = function.getAddress()
+                functionEnd   = function.getAddress() + function.getSize()
+
+                # If the function is within the given section and the
+                # instruction is within the function, then add the instruction
+                # to the list for the given function
+                if functionStart >= startAddr and functionEnd <= endAddr \
+                   and instruction.addr >= functionStart and instruction.addr < functionEnd:
+
+                    logger.info(f"Assigning instruction at {instruction.addr:x} to {function.getName()}")
+                    function.instructions.append(instruction)
+
+                    # The correct function was found, so skip ahead to assigning
+                    # the next instruction instead of looking through more
+                    # functions to which the current instruction does not belong
+                    break
 
 
     def resolveExternalSymbols( self ):
@@ -1077,6 +1136,8 @@ class ElfSection( executable.Section ):
 
     def __init__ ( self, section, exeMap, name=None ):
 
+        super().__init__()
+
         self.__dict__.update(section.getDictionary())
         self.setName(name)
         self.setBytes(exeMap[self.fileOffset:self.fileOffset+self.size])
@@ -1092,7 +1153,7 @@ class ElfSection( executable.Section ):
     def __repr__(self):
 
         return (
-            f"name: {self.name}, "
+            f"name: {self._name}, "
             f"type: {SECTION_TYPE_STR[self.type]}, "
             f"flags: {self.flags}, "
             f"address: {hex(self.address)}, "
