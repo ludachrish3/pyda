@@ -96,7 +96,7 @@ class X86_64Disassembler( Disassembler ):
 
                 cls.__resolveRelativeAddr(curInstruction, operand)
 
-            logger.debug(curInstruction)
+            logger.debug(f"{curInstruction.addr}: {curInstruction}")
 
             # Add the instruction and advance the address
             instructions.append(curInstruction)

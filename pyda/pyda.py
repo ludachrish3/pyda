@@ -114,6 +114,10 @@ def showCommand( exe, tokens ):
     functionName = tokens[1]
     function = exe.getSymbol(functionName)
 
+    if function is None:
+        print(f"The function '{functionName}' could not be found")
+        return
+
     if tokens[0] in ["a", "asm"]:
 
         # Iterate through the instruction and print them out
@@ -242,7 +246,7 @@ def runTui( executables ):
 
         # TODO: Maybe add a signal handler to make sure Ctrl+C doesn't kill it
         # TODO: Ignore unprintable characters and add a command history
-        line = input("pyda> ").strip().lower()
+        line = input("pyda> ").strip()
 
         # Split up the tokens by whitespace, and remove any extra spaces
         tokens = line.split(" ")

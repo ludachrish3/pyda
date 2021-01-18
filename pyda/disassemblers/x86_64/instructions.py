@@ -112,11 +112,6 @@ class X86_64Instruction( Instruction ):
 
         logger.debug(f"sizePrefix: {sizePrefix}, infoSize: {infoSize}, maxSize: {maxSize}, sizeBit: {sizeBit}")
 
-        # If a register size is 0, that means it should not exist and the size
-        # should remain 0 no matter what.
-        if infoSize == REG_SIZE_0:
-            return infoSize
-
         # If the REX 8-bit prefix is not there, then the size remains the normal
         # 8-bit register. Also, if there is no infoSize and the size bit is 0, the
         # operand is 8 bits. The REX 8-bit prefix only applies in these cases.
@@ -1362,22 +1357,22 @@ twoByteOpcodes = {
     0x8d: X86_64InstructionInfo("jge",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than or equal (signed)
     0x8e: X86_64InstructionInfo("jle",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than or equal (signed)
     0x8f: X86_64InstructionInfo("jgt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than (signed)
-    0x90: X86_64InstructionInfo("seto",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Overflow
-    0x91: X86_64InstructionInfo("setno", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not Overflow
-    0x92: X86_64InstructionInfo("setb",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than (unsigned)
-    0x93: X86_64InstructionInfo("setae", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than or equal (unsigned)
-    0x94: X86_64InstructionInfo("sete",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Equal
-    0x95: X86_64InstructionInfo("setne", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not equal
-    0x96: X86_64InstructionInfo("setbe", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than or equal (unsigned)
-    0x97: X86_64InstructionInfo("seta",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than (unsigned)
-    0x98: X86_64InstructionInfo("sets",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Signed
-    0x99: X86_64InstructionInfo("setns", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not signed
-    0x9a: X86_64InstructionInfo("setp",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Parity
-    0x9b: X86_64InstructionInfo("setnp", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Not parity
-    0x9c: X86_64InstructionInfo("setl",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than (signed)
-    0x9d: X86_64InstructionInfo("setge", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than or equal (signed)
-    0x9e: X86_64InstructionInfo("setle", modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Less than or equal (signed)
-    0x9f: X86_64InstructionInfo("setg",  modRm_0=True, size_1=REG_SIZE_0, size_0=REG_SIZE_8), # Greater than (signed)
+    0x90: X86_64InstructionInfo("seto",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Overflow
+    0x91: X86_64InstructionInfo("setno", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Not Overflow
+    0x92: X86_64InstructionInfo("setb",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Less than (unsigned)
+    0x93: X86_64InstructionInfo("setae", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Greater than or equal (unsigned)
+    0x94: X86_64InstructionInfo("sete",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Equal
+    0x95: X86_64InstructionInfo("setne", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Not equal
+    0x96: X86_64InstructionInfo("setbe", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Less than or equal (unsigned)
+    0x97: X86_64InstructionInfo("seta",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Greater than (unsigned)
+    0x98: X86_64InstructionInfo("sets",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Signed
+    0x99: X86_64InstructionInfo("setns", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Not signed
+    0x9a: X86_64InstructionInfo("setp",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Parity
+    0x9b: X86_64InstructionInfo("setnp", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Not parity
+    0x9c: X86_64InstructionInfo("setl",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Less than (signed)
+    0x9d: X86_64InstructionInfo("setge", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Greater than or equal (signed)
+    0x9e: X86_64InstructionInfo("setle", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Less than or equal (signed)
+    0x9f: X86_64InstructionInfo("setg",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Greater than (signed)
 #   0xa0: TODO:
 #   0xa1: TODO:
 #   0xa2: TODO:

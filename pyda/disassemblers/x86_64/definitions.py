@@ -132,7 +132,6 @@ REG_SIZE_32    = 4
 REG_SIZE_16    = 2
 REG_SIZE_8     = 1
 REG_SIZE_8_REX = 1.5
-REG_SIZE_0     = 0 # Used for indicating an operand does not exist
 
 REG_NAME_UNDEF = "UNDEF REG"
 
