@@ -96,7 +96,8 @@ class X86_64Disassembler( Disassembler ):
 
                 cls.__resolveRelativeAddr(curInstruction, operand)
 
-            logger.debug(f"{curInstruction.addr}: {curInstruction}")
+            instBytes = [ f"{x:02x}" for x in curInstruction.bytes ]
+            logger.debug(f"{curInstruction.addr:x}: {instBytes} {curInstruction}")
 
             # Add the instruction and advance the address
             instructions.append(curInstruction)
@@ -189,6 +190,8 @@ class X86_64Disassembler( Disassembler ):
                     instruction.extendIndex = True
 
                 if byte & PREFIX_REX_B_MASK == PREFIX_REX_B_MASK:
+                    logger.debug("Extended r/m, SIB base, or opcode reg field prefix")
+                    # TODO: This is not correct. The handling is much more complicated. See Intel documentation on REX prefixes
                     instruction.extendBase = True
 
             else:

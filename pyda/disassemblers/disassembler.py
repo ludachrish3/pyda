@@ -20,7 +20,7 @@ class Disassembler(abc.ABC):
 
 class Instruction():
 
-    def __init__(self, mnemonic, addr=0, operands=[], exchange=False):
+    def __init__(self, mnemonic, addr=0, operands=[], exchange=False, destIsAlsoSource=False):
 
         # The operands list must be deep copied or else the reference to it
         # remains even after moving onto the next Instruction object. This way
@@ -31,9 +31,10 @@ class Instruction():
         self.mnemonic = mnemonic
         self.operands = copy.deepcopy(operands)
         self.exchange = exchange
+        self.destIsAlsoSource = destIsAlsoSource
 
 
-    def __repr__(self):
+    def __repr__( self ):
 
         # Do not show operands if the instruction is a NOP because sometimes
         # NOP instructions create operands, but they don't mean anything.
@@ -58,6 +59,11 @@ class Instruction():
 
                 if operand.isDestination:
                     destinations.append(operand)
+
+                    # If the destination is also a source destination, then
+                    # put it at the front of the list of source operands
+                    if self.destIsAlsoSource:
+                        sources.insert(0, operand)
 
                 else:
                     sources.append(operand)
