@@ -66,6 +66,12 @@ class X86_64Instruction( Instruction ):
             size    = curKwargs.get("size",    None)
             maxSize = curKwargs.get("maxSize", REG_SIZE_128)
             curKwargs["size"] = self.getOperandSize(opcode, self.sizePrefix, size, maxSize)
+
+            # If this operand gets its value from the opcode
+            valueIsOpcodeRegVal = curKwargs.get("opcodeRegVal", False)
+            if valueIsOpcodeRegVal:
+                curKwargs["value"] = opcode & OP_REG_MASK
+
             logger.debug(f"operand kwargs: {curKwargs}")
 
             self.operands.append(X86_64Operand(**curKwargs))
@@ -158,7 +164,7 @@ class X86_64Operand( Operand ):
 
     def __init__( self, value=0, size=REG_SIZE_32, maxSize=REG_SIZE_64, segmentReg=0,
                   isDestination=False, modRm=False, reg=False, isOffset=False, isSigned=False,
-                  isImmediate=False, indirect=False, mmRegister=False, floatReg=False ):
+                  isImmediate=False, indirect=False, opcodeRegVal=False, mmRegister=False, floatReg=False ):
 
         super().__init__(size, value, isDestination)
         self.maxSize = maxSize              # The maximum size allowed for the operand
@@ -167,6 +173,7 @@ class X86_64Operand( Operand ):
         self.isOffset = isOffset            # Whether the operand is an offset from the end of the instruction
         self.isImmediate = isImmediate      # Whether the operand is an immediate
         self.segmentReg = segmentReg        # The segment register to use as a base value
+        self.opcodeRegVal = opcodeRegVal    # Whether the operand gets its value from the opcode
         self.mmRegister = mmRegister        # Whether the operand is an MM register
         self.floatReg = floatReg            # Whether the operand is a floating point register
         self.indirect = indirect            # Whether the addressing is indirect
@@ -279,6 +286,7 @@ class X86_64InstructionInfo():
 
         for operandIndex in range(numOperands):
 
+            # Create a list of kwargs dictionaries for each operand
             self.operandKwargs.append({ key.split("_")[0]: value for (key, value) in kwargs.items() if key.endswith((f"_{operandIndex}", "_op")) })
 
             curKwargs = self.operandKwargs[operandIndex]
@@ -286,7 +294,6 @@ class X86_64InstructionInfo():
                 self.instKwargs["hasModRm"] = True
 
             logger.debug(f"operand kwargs #{operandIndex}: {self.operandKwargs[operandIndex]}")
-
 
         # Operands with an index in destinations gets the isDestination value
         # set to True
@@ -397,10 +404,10 @@ oneByteOpcodes = {
     0x35: X86_64InstructionInfo("xor",   isImmediate_1=True, maxSize_1=REG_SIZE_32),
 #   0x36: SS Segment Register Prefix
 #   0x37: Invalid
-    0x38: X86_64InstructionInfo("cmp",   modRm_0=True, reg_1=True),
-    0x39: X86_64InstructionInfo("cmp",   modRm_0=True, reg_1=True),
-    0x3a: X86_64InstructionInfo("cmp",   reg_0=True,   modRm_1=True),
-    0x3b: X86_64InstructionInfo("cmp",   reg_0=True,   modRm_1=True),
+    0x38: X86_64InstructionInfo("cmp",   destinations=[], modRm_0=True, reg_1=True),
+    0x39: X86_64InstructionInfo("cmp",   destinations=[], modRm_0=True, reg_1=True),
+    0x3a: X86_64InstructionInfo("cmp",   destinations=[], reg_0=True,   modRm_1=True),
+    0x3b: X86_64InstructionInfo("cmp",   destinations=[], reg_0=True,   modRm_1=True),
     0x3c: X86_64InstructionInfo("cmp",   destinations=[], isImmediate_1=True),
     0x3d: X86_64InstructionInfo("cmp",   destinations=[], isImmediate_1=True, maxSize_1=REG_SIZE_32),
 #   0x3e: DS Segment Register Prefix
@@ -421,22 +428,22 @@ oneByteOpcodes = {
 #   0x4d: REX.WRB Prefix
 #   0x4e: REX.WRX Prefix
 #   0x4f: REX.WRXB Prefix
-    0x50: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RAX, size_op=REG_SIZE_64),
-    0x51: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RCX, size_op=REG_SIZE_64),
-    0x52: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RDX, size_op=REG_SIZE_64),
-    0x53: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RBX, size_op=REG_SIZE_64),
-    0x54: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RSP, size_op=REG_SIZE_64),
-    0x55: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RBP, size_op=REG_SIZE_64),
-    0x56: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RSI, size_op=REG_SIZE_64),
-    0x57: X86_64InstructionInfo("push",  numOperands=1, destinations=[], value_1=REG_RDI, size_op=REG_SIZE_64),
-    0x58: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RAX, size_op=REG_SIZE_64),
-    0x59: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RCX, size_op=REG_SIZE_64),
-    0x5a: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RDX, size_op=REG_SIZE_64),
-    0x5b: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RBX, size_op=REG_SIZE_64),
-    0x5c: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RSP, size_op=REG_SIZE_64),
-    0x5d: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RBP, size_op=REG_SIZE_64),
-    0x5e: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RSI, size_op=REG_SIZE_64),
-    0x5f: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, value_0=REG_RDI, size_op=REG_SIZE_64),
+    0x50: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x51: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x52: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x53: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x54: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x55: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x56: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x57: X86_64InstructionInfo("push",  numOperands=1, destinations=[], opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x58: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x59: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x5a: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x5b: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x5c: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x5d: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x5e: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
+    0x5f: X86_64InstructionInfo("pop",   numOperands=1, destIsAlsoSource_inst=False, opcodeRegVal_0=True, size_op=REG_SIZE_64),
 #   0x60: Invalid
 #   0x61: Invalid
 #   0x62: Invalid
@@ -536,13 +543,13 @@ oneByteOpcodes = {
             0xf3: X86_64InstructionInfo("pause", numOperands=0),
         },
     },
-    0x91: X86_64InstructionInfo("xchg",  value_0=REG_RCX, exchange_inst=True, size_op=REG_SIZE_32),
-    0x92: X86_64InstructionInfo("xchg",  value_0=REG_RDX, exchange_inst=True, size_op=REG_SIZE_32),
-    0x93: X86_64InstructionInfo("xchg",  value_0=REG_RBX, exchange_inst=True, size_op=REG_SIZE_32),
-    0x94: X86_64InstructionInfo("xchg",  value_0=REG_RSP, exchange_inst=True, size_op=REG_SIZE_32),
-    0x95: X86_64InstructionInfo("xchg",  value_0=REG_RBP, exchange_inst=True, size_op=REG_SIZE_32),
-    0x96: X86_64InstructionInfo("xchg",  value_0=REG_RSI, exchange_inst=True, size_op=REG_SIZE_32),
-    0x97: X86_64InstructionInfo("xchg",  value_0=REG_RDI, exchange_inst=True, size_op=REG_SIZE_32),
+    0x91: X86_64InstructionInfo("xchg",  opcodeRegVal_0=True, exchange_inst=True, size_op=REG_SIZE_32),
+    0x92: X86_64InstructionInfo("xchg",  opcodeRegVal_0=True, exchange_inst=True, size_op=REG_SIZE_32),
+    0x93: X86_64InstructionInfo("xchg",  opcodeRegVal_0=True, exchange_inst=True, size_op=REG_SIZE_32),
+    0x94: X86_64InstructionInfo("xchg",  opcodeRegVal_0=True, exchange_inst=True, size_op=REG_SIZE_32),
+    0x95: X86_64InstructionInfo("xchg",  opcodeRegVal_0=True, exchange_inst=True, size_op=REG_SIZE_32),
+    0x96: X86_64InstructionInfo("xchg",  opcodeRegVal_0=True, exchange_inst=True, size_op=REG_SIZE_32),
+    0x97: X86_64InstructionInfo("xchg",  opcodeRegVal_0=True, exchange_inst=True, size_op=REG_SIZE_32),
     0x98: {
         None: { # There are no secondary opcodes
             PREFIX_16_BIT_OPERAND: X86_64InstructionInfo("cbw",  size_0=REG_SIZE_16, size_1=REG_SIZE_8, destIsAlsoSource_inst=False),
@@ -579,22 +586,22 @@ oneByteOpcodes = {
     0xad: X86_64InstructionInfo("loads", segmentReg_1=SEGMENT_REG_DS, value_1=REG_RSI),
     0xae: X86_64InstructionInfo("scans", numOperands=3, value_0=REG_RFLAGS, segmentReg_1=SEGMENT_REG_ES, value_1=REG_RDI),
     0xaf: X86_64InstructionInfo("scans", numOperands=3, value_0=REG_RFLAGS, segmentReg_1=SEGMENT_REG_ES, value_1=REG_RDI),
-    0xb0: X86_64InstructionInfo("mov",   value_0=REG_RAX, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb1: X86_64InstructionInfo("mov",   value_0=REG_RCX, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb2: X86_64InstructionInfo("mov",   value_0=REG_RDX, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb3: X86_64InstructionInfo("mov",   value_0=REG_RBX, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb4: X86_64InstructionInfo("mov",   value_0=REG_RSP, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb5: X86_64InstructionInfo("mov",   value_0=REG_RBP, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb6: X86_64InstructionInfo("mov",   value_0=REG_RSI, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb7: X86_64InstructionInfo("mov",   value_0=REG_RDI, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
-    0xb8: X86_64InstructionInfo("mov",   value_0=REG_RAX, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
-    0xb9: X86_64InstructionInfo("mov",   value_0=REG_RCX, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
-    0xba: X86_64InstructionInfo("mov",   value_0=REG_RDX, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
-    0xbb: X86_64InstructionInfo("mov",   value_0=REG_RBX, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
-    0xbc: X86_64InstructionInfo("mov",   value_0=REG_RSP, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
-    0xbd: X86_64InstructionInfo("mov",   value_0=REG_RBP, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
-    0xbe: X86_64InstructionInfo("mov",   value_0=REG_RSI, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
-    0xbf: X86_64InstructionInfo("mov",   value_0=REG_RDI, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xb0: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb1: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb2: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb3: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb4: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb5: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb6: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb7: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xb8: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xb9: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xba: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xbb: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xbc: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xbd: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xbe: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xbf: X86_64InstructionInfo("mov",   opcodeRegVal_0=True, isImmediate_1=True, size_op=REG_SIZE_32, destIsAlsoSource_inst=False),
     0xc0: {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes

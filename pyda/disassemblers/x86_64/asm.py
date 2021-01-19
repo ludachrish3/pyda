@@ -49,8 +49,9 @@ class X86_64Disassembler( Disassembler ):
             numPrefixBytes = cls.__handlePrefixes(curInstruction, byteBuffer)
             byteBuffer = byteBuffer[numPrefixBytes:]
 
-            # Replace the instruction with the one that corresponds to the opcode.
-            # Consume all opcodes bytes from the byteBuffer.
+            # Update the instruction based on the instruction info that
+            # corresponds with the opcode.  Consume all opcodes bytes from the
+            # byteBuffer.
             # TODO: Add exceptions or IndexError if byteBuffer bytes run out
             numOpcodeBytes = cls.__handleOpcode(curInstruction, byteBuffer)
             byteBuffer = byteBuffer[numOpcodeBytes:]
@@ -82,6 +83,15 @@ class X86_64Disassembler( Disassembler ):
             # point registers, and this prevents that instruction or others like it
             # from trying to consume bytes for an immediate.
             for operand in curInstruction.operands:
+
+                # Handle operands that get their value from the opcode. They aren't
+                # necessarily handled earlier if there isn't a Mod R/M byte, which
+                # is often the case for this kind of instruction.
+                # Extend the value if the instruction has a base extension prefix.
+                if operand.opcodeRegVal and curInstruction.extendBase:
+
+                        logger.debug("Extending opcode reg value")
+                        operand.value |= REG_EXTEND
 
                 if operand.isOffset or (operand.isImmediate and operand.value is 0):
 
@@ -233,11 +243,10 @@ class X86_64Disassembler( Disassembler ):
                 primaryOpcode = byteBuffer[0]
                 info = oneByteOpcodes[primaryOpcode]
 
-        except NameError:
+        except NameError as e:
 
             # The opcode is not a valid 1 or 2 byte opcode
             raise Exception(f"An invalid opcode was found: {primaryOpcode:02x}")
-            return
 
         # If the info object is a dictionary, then there is more work to be done to
         # determine the secondary opcode, prefix, and extended opcode.
@@ -299,7 +308,6 @@ class X86_64Disassembler( Disassembler ):
 
                         else:
                             info = info[None]
-
 
         instruction.setAttributes(primaryOpcode, info)
 
@@ -394,13 +402,13 @@ class X86_64Disassembler( Disassembler ):
                 logger.debug("Extending value")
                 operand.value |= REG_EXTEND
 
-            # Make the register a floating point register if the addressing mode is
-            # direct. Otherwise, a normal register should be used for addressing.
-            if operand.floatReg and mod == MOD_DIRECT:
-                operand.value |= REG_FLOAT
-
             if mod == MOD_DIRECT:
                 logger.debug("Operand is the value in a register")
+
+                # Make the register a floating point register if the addressing mode is
+                # direct. Otherwise, a normal register should be used for addressing.
+                if operand.floatReg:
+                    operand.value |= REG_FLOAT
 
                 # Change this register to an MM register if this instruction deals
                 # with MM registers. Only direct references to MM registers should
@@ -460,10 +468,7 @@ class X86_64Disassembler( Disassembler ):
                 operand.displacement = int.from_bytes(byteBuffer[1+addrBytes:1+addrBytes+displaceBytes], "little", signed=True)
                 logger.debug(f"Adding displacement to the operand: {operand.displacement:x}")
 
-        # Otherwise, set the value as long as this operand is not an immediate and
-        # the value has not been set. If the value was already set, that would
-        # indicate that the operand has a predetermined value and is already set to
-        # the correct value.
+        # Otherwise, set the value to be the reg value from the Mod R/M byte
         elif operand.reg:
             logger.debug("Mod R/M byte is not for this operand")
             operand.value = regOrOp
