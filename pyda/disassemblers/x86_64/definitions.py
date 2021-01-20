@@ -125,7 +125,6 @@ REG_RIP              = 0b10000000
 REG_RFLAGS           = 0b10000001
 REG_RDX_RAX_COMBINED = 0b10000010
 REG_FPENV            = 0b10000011
-REG_STACK            = 0b10000100
 
 REG_SIZE_128   = 16
 REG_SIZE_80    = 10
@@ -429,13 +428,5 @@ REG_NAMES = {
         REG_SIZE_16:    "%fpcw",
         REG_SIZE_8:     "%fpenv",
         REG_SIZE_8_REX: "%fpenv",
-    },
-    REG_STACK: {
-        REG_SIZE_128:   "stack",
-        REG_SIZE_64:    "stack",
-        REG_SIZE_32:    "stack",
-        REG_SIZE_16:    "stack",
-        REG_SIZE_8:     "stack",
-        REG_SIZE_8_REX: "stack",
     },
 }
