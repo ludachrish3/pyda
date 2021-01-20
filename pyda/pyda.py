@@ -78,7 +78,7 @@ def listCommand( exe, tokens ):
         globalVars = exe.getSymbols(symbolType=executable.SYMBOL_TYPE_GLOBAL, byName=True)
 
         # Convert the global variables into a table-friendly format
-        globalVars = [ {"Name": var.getName(), "Address": f"{var.getAddress():#010x}"} for var in globalVars ]
+        globalVars = [ {"Name": var.getName(), "Address": f"{var.getAddress():#010x}"} for var in globalVars.values() ]
 
         printTable(globalVars)
 
@@ -87,7 +87,7 @@ def listCommand( exe, tokens ):
         symbols = exe.getSymbols(byName=True)
 
         # Convert the symbols into a table-friendly format
-        symbols = [ {"Name": sym.getName(), "Address": f"{sym.getAddress():#010x}"} for sym in symbols ]
+        symbols = [ {"Name": sym.getName(), "Address": f"{sym.getAddress():#010x}"} for sym in symbols.values() ]
 
         printTable(symbols)
 
