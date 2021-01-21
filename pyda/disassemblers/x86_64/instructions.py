@@ -866,8 +866,8 @@ oneByteOpcodes = {
                     None:       X86_64InstructionInfo("fmul",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
                     MOD_DIRECT: X86_64InstructionInfo("fmul",   floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
                 },
-                2: X86_64InstructionInfo("fcom",   floatReg_op=True, numOperands=3, modRm_2=True, size_op=REG_SIZE_64, value_0=REG_RFLAGS, value_1=REG_ST0),
-                3: X86_64InstructionInfo("fcomp",  floatReg_op=True, numOperands=3, modRm_2=True, size_op=REG_SIZE_64, value_0=REG_RFLAGS, value_1=REG_ST0),
+                2: X86_64InstructionInfo("fcom",   destinations=[], floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
+                3: X86_64InstructionInfo("fcomp",  destinations=[], floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
                 4: {
                     None:       X86_64InstructionInfo("fsub",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
                     MOD_DIRECT: X86_64InstructionInfo("fsubr",  floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
@@ -891,27 +891,27 @@ oneByteOpcodes = {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
                 0: {
-                    None:       X86_64InstructionInfo("fld",    floatReg_op=True, modR_1=True, size=REG_SIZE_64, value_0=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("ffree",  numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
+                    None:       X86_64InstructionInfo("fld",    floatReg_op=True, modR_1=True, size=REG_SIZE_64, value_0=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_DIRECT: X86_64InstructionInfo("ffree",  destinations=[], numOperands=1, floatReg_op=True, modRm_0=True, size_0=REG_SIZE_64),
                 },
                 1: {
-                    None:       X86_64InstructionInfo("fisttp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("fisttp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
                     MOD_DIRECT: X86_64InstructionInfo("fxch",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0, exchange_inst=True),
                 },
                 2: {
-                    None:       X86_64InstructionInfo("fst",    floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("fst",    floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
+                    None:       X86_64InstructionInfo("fst",    floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_DIRECT: X86_64InstructionInfo("fst",    floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0, destIsAlsoSource_inst=False),
                 },
                 3: {
-                    None:       X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
+                    None:       X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_DIRECT: X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0, destIsAlsoSource_inst=False),
                 },
                 4: {
-                    None:       X86_64InstructionInfo("frstor", numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
-                    MOD_DIRECT: X86_64InstructionInfo("fucom",  floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
+                    None:       X86_64InstructionInfo("frstor", destinations=[], numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
+                    MOD_DIRECT: X86_64InstructionInfo("fucom",  destinations=[], floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
                 },
                 5: {
-                    MOD_DIRECT: X86_64InstructionInfo("fucomp", floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
+                    MOD_DIRECT: X86_64InstructionInfo("fucomp", destinations=[], floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
                 },
                 6: {
                     MOD_INDIRECT:    X86_64InstructionInfo("fsave", numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
@@ -919,9 +919,9 @@ oneByteOpcodes = {
                     MOD_4_BYTE_DISP: X86_64InstructionInfo("fsave", numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
                 },
                 7: {
-                    MOD_INDIRECT:    X86_64InstructionInfo("fstsw", modRm_0=True, size_op=REG_SIZE_16, value_1=REG_FPENV),
-                    MOD_1_BYTE_DISP: X86_64InstructionInfo("fstsw", modRm_0=True, size_op=REG_SIZE_16, value_1=REG_FPENV),
-                    MOD_1_BYTE_DISP: X86_64InstructionInfo("fstsw", modRm_0=True, size_op=REG_SIZE_16, value_1=REG_FPENV),
+                    MOD_INDIRECT:    X86_64InstructionInfo("fstsw", numOperands=1, modRm_0=True, size_0=REG_SIZE_16),
+                    MOD_1_BYTE_DISP: X86_64InstructionInfo("fstsw", numOperands=1, modRm_0=True, size_0=REG_SIZE_16),
+                    MOD_1_BYTE_DISP: X86_64InstructionInfo("fstsw", numOperands=1, modRm_0=True, size_0=REG_SIZE_16),
                 },
             },
         },
@@ -938,12 +938,12 @@ oneByteOpcodes = {
                     MOD_DIRECT: X86_64InstructionInfo("fmulp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
                 },
                 2: {
-                    None:       X86_64InstructionInfo("ficom",  numOperands=3, floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("fcomp",  numOperands=3, floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("ficom",  destinations=[], floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
+                    MOD_DIRECT: X86_64InstructionInfo("fcomp",  destinations=[], floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
                 },
                 3: {
-                    None:       X86_64InstructionInfo("ficomp", numOperands=3, floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("fcompp", numOperands=3, floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("ficomp", destinations=[], floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
+                    MOD_DIRECT: X86_64InstructionInfo("fcompp", destinations=[], floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),
                 },
                 4: {
                     None:       X86_64InstructionInfo("fisub",  floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
@@ -968,37 +968,37 @@ oneByteOpcodes = {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
                 0: {
-                    None:       X86_64InstructionInfo("fild",   floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16,  value_0=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("ffreep", numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
+                    None:       X86_64InstructionInfo("fild",   floatReg_op=True, modRm_1=True, size_1=REG_SIZE_16, value_0=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_DIRECT: X86_64InstructionInfo("ffreep", destinations=[], numOperands=1, floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64),
                 },
                 1: {
-                    None:       X86_64InstructionInfo("fistp",  floatReg_op=True, modRm_0=True, size_1=REG_SIZE_16,  value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("fistp",  floatReg_op=True, modRm_0=True, size_1=REG_SIZE_16,  value_1=REG_ST0, destIsAlsoSource_inst=False),
                     MOD_DIRECT: X86_64InstructionInfo("fxch",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0, exchange_inst=True),
                 },
                 2: {
-                    None:       X86_64InstructionInfo("fist",   floatReg_op=True, modRm_0=True, size_1=REG_SIZE_16,  value_1=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("fist",   floatReg_op=True, modRm_0=True, size_1=REG_SIZE_16,  value_1=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_DIRECT: X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
                 },
                 3: {
-                    None:       X86_64InstructionInfo("fistp",  floatReg_op=True, modRm_0=True, size_1=REG_SIZE_16,  value_1=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("fistp",  floatReg_op=True, modRm_0=True, size_1=REG_SIZE_16,  value_1=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_DIRECT: X86_64InstructionInfo("fstp",   floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
                 },
                 4: {
-                    None:       X86_64InstructionInfo("fbld",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0),    # bcd value
-                    MOD_DIRECT: X86_64InstructionInfo("fstw",   size_op=REG_SIZE_16, value_0=REG_RAX, value_1=REG_FPENV),
+                    None:       X86_64InstructionInfo("fbld",   floatReg_op=True, modRm_1=True, size_op=REG_SIZE_64, value_0=REG_ST0, destIsAlsoSource_inst=False), # bcd value
+                    MOD_DIRECT: X86_64InstructionInfo("fstw",   numOperands=1, size_op=REG_SIZE_16, value_0=REG_RAX, destIsAlsoSource_inst=False),
                 },
                 5: {
-                    None:       X86_64InstructionInfo("fild",    floatReg_op=True, modRm_1=True, size_1=REG_SIZE_64,  value_0=REG_ST0),
-                    MOD_DIRECT: X86_64InstructionInfo("fucomip", numOperands=3, floatReg_op=True, modRm_1=True, value_0=REG_RFLAGS, value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("fild",    floatReg_op=True, modRm_1=True, size_1=REG_SIZE_64,  value_0=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_DIRECT: X86_64InstructionInfo("fucomip", destinations=[], floatReg_op=True, modRm_1=True, value_0=REG_ST0),
                 },
                 6: {
-                    None:       X86_64InstructionInfo("fbstp",  floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),    # bcd value
-                    MOD_DIRECT: X86_64InstructionInfo("fcomip", numOperands=3, floatReg_op=True, modRm_1=True, value_0=REG_RFLAGS, value_1=REG_ST0),
+                    None:       X86_64InstructionInfo("fbstp",  floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False), # bcd value
+                    MOD_DIRECT: X86_64InstructionInfo("fcomip", destinations=[], floatReg_op=True, modRm_1=True, value_0=REG_ST0),
                 },
                 7: {
-                    MOD_INDIRECT:    X86_64InstructionInfo("fistp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
-                    MOD_1_BYTE_DISP: X86_64InstructionInfo("fistp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
-                    MOD_4_BYTE_DISP: X86_64InstructionInfo("fistp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0),
+                    MOD_INDIRECT:    X86_64InstructionInfo("fistp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_1_BYTE_DISP: X86_64InstructionInfo("fistp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
+                    MOD_4_BYTE_DISP: X86_64InstructionInfo("fistp", floatReg_op=True, modRm_0=True, size_op=REG_SIZE_64, value_1=REG_ST0, destIsAlsoSource_inst=False),
                 },
             },
         },
@@ -1028,8 +1028,8 @@ oneByteOpcodes = {
     0xf6: {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
-                0: X86_64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
-                1: X86_64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
+                0: X86_64InstructionInfo("test", destinations=[], modRm_0=True, isImmediate_1=True),
+                1: X86_64InstructionInfo("test", destinations=[], modRm_0=True, isImmediate_1=True),
                 2: X86_64InstructionInfo("not",  numOperands=1, modRm_0=True),
                 3: X86_64InstructionInfo("neg",  numOperands=1, modRm_0=True),
                 4: X86_64InstructionInfo("mul",  numOperands=3, modRm_2=True, size_0=REG_SIZE_16),
@@ -1042,8 +1042,8 @@ oneByteOpcodes = {
     0xf7: {
         None: { # There are no secondary opcodes
             None: { # There are no prefixes
-                0: X86_64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
-                1: X86_64InstructionInfo("test", numOperands=3, modRm_1=True, isImmediate_2=True, value_0=REG_RFLAGS),
+                0: X86_64InstructionInfo("test", destinations=[], modRm_0=True, isImmediate_1=True),
+                1: X86_64InstructionInfo("test", destinations=[], modRm_0=True, isImmediate_1=True),
                 2: X86_64InstructionInfo("not",  numOperands=1, modRm_0=True),
                 3: X86_64InstructionInfo("neg",  numOperands=1, modRm_0=True),
                 4: X86_64InstructionInfo("mul",  numOperands=3, destinations=[0,1], modRm_2=True, value_0=REG_RDX),
