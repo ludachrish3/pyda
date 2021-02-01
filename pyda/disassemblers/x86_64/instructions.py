@@ -1101,18 +1101,18 @@ twoByteOpcodes = {
 #   0x0f: TODO:
     0x10: {
         None: {
-            None: X86_64InstructionInfo("movups", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("movupd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf2: X86_64InstructionInfo("movsd",  modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf3: X86_64InstructionInfo("movss",  modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("movups", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("movupd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf2: X86_64InstructionInfo("movsd",  modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("movss",  modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
     0x11: {
         None: {
-            None: X86_64InstructionInfo("movups", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("movupd", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf2: X86_64InstructionInfo("movsd",  modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf3: X86_64InstructionInfo("movss",  modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("movups", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("movupd", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf2: X86_64InstructionInfo("movsd",  modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("movss",  modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
 #   0x12: TODO:
@@ -1122,13 +1122,13 @@ twoByteOpcodes = {
 #   0x16: TODO:
 #   0x17: TODO:
 #   0x18: TODO:
-    0x19: X86_64InstructionInfo("nop", modRm_0=True),
-    0x1a: X86_64InstructionInfo("nop", modRm_0=True),
-    0x1b: X86_64InstructionInfo("nop", modRm_0=True),
-    0x1c: X86_64InstructionInfo("nop", modRm_0=True),
-    0x1d: X86_64InstructionInfo("nop", modRm_0=True),
-    0x1e: X86_64InstructionInfo("nop", modRm_0=True),
-    0x1f: X86_64InstructionInfo("nop", modRm_0=True),
+    0x19: X86_64InstructionInfo("nop", numOperands=1, destinations=[], modRm_0=True),
+    0x1a: X86_64InstructionInfo("nop", numOperands=1, destinations=[], modRm_0=True),
+    0x1b: X86_64InstructionInfo("nop", numOperands=1, destinations=[], modRm_0=True),
+    0x1c: X86_64InstructionInfo("nop", numOperands=1, destinations=[], modRm_0=True),
+    0x1d: X86_64InstructionInfo("nop", numOperands=1, destinations=[], modRm_0=True),
+    0x1e: X86_64InstructionInfo("nop", numOperands=1, destinations=[], modRm_0=True),
+    0x1f: X86_64InstructionInfo("nop", numOperands=1, destinations=[], modRm_0=True),
 #   0x20: TODO:
 #   0x21: TODO:
 #   0x22: TODO:
@@ -1139,44 +1139,44 @@ twoByteOpcodes = {
 #   0x27: TODO:
     0x28: {
         None: {
-            None: X86_64InstructionInfo("movaps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("movapd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("movaps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("movapd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
     0x29: {
         None: {
-            None: X86_64InstructionInfo("movaps", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("movapd", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("movaps", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("movapd", modRm_0=True, reg_1=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
     0x2a: {
         None: {
-            None: X86_64InstructionInfo("cvtpi2ps", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_64, size_0=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("cvtpi2pd", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_64, size_0=REG_SIZE_128),
-            0xf2: X86_64InstructionInfo("cvtsi2sd", modRm_1=True, reg_0=True, mmRegister_0=True,  size_1=REG_SIZE_32, size_0=REG_SIZE_128),
-            0xf3: X86_64InstructionInfo("cvtsi2ss", modRm_1=True, reg_0=True, mmRegister_0=True,  size_1=REG_SIZE_32, size_0=REG_SIZE_128),
+            None: X86_64InstructionInfo("cvtpi2ps", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_64, size_0=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("cvtpi2pd", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_64, size_0=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf2: X86_64InstructionInfo("cvtsi2sd", modRm_1=True, reg_0=True, mmRegister_0=True,  size_1=REG_SIZE_32, size_0=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("cvtsi2ss", modRm_1=True, reg_0=True, mmRegister_0=True,  size_1=REG_SIZE_32, size_0=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
 #   0x2b: TODO:
     0x2c: {
         None: {
-            None: X86_64InstructionInfo("cvttps2pi", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_64),
-            0x66: X86_64InstructionInfo("cvttpd2pi", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_128, size_0=REG_SIZE_64),
-            0xf2: X86_64InstructionInfo("cvttsd2si", modRm_1=True, reg_0=True, mmRegister_1=True,  size_1=REG_SIZE_128, size_0=REG_SIZE_32),
-            0xf3: X86_64InstructionInfo("cvttss2si", modRm_1=True, reg_0=True, mmRegister_1=True,  size_1=REG_SIZE_128, size_0=REG_SIZE_32),
+            None: X86_64InstructionInfo("cvttps2pi", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_64, destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("cvttpd2pi", modRm_1=True, reg_0=True, mmRegister_op=True, size_1=REG_SIZE_128, size_0=REG_SIZE_64, destIsAlsoSource_inst=False),
+            0xf2: X86_64InstructionInfo("cvttsd2si", modRm_1=True, reg_0=True, mmRegister_1=True,  size_1=REG_SIZE_128, size_0=REG_SIZE_32, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("cvttss2si", modRm_1=True, reg_0=True, mmRegister_1=True,  size_1=REG_SIZE_128, size_0=REG_SIZE_32, destIsAlsoSource_inst=False),
         },
     },
 #   0x2d: TODO:
     0x2e: {
         None: {
-            None: X86_64InstructionInfo("ucomiss", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("ucomisd", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
+            None: X86_64InstructionInfo("ucomiss", destinations=[], modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X86_64InstructionInfo("ucomisd", destinations=[], modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x2f: {
         None: {
-            None: X86_64InstructionInfo("comiss", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("comisd", numOperands=3, modRm_2=True, reg_1=True, value_0=REG_RFLAGS, mmRegister_1=True, mmRegister_2=True, size_1=REG_SIZE_128, size_2=REG_SIZE_128),
+            None: X86_64InstructionInfo("comiss", destinations=[], modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X86_64InstructionInfo("comisd", destinations=[], modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
 #   0x30: TODO:
@@ -1195,41 +1195,41 @@ twoByteOpcodes = {
 #   0x3d: TODO:
 #   0x3e: TODO:
 #   0x3f: TODO:
-    0x40: X86_64InstructionInfo("cmovo",  modRm_1=True, reg_0=True), # Overflow
-    0x41: X86_64InstructionInfo("cmovno", modRm_1=True, reg_0=True), # Not overflow
-    0x42: X86_64InstructionInfo("cmovb",  modRm_1=True, reg_0=True), # Less than (unsigned)
-    0x43: X86_64InstructionInfo("cmovae", modRm_1=True, reg_0=True), # Greater than or equal (unsigned)
-    0x44: X86_64InstructionInfo("cmove",  modRm_1=True, reg_0=True), # Equal
-    0x45: X86_64InstructionInfo("cmovne", modRm_1=True, reg_0=True), # Not equal
-    0x46: X86_64InstructionInfo("cmovbe", modRm_1=True, reg_0=True), # Less than or equal (unsigned)
-    0x47: X86_64InstructionInfo("cmova",  modRm_1=True, reg_0=True), # Greater than (unsigned)
-    0x48: X86_64InstructionInfo("cmovs",  modRm_1=True, reg_0=True), # Signed
-    0x49: X86_64InstructionInfo("cmovns", modRm_1=True, reg_0=True), # Unsigned
-    0x4a: X86_64InstructionInfo("cmovp",  modRm_1=True, reg_0=True), # Parity
-    0x4b: X86_64InstructionInfo("cmovnp", modRm_1=True, reg_0=True), # Not parity
-    0x4c: X86_64InstructionInfo("cmovlt", modRm_1=True, reg_0=True), # Less than (signed)
-    0x4d: X86_64InstructionInfo("cmovge", modRm_1=True, reg_0=True), # Greater than or equal (signed)
-    0x4e: X86_64InstructionInfo("cmovle", modRm_1=True, reg_0=True), # Less than or equal (signed)
-    0x4f: X86_64InstructionInfo("cmovgt", modRm_1=True, reg_0=True), # Greater than (signed)
+    0x40: X86_64InstructionInfo("cmovo",  modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Overflow
+    0x41: X86_64InstructionInfo("cmovno", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Not overflow
+    0x42: X86_64InstructionInfo("cmovb",  modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Less than (unsigned)
+    0x43: X86_64InstructionInfo("cmovae", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Greater than or equal (unsigned)
+    0x44: X86_64InstructionInfo("cmove",  modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Equal
+    0x45: X86_64InstructionInfo("cmovne", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Not equal
+    0x46: X86_64InstructionInfo("cmovbe", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Less than or equal (unsigned)
+    0x47: X86_64InstructionInfo("cmova",  modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Greater than (unsigned)
+    0x48: X86_64InstructionInfo("cmovs",  modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Signed
+    0x49: X86_64InstructionInfo("cmovns", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Unsigned
+    0x4a: X86_64InstructionInfo("cmovp",  modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Parity
+    0x4b: X86_64InstructionInfo("cmovnp", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Not parity
+    0x4c: X86_64InstructionInfo("cmovlt", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Less than (signed)
+    0x4d: X86_64InstructionInfo("cmovge", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Greater than or equal (signed)
+    0x4e: X86_64InstructionInfo("cmovle", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Less than or equal (signed)
+    0x4f: X86_64InstructionInfo("cmovgt", modRm_1=True, reg_0=True, destIsAlsoSource_inst=False), # Greater than (signed)
 #   0x50: TODO:
     0x51: {
         None: {
-            None: X86_64InstructionInfo("sqrtps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("sqrtpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf2: X86_64InstructionInfo("sqrtsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf3: X86_64InstructionInfo("sqrtss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("sqrtps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("sqrtpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf2: X86_64InstructionInfo("sqrtsd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("sqrtss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
     0x52: {
         None: {
-            None: X86_64InstructionInfo("rsqrtps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf3: X86_64InstructionInfo("rsqrtss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("rsqrtps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("rsqrtss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
     0x53: {
         None: {
-            None: X86_64InstructionInfo("rcpps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf3: X86_64InstructionInfo("rcpss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("rcpps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("rcpss", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
     0x54: {
@@ -1240,8 +1240,8 @@ twoByteOpcodes = {
     },
     0x55: {
         None: {
-            None: X86_64InstructionInfo("addps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0x66: X86_64InstructionInfo("addpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("andnps", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            0x66: X86_64InstructionInfo("andnpd", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
         },
     },
     0x56: {
@@ -1323,9 +1323,9 @@ twoByteOpcodes = {
 #   0x6e: TODO:
     0x6f: {
         None: {
-            None: X86_64InstructionInfo("movq",   modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_64),
-            0x66: X86_64InstructionInfo("movdqa", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
-            0xf3: X86_64InstructionInfo("movdqu", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128),
+            None: X86_64InstructionInfo("movq",   modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_64,  destIsAlsoSource_inst=False),
+            0x66: X86_64InstructionInfo("movdqa", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
+            0xf3: X86_64InstructionInfo("movdqu", modRm_1=True, reg_0=True, mmRegister_op=True, size_op=REG_SIZE_128, destIsAlsoSource_inst=False),
         },
     },
 #   0x70: TODO:
@@ -1344,22 +1344,22 @@ twoByteOpcodes = {
 #   0x7d: TODO:
 #   0x7e: TODO:
 #   0x7f: TODO:
-    0x80: X86_64InstructionInfo("jo",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Overflow
-    0x81: X86_64InstructionInfo("jno",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Not overflow
-    0x82: X86_64InstructionInfo("jb",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than (unsigned)
-    0x83: X86_64InstructionInfo("jae",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than or equal (unsigned)
-    0x84: X86_64InstructionInfo("je",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Equal
-    0x85: X86_64InstructionInfo("jne",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Not equal
-    0x86: X86_64InstructionInfo("jbe",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than or equal (unsigned)
-    0x87: X86_64InstructionInfo("ja",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than (unsigned)
-    0x88: X86_64InstructionInfo("js",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Signed
-    0x89: X86_64InstructionInfo("jns",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Unsigned
-    0x8a: X86_64InstructionInfo("jp",    numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Parity
-    0x8b: X86_64InstructionInfo("jnp",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Not parity
-    0x8c: X86_64InstructionInfo("jlt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than (signed)
-    0x8d: X86_64InstructionInfo("jge",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than or equal (signed)
-    0x8e: X86_64InstructionInfo("jle",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Less than or equal (signed)
-    0x8f: X86_64InstructionInfo("jgt",   numOperands=1, isOffset_0=True, size_0=REG_SIZE_32), # Greater than (signed)
+    0x80: X86_64InstructionInfo("jo",    numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Overflow
+    0x81: X86_64InstructionInfo("jno",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Not overflow
+    0x82: X86_64InstructionInfo("jb",    numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Less than (unsigned)
+    0x83: X86_64InstructionInfo("jae",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Greater than or equal (unsigned)
+    0x84: X86_64InstructionInfo("je",    numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Equal
+    0x85: X86_64InstructionInfo("jne",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Not equal
+    0x86: X86_64InstructionInfo("jbe",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Less than or equal (unsigned)
+    0x87: X86_64InstructionInfo("ja",    numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Greater than (unsigned)
+    0x88: X86_64InstructionInfo("js",    numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Signed
+    0x89: X86_64InstructionInfo("jns",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Unsigned
+    0x8a: X86_64InstructionInfo("jp",    numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Parity
+    0x8b: X86_64InstructionInfo("jnp",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Not parity
+    0x8c: X86_64InstructionInfo("jlt",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Less than (signed)
+    0x8d: X86_64InstructionInfo("jge",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Greater than or equal (signed)
+    0x8e: X86_64InstructionInfo("jle",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Less than or equal (signed)
+    0x8f: X86_64InstructionInfo("jgt",   numOperands=1, destinations=[], isOffset_0=True, size_0=REG_SIZE_32), # Greater than (signed)
     0x90: X86_64InstructionInfo("seto",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Overflow
     0x91: X86_64InstructionInfo("setno", numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Not Overflow
     0x92: X86_64InstructionInfo("setb",  numOperands=1, modRm_0=True, size_0=REG_SIZE_8), # Less than (unsigned)
@@ -1379,7 +1379,7 @@ twoByteOpcodes = {
 #   0xa0: TODO:
 #   0xa1: TODO:
 #   0xa2: TODO:
-    0xa3: X86_64InstructionInfo("bt",    modRm_0=True, reg_1=True, size_op=REG_SIZE_32),
+    0xa3: X86_64InstructionInfo("bt",    destinations=[], modRm_0=True, reg_1=True, size_op=REG_SIZE_32),
 #   0xa4: TODO:
 #   0xa5: TODO:
 #   0xa6: TODO:
@@ -1398,10 +1398,10 @@ twoByteOpcodes = {
 #   0xb3: TODO:
 #   0xb4: TODO:
 #   0xb5: TODO:
-    0xb6: X86_64InstructionInfo("movzx", modRm_1=True, reg_0=True, size_1=REG_SIZE_8,  size_0=REG_SIZE_32),
-    0xb7: X86_64InstructionInfo("movzx", modRm_1=True, reg_0=True, size_1=REG_SIZE_16, size_0=REG_SIZE_32, src_maxSize=REG_SIZE_16),
-    0xbe: X86_64InstructionInfo("movsx", reg_0=True, modRm_1=True, size_0=REG_SIZE_32,  size_1=REG_SIZE_8),
-    0xbf: X86_64InstructionInfo("movsx", reg_0=True, modRm_1=True, size_0=REG_SIZE_32,  size_1=REG_SIZE_16),
+    0xb6: X86_64InstructionInfo("movzx", modRm_1=True, reg_0=True, size_1=REG_SIZE_8,  size_0=REG_SIZE_32, destIsAlsoSource_inst=False),
+    0xb7: X86_64InstructionInfo("movzx", modRm_1=True, reg_0=True, size_1=REG_SIZE_16, size_0=REG_SIZE_32, maxSize_1=REG_SIZE_16, destIsAlsoSource_inst=False),
+    0xbe: X86_64InstructionInfo("movsx", reg_0=True, modRm_1=True, size_0=REG_SIZE_32, size_1=REG_SIZE_8, destIsAlsoSource_inst=False),
+    0xbf: X86_64InstructionInfo("movsx", reg_0=True, modRm_1=True, size_0=REG_SIZE_32, size_1=REG_SIZE_16, maxSize_1=REG_SIZE_16, destIsAlsoSource_inst=False),
 
     0xef: {
         None: {
